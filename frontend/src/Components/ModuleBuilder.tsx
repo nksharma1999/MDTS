@@ -673,7 +673,7 @@ export const ModuleBuilder = () => {
               <tr>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', columnGap: '0' }}>Code</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Activity Name</th>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Duration</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', width:'10px' }}>Duration</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Prerequisites</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Level</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th>
@@ -695,7 +695,7 @@ export const ModuleBuilder = () => {
                   >
                     <td>{val.parentModuleCode}</td>
                     <td>{val.name}</td>
-                    <td>{val.duration}</td>
+                    <td style={{width:'10px'}}>{val.duration}</td>
                     <td>{val.prerequisites}</td>
                     <td>L{val.lavel}</td>
                     <td>

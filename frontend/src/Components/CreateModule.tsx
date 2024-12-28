@@ -2,17 +2,19 @@ import { useState, useEffect } from "react";
 import { generateTwoLetterAcronym } from "../Utils/generateTwoLetterAcronym";
 import { useLocation } from "react-router-dom";
 import {
-  Typography, TextField, InputAdornment, Accordion,
+  Typography,
+  TextField,
+  InputAdornment,
+  Accordion,
   AccordionSummary,
-  AccordionDetails, Button
+  AccordionDetails,
+  Button,
 } from "@mui/material";
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 // import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-
-
 
 export const CreateModule = () => {
   const [newModelName, setNewModelName] = useState<string>("");
@@ -22,7 +24,10 @@ export const CreateModule = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [collapsedModules, setCollapsedModules] = useState({});
   const [isSaveEnabled, setIsSaveEnabled] = useState(false);
-  const [selectedRow, setSelectedRow] = useState({ moduleIndex: 0, activityIndex: null });
+  const [selectedRow, setSelectedRow] = useState({
+    moduleIndex: 0,
+    activityIndex: null,
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(null);
   const [modules, setModules] = useState([]);
@@ -36,7 +41,7 @@ export const CreateModule = () => {
 
   const [module, setModule] = useState([
     {
-      parentModuleCode: '', // Initialize as an empty string
+      parentModuleCode: "", // Initialize as an empty string
       moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
       lavel: 0,
       plus: 0,
@@ -46,19 +51,16 @@ export const CreateModule = () => {
 
   // const editingModuleIndex = selectedRow?.moduleIndex; // Or the appropriate logic to fetch the index
 
-
   // const [selectedRow, setSelectedRow] = useState({ moduleIndex: null, activityIndex: null });
-
 
   const generateModuleCode = (moduleName: string): string => {
     try {
-      
       const acronym = generateTwoLetterAcronym(moduleName, existingAcronyms);
       return acronym;
     } catch (error) {
-      console.error('Error in generateModuleCode:', error);
+      console.error("Error in generateModuleCode:", error);
     }
-    return 'NA';
+    return "NA";
   };
 
   // Update parentModuleCode when moduleName changes
@@ -73,7 +75,6 @@ export const CreateModule = () => {
       );
     }
   }, [moduleName]);
-
 
   const handleModulePlus = () => {
     try {
@@ -103,11 +104,12 @@ export const CreateModule = () => {
         return updatedModule;
       });
     } else {
-      setModule((prevModule) => prevModule.filter((_, idx) => idx !== moduleIndex));
+      setModule((prevModule) =>
+        prevModule.filter((_, idx) => idx !== moduleIndex)
+      );
     }
     setSelectedRow({ moduleIndex: 0, activityIndex: null });
   };
-
 
   const toggleModule = (moduleIndex) => {
     setCollapsedModules((prevState) => ({
@@ -115,9 +117,6 @@ export const CreateModule = () => {
       [moduleIndex]: !prevState[moduleIndex], // Toggle the collapse state
     }));
   };
-
-
-
 
   const handleModuleMinus = (pCode: string, index: number, values: any) => {
     let tempData = [...module]; // Copy module state to avoid mutating it directly
@@ -145,7 +144,6 @@ export const CreateModule = () => {
     setModule(tempData); // Update the state with the modified data
   };
 
-
   const [newActInput, setNewActInput] = useState({
     pCode: "",
     childCode: "",
@@ -161,17 +159,17 @@ export const CreateModule = () => {
     });
 
     // Retrieve the previous activity
-    const selectedModule = module.find(mod => mod.parentModuleCode === pcode);
-    const lastActivity = selectedModule?.activitys[selectedModule.activitys.length - 1];
+    const selectedModule = module.find((mod) => mod.parentModuleCode === pcode);
+    const lastActivity =
+      selectedModule?.activitys[selectedModule.activitys.length - 1];
 
     if (lastActivity) {
-      setNewActInput(prev => ({
+      setNewActInput((prev) => ({
         ...prev,
         input: lastActivity.name, // Set the prerequisite to the previous activity's name
       }));
     }
   };
-
 
   const handleAddActivityToFirstRow = () => {
     const { moduleIndex, activityIndex } = selectedRow; // Includes `activityIndex` to track the selected row
@@ -182,7 +180,9 @@ export const CreateModule = () => {
 
     // Fetch the code of the selected activity
     const selectedActivity = activities[activityIndex];
-    const previousCode = selectedActivity ? selectedActivity.code : selectedModule.parentModuleCode;
+    const previousCode = selectedActivity
+      ? selectedActivity.code
+      : selectedModule.parentModuleCode;
     // Generate the new code for the activity
     const newCode = getCode(previousCode);
 
@@ -207,8 +207,7 @@ export const CreateModule = () => {
     }
 
     // Update the module state
-    setModule(updatedModules.map(module => ({ ...module })));
-
+    setModule(updatedModules.map((module) => ({ ...module })));
   };
 
   // Check if it is a submodule
@@ -218,13 +217,14 @@ export const CreateModule = () => {
 
     if (
       preCodeArr.length !== currodeArr.length ||
-      (currodeArr[1] !== undefined && isNaN(Number(currodeArr[1])) && !Number.isInteger(Number(currodeArr[1])))
+      (currodeArr[1] !== undefined &&
+        isNaN(Number(currodeArr[1])) &&
+        !Number.isInteger(Number(currodeArr[1])))
     ) {
       return true;
     }
     return false; // Replace this with your actual logic
   };
-
 
   // Updated `getCode` Function
   const getCode = (prevCode) => {
@@ -244,7 +244,6 @@ export const CreateModule = () => {
     // Increment the numeric suffix by 10
     return `${baseCode}/${lastNumber + 10}`;
   };
-
 
   const handleSaveActivity = () => {
     let tempData = module;
@@ -281,7 +280,6 @@ export const CreateModule = () => {
     });
   };
 
-
   const handleIncButtonClick = (pCode: string, index: number, values: any) => {
     // Create a copy of the module array
     let tempData = [...module];
@@ -297,7 +295,10 @@ export const CreateModule = () => {
 
           // Ensure all activities within this submodule have the same level
           const updatedLevel = act[index].level;
-          const submoduleCodePrefix = act[index].code.split("/").slice(0, 2).join("/"); // Extract submodule code prefix
+          const submoduleCodePrefix = act[index].code
+            .split("/")
+            .slice(0, 2)
+            .join("/"); // Extract submodule code prefix
 
           act = act.map((activity) => {
             if (activity.code.startsWith(submoduleCodePrefix)) {
@@ -314,7 +315,10 @@ export const CreateModule = () => {
           const maxLevel = getMaxLevel(act);
 
           // Generate a unique two-letter acronym
-          const acronym = generateTwoLetterAcronym(values.name, existingAcronyms);
+          const acronym = generateTwoLetterAcronym(
+            values.name,
+            existingAcronyms
+          );
           setExistingAcronyms([...existingAcronyms, acronym]);
 
           // Create a new activity with updated level and code
@@ -330,7 +334,10 @@ export const CreateModule = () => {
           act.push(newActivity);
 
           // Ensure all activities under this submodule have the same level
-          const submoduleCodePrefix = newActivity.code.split("/").slice(0, 2).join("/"); // Extract submodule code prefix
+          const submoduleCodePrefix = newActivity.code
+            .split("/")
+            .slice(0, 2)
+            .join("/"); // Extract submodule code prefix
           const newLevel = newActivity.level;
 
           act = act.map((activity) => {
@@ -387,22 +394,24 @@ export const CreateModule = () => {
   const handleEditModule = (index) => {
     setIsEditing(true);
     setSelectedModuleIndex(index); // Store the index for handling edit
-};
+  };
 
-const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
-    console.log('handleEditRow called with:', moduleIndex, activityIndex, updatedData);
+  const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
+    console.log(
+      "handleEditRow called with:",
+      moduleIndex,
+      activityIndex,
+      updatedData
+    );
     const updatedModules = [...modules];
     if (activityIndex !== null) {
-        updatedModules[moduleIndex].activitys[activityIndex] = updatedData;
+      updatedModules[moduleIndex].activitys[activityIndex] = updatedData;
     } else {
-        updatedModules[moduleIndex] = updatedData;
+      updatedModules[moduleIndex] = updatedData;
     }
     setModules(updatedModules);
-    console.log('Updated Modules:', updatedModules);
-};
-
-  
-
+    console.log("Updated Modules:", updatedModules);
+  };
 
   const handleFilterClick = () => {
     const { moduleIndex } = selectedRow;
@@ -411,7 +420,9 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
       const currentModule = module[moduleIndex];
 
       // Sort the activities by level in ascending or descending order
-      const sortedActivities = [...currentModule.activitys].sort((a, b) => a.level - b.level);
+      const sortedActivities = [...currentModule.activitys].sort(
+        (a, b) => a.level - b.level
+      );
       // Uncomment the following line for descending order
       // const sortedActivities = [...currentModule.activitys].sort((a, b) => b.level - a.level);
 
@@ -429,64 +440,67 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
     }
   };
 
+  const filteredModules = module
+    .map((mod) => {
+      const { name = "", code = "" } = mod; // Safely destructure module fields
 
-  const filteredModules = module.map((mod) => {
-    const { name = "", code = "" } = mod; // Safely destructure module fields
+      // Filter activities within each module
+      const filteredActivities = (mod.activitys || []).filter((activity) => {
+        if (!activity || typeof activity !== "object") {
+          return false; // Skip invalid activities
+        }
 
-    // Filter activities within each module
-    const filteredActivities = (mod.activitys || []).filter((activity) => {
-      if (!activity || typeof activity !== "object") {
-        return false; // Skip invalid activities
+        // Destructure activity fields with defaults
+        const {
+          name: activityName = "",
+          level = "",
+          prerequisites = "",
+          code: activityCode = "",
+          duration = "",
+        } = activity;
+
+        const searchTermLower = searchTerm.toLowerCase();
+
+        // Check if any activity field matches the search term
+        return (
+          activityName.toLowerCase().includes(searchTermLower) ||
+          level.toString().toLowerCase().includes(searchTermLower) ||
+          prerequisites.toLowerCase().includes(searchTermLower) ||
+          activityCode.toLowerCase().includes(searchTermLower) ||
+          duration.toLowerCase().includes(searchTermLower)
+        );
+      });
+
+      // Check if the module itself matches the search term or has filtered activities
+      if (
+        name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        code.toLowerCase().includes(searchTerm.toLowerCase()) || // Check module code
+        filteredActivities.length > 0 // Include if any activities matched
+      ) {
+        return { ...mod, activitys: filteredActivities }; // Return module with filtered activities
       }
 
-      // Destructure activity fields with defaults
-      const {
-        name: activityName = "",
-        level = "",
-        prerequisites = "",
-        code: activityCode = "",
-        duration = "",
-      } = activity;
-
-      const searchTermLower = searchTerm.toLowerCase();
-
-      // Check if any activity field matches the search term
-      return (
-        activityName.toLowerCase().includes(searchTermLower) ||
-        level.toString().toLowerCase().includes(searchTermLower) ||
-        prerequisites.toLowerCase().includes(searchTermLower) ||
-        activityCode.toLowerCase().includes(searchTermLower) ||
-        duration.toLowerCase().includes(searchTermLower)
-      );
-    });
-
-    // Check if the module itself matches the search term or has filtered activities
-    if (
-      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      code.toLowerCase().includes(searchTerm.toLowerCase()) || // Check module code
-      filteredActivities.length > 0 // Include if any activities matched
-    ) {
-      return { ...mod, activitys: filteredActivities }; // Return module with filtered activities
-    }
-
-    return null; // Exclude modules with no matches
-  }).filter(Boolean); // Remove null values
+      return null; // Exclude modules with no matches
+    })
+    .filter(Boolean); // Remove null values
 
   const handleSaveAll = () => {
     console.log("Saving all changes: ", modules);
     setIsSaveEnabled(false); // Disable the Save button after saving
     // Add API call here to persist data if needed
   };
-  
-
-
-
 
   return (
     <div style={{ padding: 10 }}>
       <div className="card mb-3">
         <div className="card-header">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Typography variant="h5" style={{ flexGrow: 1 }}>
               Tool Bar
             </Typography>
@@ -498,12 +512,13 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                   const { moduleIndex, activityIndex } = selectedRow;
 
                   if (moduleIndex !== null) {
-                    console.log('module index : ', moduleIndex);
+                    console.log("module index : ", moduleIndex);
                     const selectedModule = module[moduleIndex];
-                    console.log('selectedModule : ', selectedModule);
+                    console.log("selectedModule : ", selectedModule);
                     if (activityIndex !== null) {
                       // If an activity is selected
-                      const selectedActivity = selectedModule.activitys[activityIndex];
+                      const selectedActivity =
+                        selectedModule.activitys[activityIndex];
                       handleModuleMinus(
                         selectedModule.parentModuleCode,
                         activityIndex,
@@ -515,11 +530,20 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                         level: selectedModule.lavel,
                         code: selectedModule.parentModuleCode,
                       };
-                      handleModuleMinus(selectedModule.parentModuleCode, moduleIndex, values);
+                      handleModuleMinus(
+                        selectedModule.parentModuleCode,
+                        moduleIndex,
+                        values
+                      );
                     }
                   }
                 }}
-                style={{ padding: 0, margin: 0, fontSize: '22px', color: 'blueviolet' }}
+                style={{
+                  padding: 0,
+                  margin: 0,
+                  fontSize: "22px",
+                  color: "blueviolet",
+                }}
               >
                 <i className="fas fa-arrow-left-long"></i>
               </button>
@@ -534,7 +558,8 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                     const selectedModule = module[moduleIndex];
                     if (activityIndex !== null) {
                       // If an activity is selected
-                      const selectedActivity = selectedModule.activitys[activityIndex];
+                      const selectedActivity =
+                        selectedModule.activitys[activityIndex];
                       handleIncButtonClick(
                         selectedModule.parentModuleCode,
                         activityIndex,
@@ -546,11 +571,20 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                         level: selectedModule.lavel,
                         code: selectedModule.parentModuleCode,
                       };
-                      handleIncButtonClick(selectedModule.parentModuleCode, moduleIndex, values);
+                      handleIncButtonClick(
+                        selectedModule.parentModuleCode,
+                        moduleIndex,
+                        values
+                      );
                     }
                   }
                 }}
-                style={{ padding: 0, margin: 0, fontSize: '22px', color: 'blueviolet' }}
+                style={{
+                  padding: 0,
+                  margin: 0,
+                  fontSize: "22px",
+                  color: "blueviolet",
+                }}
               >
                 <i className="fa-solid fa-arrow-right-long"></i>
               </button>
@@ -559,7 +593,7 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                 className="btn"
                 title="Delete"
                 onClick={handleDelete}
-                style={{ marginLeft: 0, color: 'blue' }}
+                style={{ marginLeft: 0, color: "blue" }}
               >
                 <i className="fa-solid fa-trash-can"></i>
               </button>
@@ -568,14 +602,14 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                 title="Filter"
                 onClick={handleFilterClick}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
+                  display: "flex",
+                  alignItems: "center",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
                 }}
               >
-                <FilterListIcon style={{ fontSize: '24px', color: '#333' }} />
+                <FilterListIcon style={{ fontSize: "24px", color: "#333" }} />
               </button>
 
               <TextField
@@ -594,28 +628,53 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                 style={{ width: "300px" }}
               />
 
-              <button className="btn btn-info" onClick={handleAddActivityToFirstRow}>
+              <button
+                className="btn btn-info"
+                onClick={handleAddActivityToFirstRow}
+              >
                 Add Activity
               </button>
             </div>
           </div>
         </div>
 
-
-
         <div className="card-body">
-          <table className="table table-bordered" cellSpacing="0" cellPadding="0">
-
+          <table
+            className="table table-bordered"
+            cellSpacing="0"
+            cellPadding="0"
+          >
             {/* Table header: Rendered only once */}
             <thead>
               <tr>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', columnGap: '0' }}>Code</th>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Activity Name</th>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Duration<small> (in days)</small></th>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Prerequisites</th>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Level</th>
+                <th
+                  style={{
+                    textAlign: "center",
+                    backgroundColor: "#e0f7fa",
+                    columnGap: "0",
+                  }}
+                >
+                  Code
+                </th>
+                <th style={{ textAlign: "center", backgroundColor: "#e0f7fa" }}>
+                  Activity Name
+                </th>
+                <th
+                  style={{
+                    textAlign: "center",
+                    backgroundColor: "#e0f7fa",
+                    width: "100px",
+                  }}
+                >
+                  Duration<small> (in days)</small>
+                </th>
+                <th style={{ textAlign: "center", backgroundColor: "#e0f7fa",width: "100px", }}>
+                  Prerequisites
+                </th>
+                <th style={{ textAlign: "center", backgroundColor: "#e0f7fa" }}>
+                  Level
+                </th>
                 {/* <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th> */}
-
               </tr>
             </thead>
             {/* Table body: Rendered dynamically */}
@@ -627,28 +686,30 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                   <tr
                     key={`module-${moduleIndex}`}
                     style={{
-                      backgroundColor: moduleIndex === selectedRow.moduleIndex ? 'grey' : 'gray',
-                      color: 'white',
-                      textAlign: 'center',
+                      backgroundColor:
+                        moduleIndex === selectedRow.moduleIndex
+                          ? "grey"
+                          : "gray",
+                      color: "white",
+                      textAlign: "center",
                     }}
-                    onClick={() => setSelectedRow({ moduleIndex, activityIndex: null })}
+                    onClick={() =>
+                      setSelectedRow({ moduleIndex, activityIndex: null })
+                    }
                   >
-                  <td>{generateModuleCode(moduleName)}</td>
+                    <td>{generateModuleCode(moduleName)}</td>
 
-        <td>
-          {moduleName}
-        </td>
+                    <td>{moduleName}</td>
 
-        <td>{val.duration}</td>
+                    <td style={{ textAlign: "center" }}>{val.duration}</td>
 
-        <td>{val.prerequisites}</td>
+                    <td>{val.prerequisites}</td>
 
-        <td>
-          {`L${val.lavel}`} {/* Level remains non-editable */}
-        </td>
+                    <td>
+                      {`L${val.lavel}`} {/* Level remains non-editable */}
+                    </td>
 
-
-        {/* <td>
+                    {/* <td>
           <EditIcon
             onClick={() => handleEditModule(moduleIndex)}
             style={{ marginLeft: '10px', color: isEditing ? 'green' : 'blue', cursor: 'pointer' }}
@@ -660,71 +721,72 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
                 // Child rows rendering
                 const activityRows = !collapsedModules[moduleIndex]
                   ? val.activitys.map((act, activityIndex) => (
-                    <tr
-                      key={`module-${moduleIndex}-activity-${activityIndex}`}
-                      style={{
-                        backgroundColor:
-                          moduleIndex === selectedRow.moduleIndex &&
+                      <tr
+                        key={`module-${moduleIndex}-activity-${activityIndex}`}
+                        style={{
+                          backgroundColor:
+                            moduleIndex === selectedRow.moduleIndex &&
                             activityIndex === selectedRow.activityIndex
-                            ? 'lightblue'
-                            : '',
-                        textAlign: 'center',
-                      }}
-                      onClick={() => setSelectedRow({ moduleIndex, activityIndex })}
-                    >
-                      <td>{act.code}</td>
-                      <td>
-                        <TextField
-                          value={act.name}
-                          onChange={(e) =>
-                            handleEditRow(moduleIndex, activityIndex, {
-                              ...act,
-                              name: e.target.value,
-                            })
-                          }
-                          variant="standard"
-                          fullWidth
-                          InputProps={{ disableUnderline: true }}
-                        />
-                      </td>
-                      <td>
-                        <TextField
-                          value={act.duration}
-                          onChange={(e) =>
-                            handleEditRow(moduleIndex, activityIndex, {
-                              ...act,
-                              duration: e.target.value,
-                            })
-                          }
-                          variant="standard"
-                          fullWidth
-                          InputProps={{ disableUnderline: true }}
-                        />
-                      </td>
-                      <td>
-                        <TextField
-                          value={act.prerequisites}
-                          onChange={(e) =>
-                            handleEditRow(moduleIndex, activityIndex, {
-                              ...act,
-                              prerequisites: e.target.value,
-                            })
-                          }
-                          variant="standard"
-                          fullWidth
-                          InputProps={{ disableUnderline: true }}
-                        />
-                      </td>
-                      <td>L{act.level}</td>
-                      {/* <td>
+                              ? "lightblue"
+                              : "",
+                          textAlign: "center",
+                        }}
+                        onClick={() =>
+                          setSelectedRow({ moduleIndex, activityIndex })
+                        }
+                      >
+                        <td>{act.code}</td>
+                        <td>
+                          <TextField
+                            value={act.name}
+                            onChange={(e) =>
+                              handleEditRow(moduleIndex, activityIndex, {
+                                ...act,
+                                name: e.target.value,
+                              })
+                            }
+                            variant="standard"
+                            fullWidth
+                            InputProps={{ disableUnderline: true }}
+                          />
+                        </td>
+                        <td>
+                          <TextField
+                            value={act.duration}
+                            onChange={(e) =>
+                              handleEditRow(moduleIndex, activityIndex, {
+                                ...act,
+                                duration: e.target.value,
+                              })
+                            }
+                            variant="standard"
+                            fullWidth
+                            InputProps={{ disableUnderline: true }}
+                          />
+                        </td>
+                        <td>
+                          <TextField
+                            value={act.prerequisites}
+                            onChange={(e) =>
+                              handleEditRow(moduleIndex, activityIndex, {
+                                ...act,
+                                prerequisites: e.target.value,
+                              })
+                            }
+                            variant="standard"
+                            fullWidth
+                            InputProps={{ disableUnderline: true }}
+                          />
+                        </td>
+                        <td>L{act.level}</td>
+                        {/* <td>
                         <EditIcon
                           onClick={() => handleEditModule(moduleIndex)}
                           style={{ color: "#007bff", cursor: "pointer" }}
                         />
                       </td> */}
-
-                    </tr>
-                  ))
+                      </tr>
+                    ))
                   : null;
 
                 // Return both parent and child rows
@@ -744,13 +806,12 @@ const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
               right: "20px",
               zIndex: 1000,
               backgroundColor: "blue", // Blue background
-              color: "white",          // White text for better contrast
+              color: "white", // White text for better contrast
               opacity: isSaveEnabled ? 1 : 0.6, // Dim button if disabled
             }}
           >
             Save
           </Button>
-
         </div>
 
         <div
