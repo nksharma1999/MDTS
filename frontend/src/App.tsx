@@ -6,8 +6,22 @@ import { RegisterNewProject } from "./Components/RegisterNewProject";
 import { EmployeeRegistration } from "./Components/EmployeeRegistration";
 import { ModuleBuilder } from "./Components/ModuleBuilder";
 import {CreateModule} from './Components/CreateModule';
+import React, { useEffect } from "react";
+
+import {
+  getModules,
+  addModule,
+  findModule,
+  initializeModules,
+} from './Utils/moduleStorage';
 
 function App() {
+
+  useEffect(() => {
+    // Ensure local storage is initialized with an empty array
+    initializeModules();
+  }, []);
+
   return (
     <>
       <Header />

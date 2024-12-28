@@ -52,6 +52,7 @@ export const CreateModule = () => {
 
   const generateModuleCode = (moduleName: string): string => {
     try {
+      
       const acronym = generateTwoLetterAcronym(moduleName, existingAcronyms);
       return acronym;
     } catch (error) {
