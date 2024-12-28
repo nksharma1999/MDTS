@@ -1,92 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { generateTwoLetterAcronym } from "../Utils/generateTwoLetterAcronym";
+import { useLocation } from "react-router-dom";
 import {
   Typography, TextField, InputAdornment, Accordion,
   AccordionSummary,
-  AccordionDetails,
+  AccordionDetails, Button
 } from "@mui/material";
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from "@mui/icons-material/Save";
+// import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 
 
-export const ModuleBuilder = () => {
+export const CreateModule = () => {
   const [newModelName, setNewModelName] = useState<string>("");
+  const location = useLocation();
+  const { moduleName, moduleCode } = location.state || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [collapsedModules, setCollapsedModules] = useState({});
+  const [isSaveEnabled, setIsSaveEnabled] = useState(false);
+  const [selectedRow, setSelectedRow] = useState({ moduleIndex: 0, activityIndex: null });
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedModuleIndex, setSelectedModuleIndex] = useState(null);
+  const [modules, setModules] = useState([]);
+
   const [existingAcronyms, setExistingAcronyms] = useState([
     "FC",
     "BP",
     "AM",
     "IM",
   ]);
-  //   const [selectedMineType, setSelectedMineType] = useState<string>("UG");
 
   const [module, setModule] = useState([
     {
-      parentModuleCode: "FC",
-      name: "Forest Clearance",
+      parentModuleCode: '', // Initialize as an empty string
+      moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
       lavel: 0,
       plus: 0,
-      activitys: [
-        {
-          level: 2,
-          name: "Pre-requisite to Forest Clearance",
-          code: "FC/PR",
-          duration: "2 months", // Added duration field
-          prerequisites: "Approval from State Authorities",
-          plus: 0,
-        },
-        {
-          level: 3,
-          name: "Procurement of Private Land for CA Purpose",
-          code: "FC/PR/CA",
-          duration: "3 weeks", // Added duration field
-          prerequisites: "Private Land Acquisition Agreement",
-          plus: 0,
-        }
-      ],
-    },
-    {
-      parentModuleCode: "BP",
-      name: "Budgetary Planning",
-      lavel: 0,
-      plus: 0,
-      activitys: [
-        {
-          level: 2,
-          name: "Pre-requisite to Forest Clearance",
-          code: "FC/PR",
-          duration: "1 month", // Added duration
-          prerequisites: "Initial Budget Draft Approval",
-          plus: 0,
-        },
-        {
-          level: 5,
-          name: "Pre-requisite to Forest Clearance 4",
-          code: "FC/PR/10",
-          duration: "2 month", // Added duration
-          plus: 10,
-        },
-        {
-          level: 4,
-          name: "Pre-requisite to Forest Clearance 6",
-          code: "FC/PR/20",
-          plus: 20,
-        },
-        {
-          level: 3,
-          name: "Procurement of Private Land for CA Purpose",
-          code: "FC/PR/CA",
-          plus: 0,
-        },
-      ],
+      activitys: [],
     },
   ]);
 
-  const [selectedRow, setSelectedRow] = useState({ moduleIndex: 0, activityIndex: null });
+  // const editingModuleIndex = selectedRow?.moduleIndex; // Or the appropriate logic to fetch the index
+
+
+  // const [selectedRow, setSelectedRow] = useState({ moduleIndex: null, activityIndex: null });
+
+
+  const generateModuleCode = (moduleName: string): string => {
+    try {
+      const acronym = generateTwoLetterAcronym(moduleName, existingAcronyms);
+      return acronym;
+    } catch (error) {
+      console.error('Error in generateModuleCode:', error);
+    }
+    return 'NA';
+  };
+
+  // Update parentModuleCode when moduleName changes
+  useEffect(() => {
+    if (moduleName) {
+      const acronym = generateModuleCode(moduleName);
+      setModule((prevModule) =>
+        prevModule.map((mod) => ({
+          ...mod,
+          parentModuleCode: acronym, // Update parentModuleCode
+        }))
+      );
+    }
+  }, [moduleName]);
+
 
   const handleModulePlus = () => {
     try {
@@ -196,18 +182,17 @@ export const ModuleBuilder = () => {
     // Fetch the code of the selected activity
     const selectedActivity = activities[activityIndex];
     const previousCode = selectedActivity ? selectedActivity.code : selectedModule.parentModuleCode;
-
     // Generate the new code for the activity
     const newCode = getCode(previousCode);
 
     // Create the new activity object
     const newActivity = {
-      level: selectedActivity ? selectedActivity.level : 2,
+      level: selectedActivity ? selectedActivity.level : 1,
       name: `New Activity`,
       code: newCode,
       plus: 10,
-      duration: "",
-      prerequisites: selectedActivity ? selectedActivity.name : "",
+      duration: 10,
+      prerequisites: selectedActivity ? selectedActivity.code : "",
     };
 
     // Insert the new activity directly below the selected activity
@@ -221,7 +206,8 @@ export const ModuleBuilder = () => {
     }
 
     // Update the module state
-    setModule(updatedModules);
+    setModule(updatedModules.map(module => ({ ...module })));
+
   };
 
   // Check if it is a submodule
@@ -257,7 +243,6 @@ export const ModuleBuilder = () => {
     // Increment the numeric suffix by 10
     return `${baseCode}/${lastNumber + 10}`;
   };
-
 
 
   const handleSaveActivity = () => {
@@ -398,47 +383,24 @@ export const ModuleBuilder = () => {
     return result + "/" + acry;
   };
 
+  const handleEditModule = (index) => {
+    setIsEditing(true);
+    setSelectedModuleIndex(index); // Store the index for handling edit
+};
 
-
-
-  const handleRightArrowClick = () => {
-    const { moduleIndex, activityIndex } = selectedRow;
-    if (moduleIndex !== null && activityIndex !== null) {
-      setModule((prevModules) => {
-        const updatedModules = [...prevModules];
-        const activities = updatedModules[moduleIndex].activitys;
-        const selectedActivity = activities[activityIndex];
-        let maxLevel = 0;
-        for (let act of activities) {
-          if (act.level > maxLevel) {
-            maxLevel = act.level;
-          }
-        }
-
-        selectedActivity.level = selectedActivity.level + 1;
-
-        const parentCode = updatedModules[moduleIndex].parentModuleCode || "ROOT";
-        selectedActivity.code = `${parentCode}.${selectedActivity.level}`;
-
-        return updatedModules;
-      });
+const handleEditRow = (moduleIndex, activityIndex, updatedData) => {
+    console.log('handleEditRow called with:', moduleIndex, activityIndex, updatedData);
+    const updatedModules = [...modules];
+    if (activityIndex !== null) {
+        updatedModules[moduleIndex].activitys[activityIndex] = updatedData;
     } else {
-      console.warn("No row selected for incrementing level.");
+        updatedModules[moduleIndex] = updatedData;
     }
-  };
+    setModules(updatedModules);
+    console.log('Updated Modules:', updatedModules);
+};
 
-
-  const handleEditRow = (moduleIndex: number, activityIndex: number, updatedActivity: any) => {
-    if (moduleIndex !== undefined && module[moduleIndex]) {
-      setModule(prevModule => {
-        const updatedModule = [...prevModule];
-        if (updatedModule[moduleIndex].activitys && updatedModule[moduleIndex].activitys[activityIndex]) {
-          updatedModule[moduleIndex].activitys[activityIndex] = updatedActivity;
-        }
-        return updatedModule;
-      });
-    }
-  };
+  
 
 
   const handleFilterClick = () => {
@@ -466,30 +428,6 @@ export const ModuleBuilder = () => {
     }
   };
 
-
-
-  // const handleSearchClick = () => {
-  //   // Filter out all the activity which is not selected
-  //   const { moduleIndex, activityIndex } = selectedRow;
-  //   if (moduleIndex !== null && module[moduleIndex]) {
-  //     const currentModule = module[moduleIndex];
-  //     const currentLevel = activityIndex !== null
-  //       ? currentModule.activitys[activityIndex].level
-  //       : currentModule.lavel;
-
-  //     const filteredActivities = module.map(mod => ({
-  //       ...mod,
-  //       activitys: mod.activitys.filter(activity => activity.level === currentLevel)
-  //     }));
-
-  //     setModule(filteredActivities);
-  //     console.log(`Showing activities for level ${currentLevel}:`, filteredActivities);
-
-  //   }
-  //   else {
-  //     console.warn("No row selected for filtering.");
-  //   }
-  // };
 
   const filteredModules = module.map((mod) => {
     const { name = "", code = "" } = mod; // Safely destructure module fields
@@ -533,6 +471,13 @@ export const ModuleBuilder = () => {
     return null; // Exclude modules with no matches
   }).filter(Boolean); // Remove null values
 
+  const handleSaveAll = () => {
+    console.log("Saving all changes: ", modules);
+    setIsSaveEnabled(false); // Disable the Save button after saving
+    // Add API call here to persist data if needed
+  };
+  
+
 
 
 
@@ -542,7 +487,7 @@ export const ModuleBuilder = () => {
         <div className="card-header">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography variant="h5" style={{ flexGrow: 1 }}>
-              ToolBar
+              Tool Bar
             </Typography>
             <div style={{ display: "flex", gap: "20px" }}>
               <button
@@ -552,7 +497,9 @@ export const ModuleBuilder = () => {
                   const { moduleIndex, activityIndex } = selectedRow;
 
                   if (moduleIndex !== null) {
+                    console.log('module index : ', moduleIndex);
                     const selectedModule = module[moduleIndex];
+                    console.log('selectedModule : ', selectedModule);
                     if (activityIndex !== null) {
                       // If an activity is selected
                       const selectedActivity = selectedModule.activitys[activityIndex];
@@ -646,23 +593,13 @@ export const ModuleBuilder = () => {
                 style={{ width: "300px" }}
               />
 
-              <button
-                type="button"
-                className="btn btn-success"
-                data-bs-toggle="modal"
-                data-bs-target="#exampleModal"
-              // title="Add New Module"
-              >
-                Add New Module
-              </button>
               <button className="btn btn-info" onClick={handleAddActivityToFirstRow}>
                 Add Activity
               </button>
             </div>
           </div>
         </div>
-        {/* </div> */}
-        {/* </div> */}
+
 
 
         <div className="card-body">
@@ -673,16 +610,18 @@ export const ModuleBuilder = () => {
               <tr>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', columnGap: '0' }}>Code</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Activity Name</th>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Duration</th>
+                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Duration<small> (in days)</small></th>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Prerequisites</th>
                 <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Level</th>
-                <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th>
+                {/* <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th> */}
+
               </tr>
             </thead>
             {/* Table body: Rendered dynamically */}
             <tbody>
               {filteredModules.map((val, moduleIndex) => {
                 // Parent row rendering
+                const isEditing = selectedRow.moduleIndex === moduleIndex;
                 const parentRow = (
                   <tr
                     key={`module-${moduleIndex}`}
@@ -693,25 +632,27 @@ export const ModuleBuilder = () => {
                     }}
                     onClick={() => setSelectedRow({ moduleIndex, activityIndex: null })}
                   >
-                    <td>{val.parentModuleCode}</td>
-                    <td>{val.name}</td>
-                    <td>{val.duration}</td>
-                    <td>{val.prerequisites}</td>
-                    <td>L{val.lavel}</td>
-                    <td>
-                      <button
-                        onClick={() => toggleModule(moduleIndex)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '26px',
-                          color: 'red',
-                        }}
-                      >
-                        {collapsedModules[moduleIndex] ? '+' : '-'}
-                      </button>
-                    </td>
+                  <td>{generateModuleCode(moduleName)}</td>
+
+        <td>
+          {moduleName}
+        </td>
+
+        <td>{val.duration}</td>
+
+        <td>{val.prerequisites}</td>
+
+        <td>
+          {`L${val.lavel}`} {/* Level remains non-editable */}
+        </td>
+
+
+        {/* <td>
+          <EditIcon
+            onClick={() => handleEditModule(moduleIndex)}
+            style={{ marginLeft: '10px', color: isEditing ? 'green' : 'blue', cursor: 'pointer' }}
+          />
+        </td> */}
                   </tr>
                 );
 
@@ -774,18 +715,13 @@ export const ModuleBuilder = () => {
                         />
                       </td>
                       <td>L{act.level}</td>
-                      {/* <button
-                onClick={() => toggleModule(moduleIndex)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '26px',
-                  color: 'blue',
-                }}
-              >
-                {collapsedModules[moduleIndex] ? '-' : '+'}
-              </button> */}
+                      {/* <td>
+                        <EditIcon
+                          onClick={() => handleEditModule(moduleIndex)}
+                          style={{ color: "#007bff", cursor: "pointer" }}
+                        />
+                      </td> */}
+
                     </tr>
                   ))
                   : null;
@@ -795,65 +731,27 @@ export const ModuleBuilder = () => {
               })}
             </tbody>
           </table>
+
+          {/* Save All Button */}
+          <Button
+            variant="contained"
+            onClick={handleSaveAll}
+            disabled={!isSaveEnabled}
+            style={{
+              position: "fixed",
+              bottom: "20px",
+              right: "20px",
+              zIndex: 1000,
+              backgroundColor: "blue", // Blue background
+              color: "white",          // White text for better contrast
+              opacity: isSaveEnabled ? 1 : 0.6, // Dim button if disabled
+            }}
+          >
+            Save
+          </Button>
+
         </div>
 
-
-
-
-        <div
-          className="modal fade"
-          id="exampleModal"
-          tabIndex={-1}
-          aria-labelledby="exampleModalLabel"
-          aria-hidden="true"
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title" id="exampleModalLabel">
-                  Add New Module
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="form-floating mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="floatingInput2"
-                    placeholder="Reserve"
-                    value={newModelName}
-                    onChange={(e) => {
-                      setNewModelName(e.target.value);
-                    }}
-                  />
-                  <label htmlFor="floatingInput2">Module Name</label>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  data-bs-dismiss="modal"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleModulePlus}
-                >
-                  Save changes
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
         <div
           className="modal fade"
           id="exampleModal2"

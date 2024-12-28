@@ -1,6 +1,27 @@
+import React, { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 export const Navbar = () => {
+  const [newModelName, setNewModelName] = useState("");
+  const [newCode, setNewCode] = useState("");
+  const navigate = useNavigate();
+
+  const handleModulePlus = () => {
+    if (newModelName.trim() ) {
+      navigate("/CreateModule", {
+        state: { moduleName: newModelName,},
+      });
+    } else {
+      alert("Please enter both module name and code");
+    }
+  };
+
+  const handleNavigation = () => {
+    navigate('/modulebuilder');
+  };
+
+
   return (
+    <>
     <nav
       className="navbar navbar-expand-lg navbar-dark sticky-top"
       style={{ backgroundColor: "#374151" }}
@@ -97,10 +118,15 @@ export const Navbar = () => {
                   </NavLink>
                 </li>
                 <li>
-                  <NavLink className="dropdown-item" to="/ModuleBuilder">
-                    Module Builder
-                  </NavLink>
-                </li>
+                    <a
+                      className="dropdown-item"
+                      href="#"
+                      data-bs-toggle="modal"
+                      data-bs-target="#exampleModal"
+                    >
+                      Create New Module
+                    </a>
+                  </li>
                 <li>
                   <a className="dropdown-item" href="#">
                     Timeline Builder
@@ -132,7 +158,7 @@ export const Navbar = () => {
                   </a>
                 </li>
                 <li>
-                  <a className="dropdown-item" href="#">
+                  <a className="dropdown-item" onClick={handleNavigation}>
                     Module Library
                   </a>
                 </li>
@@ -176,5 +202,45 @@ export const Navbar = () => {
         </div>
       </div>
     </nav>
+
+
+       {/* Modal for Adding New Module */}
+       <div className="modal fade" id="exampleModal" tabIndex={-1} aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="exampleModalLabel">Add New Module</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-floating mb-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Module Name"
+                  value={newModelName}
+                  onChange={(e) => setNewModelName(e.target.value)}
+                />
+                <label>Module Name</label>
+              </div>
+              {/* <div className="form-floating mb-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Code"
+                  value={newCode}
+                  onChange={(e) => setNewCode(e.target.value)}
+                />
+                <label>Code</label>
+              </div> */}
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" className="btn btn-primary" onClick={handleModulePlus}>Add Module</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };

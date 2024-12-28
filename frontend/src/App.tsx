@@ -5,6 +5,7 @@ import { Navbar } from "./Layout/Navbar";
 import { RegisterNewProject } from "./Components/RegisterNewProject";
 import { EmployeeRegistration } from "./Components/EmployeeRegistration";
 import { ModuleBuilder } from "./Components/ModuleBuilder";
+import {CreateModule} from './Components/CreateModule';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           element={<EmployeeRegistration />}
         />
         <Route path="/ModuleBuilder" element={<ModuleBuilder />} />
+        <Route path="/CreateModule" element={<CreateModule />} />
       </Routes>
     </>
   );
