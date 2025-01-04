@@ -16,18 +16,16 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from "@mui/icons-material/Save";
 // import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
-  addModule,
-  isDuplicateModuleName,
-  isDuplicateModuleCode
+  updateModule,
+  findModule,
 } from '../Utils/moduleStorage';
 import { useNavigate } from 'react-router-dom';
 
 
 
-export const CreateModule = () => {
+export const ModuleDetails = () => {
   const [newModelName, setNewModelName] = useState<string>("");
   const location = useLocation();
-  const { moduleName, moduleCode } = location.state || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [collapsedModules, setCollapsedModules] = useState({});
@@ -37,6 +35,7 @@ export const CreateModule = () => {
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(null);
   const [modules, setModules] = useState([]);
   const navigate = useNavigate();
+  const { state: mod } = useLocation(); // Dynamically passed data from the previous page
 
   const [existingAcronyms, setExistingAcronyms] = useState([
     "FC",
@@ -48,89 +47,48 @@ export const CreateModule = () => {
   const [module, setModule] = useState([
     {
       parentModuleCode: "", // Initialize as an empty string
-      moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
+      moduleName: "", // Ensure moduleName is defined or passed as props/state
       lavel: 0,
       plus: 0,
       activitys: [],
     },
   ]);
 
-  //Save module to local storage
+  if (!mod) {
+    return <Typography variant="h6" align="center">Module not found</Typography>;
+  }
+
+  useEffect(() => {
+    // Find a specific module
+    const targetModule = findModule(mod.parentModuleCode, mod.moduleName); // Replace with the desired values
+    console.log('Fetched module : ', targetModule);
+    if (targetModule) {
+      setModule([targetModule]); // Set it as a single-object array
+    }
+  }, []);
+
+  // Log the updated module state when it changes
+  useEffect(() => {
+    console.log("Updated Module State:", module);
+  }, [module]);
+
   const handleSaveModuleAndActivity = () => {
     try {
-      console.log('Inside handleSaveModuleAndActivity', module)
-      addModule(module);
-      setIsSaveEnabled(false);
-      window.alert("Modules saved successfully!");
+      console.log('Inside handleSaveModuleAndActivity', module);
+
+      if (module.length > 0) {
+        const targetModule = module[0]; // Extract the single object from the array
+        updateModule(targetModule); // Pass the object directly to the update function
+        setIsSaveEnabled(false);
+        window.alert("Modules updated successfully!");
+      } else {
+        window.alert("No module to save.");
+      }
     } catch (error) {
-      console.error("Error while saving modules:", error);
-      window.alert("Failed to save modules. Check the console for details.");
+      console.error("Error while updating modules:", error);
+      window.alert("Failed to update modules. Check the console for details.");
     }
     navigate('/ModuleLibrary');
-  };
-
-  // const editingModuleIndex = selectedRow?.moduleIndex; // Or the appropriate logic to fetch the index
-
-  // const [selectedRow, setSelectedRow] = useState({ moduleIndex: null, activityIndex: null });
-
-  const generateModuleCode = (moduleName: string) => {
-    try {
-      //Checking module name duplication
-      if (isDuplicateModuleName(moduleName)) {
-        const errorMessage = `Duplicate module name found: ${moduleName}`;
-        window.alert(errorMessage); // Show an alert to the user
-        throw new Error(errorMessage); // Throw an exception for duplication
-      }
-
-      // Generate a two-letter acronym (replace generateTwoLetterAcronym with your actual implementation)
-      const acronym = generateTwoLetterAcronym(moduleName, existingAcronyms);
-
-      //Now checking module code duplication
-      if (isDuplicateModuleCode(acronym)) {
-        //Instead of throwing the error re-generate new acronym
-        const errorMessage = `Duplicate module code found for module name : ${moduleName}`;
-        window.alert(errorMessage); // Show an alert to the user
-        throw new Error(errorMessage); // Throw an exception for duplication
-      }
-      return acronym;
-    } catch (error) {
-      //console.error("Error in generateModuleCode:", error);
-      navigate('/');
-    }
-    return "NA"; // Return a fallback value in case of an error
-  };
-
-
-  // Update parentModuleCode when moduleName changes
-  useEffect(() => {
-    if (moduleName) {
-      const acronym = generateModuleCode(moduleName);
-      setModule((prevModule) =>
-        prevModule.map((mod) => ({
-          ...mod,
-          parentModuleCode: acronym, // Update parentModuleCode
-        }))
-      );
-    }
-  }, [moduleName]);
-
-  const handleModulePlus = () => {
-    try {
-      const acronym = generateTwoLetterAcronym(newModelName, existingAcronyms);
-      setExistingAcronyms([...existingAcronyms, acronym]);
-      setModule((pre) => [
-        ...pre,
-        {
-          parentModuleCode: acronym,
-          name: newModelName,
-          activitys: [],
-          lavel: 1,
-          plus: 0,
-        },
-      ]);
-    } catch (error) {
-      console.error(error);
-    }
   };
 
   const handleDelete = () => {
@@ -188,26 +146,6 @@ export const CreateModule = () => {
     index: 0,
     input: "",
   });
-  const handleAddActivity = (id: number, pcode: string, childCode: string) => {
-    setNewActInput({
-      pCode: pcode,
-      index: id,
-      input: "",
-      childCode: childCode,
-    });
-
-    // Retrieve the previous activity
-    const selectedModule = module.find((mod) => mod.parentModuleCode === pcode);
-    const lastActivity =
-      selectedModule?.activitys[selectedModule.activitys.length - 1];
-
-    if (lastActivity) {
-      setNewActInput((prev) => ({
-        ...prev,
-        input: lastActivity.name, // Set the prerequisite to the previous activity's name
-      }));
-    }
-  };
 
   const handleAddActivityToFirstRow = () => {
     const { moduleIndex, activityIndex } = selectedRow; // Includes `activityIndex` to track the selected row
@@ -246,6 +184,7 @@ export const CreateModule = () => {
 
     // Update the module state
     setModule(updatedModules.map((module) => ({ ...module })));
+    setIsSaveEnabled(true);
   };
 
   // Check if it is a submodule
@@ -320,10 +259,7 @@ export const CreateModule = () => {
 
   const handleIncButtonClick = (pCode: string, index: number, values: any) => {
     // Create a copy of the module array
-    console.log('pCode, index, values', pCode, index, values);
-    console.log('Clicked - handleIncButtonClick()');
     let tempData = [...module];
-    console.log('tempData = ', tempData);
 
     for (let i = 0; i < tempData.length; i++) {
       if (tempData[i].parentModuleCode === pCode) {
@@ -354,14 +290,12 @@ export const CreateModule = () => {
         } else {
           // Add a new activity with acronym logic
           const maxLevel = getMaxLevel(act);
-          console.log('maxLevel = ', maxLevel);
 
           // Generate a unique two-letter acronym
           const acronym = generateTwoLetterAcronym(
             values.name,
             existingAcronyms
           );
-          console.log('acronym = ', acronym);
           setExistingAcronyms([...existingAcronyms, acronym]);
 
           // Create a new activity with updated level and code
@@ -373,9 +307,8 @@ export const CreateModule = () => {
             duration: "",
             prerequisites: values.prerequisites,
           };
-          console.log('newActivity = ', newActivity);
 
-          //act.push(newActivity);
+          act.push(newActivity);
 
           // Ensure all activities under this submodule have the same level
           const submoduleCodePrefix = newActivity.code
@@ -394,21 +327,19 @@ export const CreateModule = () => {
             }
             return activity;
           });
-          console.log('act = ', act);
 
           // Remove the activity that was split to create the submodule
-          act.splice(index, 1, newActivity); // Remove the original activity
+          act.splice(index, 1); // Remove the original activity
         }
 
         // Rearrange the activities sequentially by increments of 10
-        // act = act.map((activity, idx) => ({
-        //   ...activity,
-        //   sequence: (idx + 1) * 10, // Reassign sequence values as 10, 20, 30...
-        // }));
+        act = act.map((activity, idx) => ({
+          ...activity,
+          sequence: (idx + 1) * 10, // Reassign sequence values as 10, 20, 30...
+        }));
 
         // Update the activities array in the module
         tempData[i].activitys = act;
-        console.log('tempData = ', tempData);
         break;
       }
     }
@@ -567,7 +498,7 @@ export const CreateModule = () => {
                       // If no activity is selected, apply the minus function to the module
                       const values = {
                         level: selectedModule.lavel,
-                        code: selectedModule.parentModuleCode,
+                        code: ModuleDetailselectedModule.parentModuleCode,
                       };
                       handleModuleMinus(
                         selectedModule.parentModuleCode,
@@ -648,8 +579,21 @@ export const CreateModule = () => {
                   cursor: "pointer",
                 }}
               >
-                <FilterListIcon style={{ fontSize: "24px", color: "#333" }} />
+                <FilterListIcon style={{ fontSize: "24px", color: "blue" }} />
               </button>
+              <button
+    title="Edit"
+    // onClick={handleEditClick} // Add your edit handler function here
+    style={{
+      display: "flex",
+      alignItems: "center",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+    }}
+  >
+    <EditIcon style={{ fontSize: "24px", color: "blue" }} />
+  </button>
 
               <TextField
                 title="Search"
@@ -664,7 +608,7 @@ export const CreateModule = () => {
                     </InputAdornment>
                   ),
                 }}
-                style={{ width: "300px" }}
+                style={{ width: "300px" , color:"blue" }}
               />
 
               <button
@@ -733,7 +677,7 @@ export const CreateModule = () => {
                   >
                     <td>{module[0]?.parentModuleCode || "N/A"}</td>
                     <td>
-                      {moduleName}
+                      {module[0]?.moduleName}
                     </td>
                     <td>{val.duration}</td>
                     <td>{val.prerequisites}</td>
@@ -822,7 +766,7 @@ export const CreateModule = () => {
               opacity: isSaveEnabled ? 1 : 0.6, // Dim button if disabled
             }}
           >
-            Save
+            Update
           </Button>
         </div>
 

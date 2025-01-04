@@ -6,14 +6,16 @@ import { RegisterNewProject } from "./Components/RegisterNewProject";
 import { EmployeeRegistration } from "./Components/EmployeeRegistration";
 import { ModuleBuilder } from "./Components/ModuleBuilder";
 import {CreateModule} from './Components/CreateModule';
+import { ModuleLibrary } from './Components/ModuleLibrary';
 import React, { useEffect } from "react";
+import {ModuleDetails} from './Components/ModuleDetail';
+import {HolidayCalender} from './Components/HolidayCalender';
+
 
 import {
-  getModules,
-  addModule,
-  findModule,
   initializeModules,
 } from './Utils/moduleStorage';
+import { ProjectDetails } from "./Components/ProjectDetails";
 
 function App() {
 
@@ -44,6 +46,10 @@ function App() {
         />
         <Route path="/ModuleBuilder" element={<ModuleBuilder />} />
         <Route path="/CreateModule" element={<CreateModule />} />
+        <Route path="/ModuleLibrary" element={<ModuleLibrary />} />
+        <Route path="/HolidayCalender" element={<HolidayCalender />} />
+        <Route path="/module/:moduleName" element={<ModuleDetails />} />
+        <Route path="/projectdetails" element={<ProjectDetails />} />
       </Routes>
     </>
   );
