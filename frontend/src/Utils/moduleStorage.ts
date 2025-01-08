@@ -88,13 +88,65 @@ export const initializeModules = () => {
   }
 };
 
+/**
+ * Get a sorted list of module names based on a predefined sequence.
+ * @returns {Array<string>} - List of module names in the specified sequence.
+ */
+export const getOrderedModuleNames = () => {
+  const savedModules = localStorage.getItem(MODULE_KEY);
+  const modules = savedModules ? JSON.parse(savedModules) : [];
 
+  // Predefined sequence of module names
+  const moduleSequence = [
+    "Explored",
+    "GR Approved",
+    "Mine Plan Approved",
+    "Grant of TOR",
+    "EC",
+    "FC",
+    "CTE",
+    "CTO",
+    "Mine Opening Permission",
+  ];
+
+  // Extract valid module names from savedModules
+  const moduleNames = modules
+    .map((module) => module?.moduleName) // Ensure `moduleName` exists
+    .filter((name) => name); // Remove undefined or falsy values
+
+  // Sort module names based on predefined sequence first
+  const orderedModules = moduleSequence.filter((name) =>
+    moduleNames.includes(name)
+  );
+
+  // Add remaining modules not in the predefined sequence, sorted alphabetically
+  const otherModules = moduleNames
+    .filter((name) => !moduleSequence.includes(name))
+    .sort((a, b) => a.localeCompare(b));
+
+  // Combine both lists
+  return [...orderedModules, ...otherModules];
+};
+
+
+
+
+//Form data related code.....
 
 export const saveFormDataToListInLocalStorage = (formData: any) => {
   const formDatas = loadFormDataListFromLocalStorage();
-  formDatas.push(formData); // Add the new form data to the list
+
+  // Dynamically set the project_id
+  formData.project_id = getNewProjectId();
+
+  // Add the new form data to the list
+  formDatas.push(formData);
+
+  // Save the updated list back to local storage
   localStorage.setItem(FORM_DATA, JSON.stringify(formDatas));
 };
+
+
 
 export const loadFormDataListFromLocalStorage = () => {
   const storedData = localStorage.getItem(FORM_DATA);
@@ -125,6 +177,17 @@ export const listOfProjectName = () => {
 export const getFormDataByProjectName = (projectName: string) => {
   const allFormData = loadFormDataListFromLocalStorage();
   return allFormData.find((data: any) => data.projectName === projectName) || null;
+};
+
+const getNewProjectId = () => {
+  const allFormData = loadFormDataListFromLocalStorage();
+
+  // Find the maximum project_id, defaulting to 0 if the list is empty
+  const maxProjectId = allFormData.reduce((maxId: number, data: any) => {
+    return data.project_id > maxId ? data.project_id : maxId;
+  }, 0);
+
+  return maxProjectId + 1;
 };
 
 

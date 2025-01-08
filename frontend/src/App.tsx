@@ -11,11 +11,11 @@ import React, { useEffect } from "react";
 import {ModuleDetails} from './Components/ModuleDetail';
 import {HolidayCalender} from './Components/HolidayCalender';
 
-
 import {
   initializeModules,
 } from './Utils/moduleStorage';
 import { ProjectDetails } from "./Components/ProjectDetails";
+import ProjectParametersPage from "./Components/ProjectParameterPage";
 
 function App() {
 
@@ -39,6 +39,7 @@ function App() {
       </div> */}
       <Navbar />
       <Routes>
+        <Route path="/" element={"/"} /> {/* Default page */}
         <Route path="/RegisterNewProject" element={<RegisterNewProject />} />
         <Route
           path="/EmployeeRegistration"
@@ -49,7 +50,8 @@ function App() {
         <Route path="/ModuleLibrary" element={<ModuleLibrary />} />
         <Route path="/HolidayCalender" element={<HolidayCalender />} />
         <Route path="/module/:moduleName" element={<ModuleDetails />} />
-        <Route path="/projectdetails" element={<ProjectDetails />} />
+        <Route path="/projectdetails/:projectName" element={<ProjectDetails />} />
+        <Route path="/project-parameters" element={<ProjectParametersPage />} />
       </Routes>
     </>
   );

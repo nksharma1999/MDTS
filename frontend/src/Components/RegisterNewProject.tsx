@@ -1,15 +1,18 @@
-import { WidthFull } from "@mui/icons-material";
+import { Height, WidthFull } from "@mui/icons-material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import {
   saveFormDataToListInLocalStorage,
-  isDuplicateProjectName
+  isDuplicateProjectName,
+  getOrderedModuleNames
 } from '../Utils/moduleStorage';
 
 export const RegisterNewProject: React.FC = () => {
-  const [currentStep, setCurrentStep] = useState(1);
 
   const [formData, setFormData] = useState({
+    project_id: 0,
     projectName: "",
     mineral: "",
     mineType: "",
@@ -35,6 +38,7 @@ export const RegisterNewProject: React.FC = () => {
     nearestAirport: '',
     nearestRailwayStation: '',
     nearestRailwaySiding: '',
+    explored: "",
     grApproved: "",
     minePlanApproved: "",
     grantOfTOR: "",
@@ -46,8 +50,40 @@ export const RegisterNewProject: React.FC = () => {
 
   });
 
+  const [currentTab, setCurrentTab] = useState(0);
+  // const [tabCompletionStatus, setTabCompletionStatus] = React.useState(
+  //   Array(tabs.length).fill(false) // Track completion status of tabs
+  // );
+
+  const tabs = [
+    "Project Parameters",
+    "Contractual Details",
+    "Locations",
+    "Initial Status of the project",
+  ];
+
+  
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { id, value } = e.target;
+
+    setFormData((prevData) => ({
+      ...prevData,
+      [id]: value,
+    }));
+  };
+
+
+
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
+  const orderedModuleNames = getOrderedModuleNames();
+  const [tabCompletionStatus, setTabCompletionStatus] = React.useState(
+    Array(tabs.length).fill(false) // Track completion status of tabs
+  );
+  
 
   // Validation logic
   // Function to alert a message for a specific field
@@ -59,12 +95,12 @@ export const RegisterNewProject: React.FC = () => {
   const validateStep = () => {
     let stepErrors: { [key: string]: string } = {};
 
-    if (currentStep === 1) {
+    if (currentTab === 0) {
       if (!formData.projectName) setErrorMessage("projectName", "Project Name is required.", stepErrors);
-      if (isDuplicateProjectName(formData.projectName)){
+      if (isDuplicateProjectName(formData.projectName)) {
         setErrorMessage("projectName", "Project name is already exits!.", stepErrors);
-        alert("roject name is already exits!.");
-      } 
+        alert("Project name is already exits!.");
+      }
       if (!formData.mineral) setErrorMessage("mineral", "Please select a mineral.", stepErrors);
       if (!formData.mineType) setErrorMessage("mineType", "Please select a mine type.", stepErrors);
       if (!formData.reserve) setErrorMessage("reserve", "Please select a reserve.", stepErrors);
@@ -83,7 +119,7 @@ export const RegisterNewProject: React.FC = () => {
         setErrorMessage("forestLand", "Forest Land must be greater than 0.", stepErrors);
     }
 
-    if (currentStep === 2) {
+    if (currentTab === 1) {
       if (!formData.mineOwner) setErrorMessage("mineOwner", "Mine Owner is required.", stepErrors);
       if (!formData.dateOfH1Bidder) setErrorMessage("dateOfH1Bidder", "Date of H1 Bidder is required.", stepErrors);
       if (!formData.cbdpaDate) setErrorMessage("cbdpaDate", "CBDPA Date is required.", stepErrors);
@@ -92,7 +128,7 @@ export const RegisterNewProject: React.FC = () => {
         setErrorMessage("pbgAmount", "PBG Amount must be greater than 0.", stepErrors);
     }
 
-    if (currentStep === 3) {
+    if (currentTab === 2) {
       if (!formData.state) setErrorMessage("state", "State is required.", stepErrors);
       if (!formData.district) setErrorMessage("district", "District is required.", stepErrors);
       if (!formData.nearestTown) setErrorMessage("nearestTown", "Nearest Town is required.", stepErrors);
@@ -103,7 +139,8 @@ export const RegisterNewProject: React.FC = () => {
         setErrorMessage("nearestRailwaySiding", "Nearest Railway Siding is required.", stepErrors);
     }
 
-    if (currentStep === 4) {
+    if (currentTab === 4) {
+      if (!formData.explored) setErrorMessage("explored", "Explored is required.", stepErrors);
       if (!formData.grApproved) setErrorMessage("grApproved", "GR Approved is required.", stepErrors);
       if (!formData.minePlanApproved) setErrorMessage("minePlanApproved", "Mine Plan Approved is required.", stepErrors);
       if (!formData.grantOfTOR) setErrorMessage("grantOfTOR", "Grant of TOR is required.", stepErrors);
@@ -115,26 +152,20 @@ export const RegisterNewProject: React.FC = () => {
         setErrorMessage("mineOpeningPermission", "Mine Opening Permission is required.", stepErrors);
     }
 
+    console.log('Error : ', stepErrors);
     setErrors(stepErrors);
     return Object.keys(stepErrors).length === 0;
   };
 
-  // const handleNextStep = () => {
-  //   // if (validateStep()) {
-  //     setCurrentStep((prevStep) => Math.min(prevStep validateStep+ 1)); 
-  //   // } else {
-  //   //   console.log("Validation errors:", errors); 
-  //   // }
-  // };
 
   const handleSaveAndNext = () => {
     // Save the current step's data
-    console.log(`Saving data for step ${currentStep}`);
-    if (validateStep()) {
-      if (currentStep < 4) {
+    console.log(`Saving data for step ${currentTab}`);
+    if (!validateStep()) {
+      if (currentTab < 4) {
         0
         // Proceed to the next step
-        setCurrentStep((prevStep) => prevStep + 1);
+        setCurrentTab((prevStep) => prevStep + 1);
       } else {
         // If it's the last step, save data and navigate to another page
         console.log("Saving final step data and navigating...");
@@ -151,144 +182,51 @@ export const RegisterNewProject: React.FC = () => {
   const saveFinalData = () => {
     // Add logic to save the data (e.g., API call)
     console.log("Final data : ", formData);
-    saveFormDataToListInLocalStorage(formData);
+    saveFormDataToListInLocalStorage(formData); const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { id, value } = e.target;
+
+      setFormData((prevData) => {
+        const updatedData = { ...prevData, [id]: value };
+
+        // Calculate totalCoalBlockArea
+        if (["forestLand", "pvtLand", "govtLand"].includes(id)) {
+          const forestLand = updatedData.forestLand || 1;
+          const pvtLand = parseFloat(updatedData.pvtLand.toString()) || 1;
+          const govtLand = parseFloat(updatedData.govtLand.toString()) || 1;
+
+          updatedData.totalCoalBlockArea = forestLand + pvtLand + govtLand;
+        }
+
+        return updatedData;
+      });
+
+      setErrors((prevErrors) => ({ ...prevErrors, [id]: "" }));
+    };
   };
 
 
   const navigateToNextPage = () => {
-    // Replace with your navigation logic (e.g., using react-router)
     navigate("/");// Replace with your desired route
   };
 
+  const [visibleRows, setVisibleRows] = useState(1); // Show the first row initially
 
+  const handleRowChange = (event, rowIndex) => {
+    const { value } = event.target;
+    handleInputChange(event); // Call the parent-provided input handler
 
-
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { id, value } = e.target;
-
-    setFormData((prevData) => {
-      const updatedData = { ...prevData, [id]: value };
-
-      // Calculate totalCoalBlockArea
-      if (["forestLand", "pvtLand", "govtLand"].includes(id)) {
-        const forestLand = parseFloat(updatedData.forestLand.toString()) || 1;
-        const pvtLand = parseFloat(updatedData.pvtLand.toString()) || 1;
-        const govtLand = parseFloat(updatedData.govtLand.toString()) || 1;
-
-        updatedData.totalCoalBlockArea = forestLand + pvtLand + govtLand;
-      }
-
-      return updatedData;
-    });
-
-    setErrors((prevErrors) => ({ ...prevErrors, [id]: "" }));
+    if (value === "Yes" && rowIndex === visibleRows - 1) {
+      // If "Yes" is selected in the current row, show the next row
+      setVisibleRows((prev) => prev + 1);
+    }
   };
+  
 
-  const renderStepContent = () => {
-    const containerStyle = {
-      background: "#f0f4f8", // Modern gradient
-      padding: "20px",
-      borderRadius: "12px", // Rounded corners for a smoother look
-      boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)", // Depth effect
-      margin: "0", // Reset margin to avoid gaps
-      width: "100vw", // Full viewport width
-      position: "relative", // Ensure it aligns properly
-    };
-
-
-
-    const headerStyle = {
-      color: "blue",
-      fontSize: "28px",
-      fontWeight: "bold",
-      marginBottom: "30px",
-      textAlign: "center",
-    };
-
-    const inputStyle = {
-      padding: "4px 6px",
-      fontSize: "20px",
-      height: "28px",
-      width: "80%",
-      // border: "1px solid #ccc",
-      // borderRadius: "4px",
-    };
-
-    const selectStyle = {
-      ...inputStyle,
-      height: "50px", // Slightly taller for dropdown consistency
-    };
-
-
-    const tableStyle = {
-      width: "90%",
-      borderCollapse: "collapse",
-    };
-
-    const thStyle = {
-      textAlign: "left",
-      padding: "14px",
-      // backgroundColor: "#f0f0f0",
-      fontWeight: "bold",
-    };
-
-    const tdStyle = {
-      padding: "8px",
-      // borderBottom: "1px solid #ddd",
-    };
-
-
-    const Header = ({ title }) => (
-      <div
-        style={{
-          background: "linear-gradient(90deg, rgb(197, 210, 221), rgb(66, 165, 245))", // Matches container colors
-          padding: "15px 20px",
-          borderRadius: "12px", // Slightly more rounded corners
-          marginBottom: "20px",
-          marginTop: "0px",
-          width: "100%",
-          boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)", // Subtle depth
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <h1
-          style={{
-            color: "#ffffff", // White text for better contrast
-            margin: 0,
-            fontSize: "28px",
-            fontWeight: "bold",
-            textAlign: "center",
-            textShadow: "1px 1px 2px rgba(0, 0, 0, 0.3)", // Subtle shadow for clarity
-          }}
-        >
-          {title}
-        </h1>
-      </div>
-    );
-
-
-    // const labelStyle = {
-    //   padding: "8px",
-    //   // borderBottom: "1px solid #ddd",
-    // };
-    // const formGroupStyle = {
-    //   padding: "8px",
-    // }
-
-    const [formValues, setFormValues] = useState({
-      forestLand: "", // Or 0 if you prefer initializing as 0
-      // other fields...
-    });
-
-
-    switch (currentStep) {
-      case 1:
+  const renderTabContent = () => {
+    switch (currentTab) {
+      case 0: // Project Parameters
         return (
           <div style={containerStyle}>
-            <Header title="Project Parameters" />
             <table style={tableStyle}>
               <tbody>
                 {/* Project Name */}
@@ -323,7 +261,6 @@ export const RegisterNewProject: React.FC = () => {
                       <option value="">Select Mineral</option>
                       <option value="Coal">Coal</option>
                       <option value="Iron Ore">Iron Ore</option>
-                      <option value="Limestone">Limestone</option>
                     </select>
                   </td>
                 </tr>
@@ -364,9 +301,8 @@ export const RegisterNewProject: React.FC = () => {
                   <th style={thStyle}>Net Geological Reserve (Mn T)</th>
                   <td style={tdStyle}>
                     <input
+                      type="number"
                       style={inputStyle}
-                      type="text"
-                      className="form-control"
                       id="netGeologicalReserve"
                       placeholder="Net Geological Reserve"
                       value={formData.netGeologicalReserve}
@@ -379,9 +315,8 @@ export const RegisterNewProject: React.FC = () => {
                   <th style={thStyle}>Extractable Reserve (Mn T)</th>
                   <td style={tdStyle}>
                     <input
+                      type="number"
                       style={inputStyle}
-                      type="text"
-                      className="form-control"
                       id="extractableReserve"
                       placeholder="Extractable Reserve"
                       value={formData.extractableReserve}
@@ -391,7 +326,7 @@ export const RegisterNewProject: React.FC = () => {
                 </tr>
                 {/* Grade */}
                 <tr>
-                  <th style={thStyle}>Grade</th>
+                  <th style={thStyle}>Grade (in case of Coal)</th>
                   <td style={tdStyle}>
                     <select
                       style={selectStyle}
@@ -412,9 +347,8 @@ export const RegisterNewProject: React.FC = () => {
                   <th style={thStyle}>Strip Ratio (Cum / T)</th>
                   <td style={tdStyle}>
                     <input
+                      type="number"
                       style={inputStyle}
-                      type="text"
-                      className="form-control"
                       id="stripRatio"
                       placeholder="Strip Ratio"
                       value={formData.stripRatio}
@@ -427,9 +361,8 @@ export const RegisterNewProject: React.FC = () => {
                   <th style={thStyle}>Peak Capacity (MTPA)</th>
                   <td style={tdStyle}>
                     <input
+                      type="number"
                       style={inputStyle}
-                      type="text"
-                      className="form-control"
                       id="peakCapacity"
                       placeholder="Peak Capacity"
                       value={formData.peakCapacity}
@@ -442,14 +375,12 @@ export const RegisterNewProject: React.FC = () => {
                   <th style={thStyle}>Mine Life (years)</th>
                   <td style={tdStyle}>
                     <input
+                      type="number"
                       style={inputStyle}
-                      type="text"
-                      className="form-control"
                       id="mineLife"
                       placeholder="Mine Life"
                       value={formData.mineLife}
                       onChange={handleInputChange}
-
                     />
                   </td>
                 </tr>
@@ -459,11 +390,12 @@ export const RegisterNewProject: React.FC = () => {
                   <td style={tdStyle}>
                     <input
                       type="number"
-                      name="forestLand"
-                      value={formValues.forestLand}
-                      onChange={(e) =>
-                        setFormValues({ ...formValues, forestLand: parseFloat(e.target.value) })
-                      }
+                      style={inputStyle}
+                      id="totalCoalBlockArea"
+                      placeholder="forest Land"
+                      value={formData.totalCoalBlockArea}
+                      //disabled
+                      onChange={handleInputChange}
                     />
                   </td>
                 </tr>
@@ -471,12 +403,9 @@ export const RegisterNewProject: React.FC = () => {
             </table>
           </div>
         );
-
-      case 2:
+      case 1: // Agency Details
         return (
           <div style={containerStyle}>
-            <Header title="Contractual Details" />
-            {/* <h1 style={headerStyle}>Contractual Details</h1> */}
             <table style={tableStyle}>
               <tbody>
                 {/* Mine Owner */}
@@ -570,12 +499,10 @@ export const RegisterNewProject: React.FC = () => {
             </table>
           </div>
         );
-
-      case 3:
+      case 2: // Contact Person Details
         return (
           <div style={containerStyle}>
-            <Header title="Locations" />
-            {/* <h1 style={headerStyle}>Locations</h1> */}
+            {/* Location */}
             <table style={tableStyle}>
               <tbody>
                 {/* State */}
@@ -682,166 +609,42 @@ export const RegisterNewProject: React.FC = () => {
               </tbody>
             </table>
           </div>
-
         );
-      case 4:
+      case 3: // Work Order Scope
         return (
-          <div style={containerStyle}>
-            <Header title="Please provide Initial Status of the project" />
-            {/* <h1 style={headerStyle}>Please provide Initial Status of the project</h1> */}
-            <table style={tableStyle}>
+          <div style={styles.container}>
+            {/* Please provide Initial Status of the project */}
+            <table style={styles.table}>
               <tbody>
-                {/* GR Approved */}
-                <tr>
-                  <th style={thStyle}>GR Approved</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.grApproved ? "is-invalid" : ""}`}
-                      id="grApproved"
-                      value={formData.grApproved}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select GR Approved</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.grApproved && <div className="invalid-feedback">{errors.grApproved}</div>}
-                  </td>
-                </tr>
+                {orderedModuleNames.map((moduleName, index) => {
+                  const key = moduleName.replace(/\s+/g, "").toLowerCase(); // Generate a unique ID
 
-                {/* Mine Plan Approved */}
-                <tr>
-                  <th style={thStyle}>Mine Plan Approved</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.minePlanApproved ? "is-invalid" : ""}`}
-                      id="minePlanApproved"
-                      value={formData.minePlanApproved}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Mine Plan Approved</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.minePlanApproved && <div className="invalid-feedback">{errors.minePlanApproved}</div>}
-                  </td>
-                </tr>
+                  // Show rows up to the `visibleRows` index
+                  if (index >= visibleRows) return null;
 
-                {/* Grant of TOR */}
-                <tr>
-                  <th style={thStyle}>Grant of TOR</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.grantOfTOR ? "is-invalid" : ""}`}
-                      id="grantOfTOR"
-                      value={formData.grantOfTOR}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Grant of TOR</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.grantOfTOR && <div className="invalid-feedback">{errors.grantOfTOR}</div>}
-                  </td>
-                </tr>
-
-                {/* EC */}
-                <tr>
-                  <th style={thStyle}>EC</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.ec ? "is-invalid" : ""}`}
-                      id="ec"
-                      value={formData.ec}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select EC</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.ec && <div className="invalid-feedback">{errors.ec}</div>}
-                  </td>
-                </tr>
-
-                {/* FC */}
-                <tr>
-                  <th style={thStyle}>FC</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.fc ? "is-invalid" : ""}`}
-                      id="fc"
-                      value={formData.fc}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select FC</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.fc && <div className="invalid-feedback">{errors.fc}</div>}
-                  </td>
-                </tr>
-
-                {/* CTE */}
-                <tr>
-                  <th style={thStyle}>CTE</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.cte ? "is-invalid" : ""}`}
-                      id="cte"
-                      value={formData.cte}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select CTE</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.cte && <div className="invalid-feedback">{errors.cte}</div>}
-                  </td>
-                </tr>
-
-                {/* CTO */}
-                <tr>
-                  <th style={thStyle}>CTO</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.cto ? "is-invalid" : ""}`}
-                      id="cto"
-                      value={formData.cto}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select CTO</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.cto && <div className="invalid-feedback">{errors.cto}</div>}
-                  </td>
-                </tr>
-
-                {/* Mine Opening Permission */}
-                <tr>
-                  <th style={thStyle}>Mine Opening Permission</th>
-                  <td style={tdStyle}>
-                    <select
-                      style={selectStyle}
-                      className={`form-select ${errors.mineOpeningPermission ? "is-invalid" : ""}`}
-                      id="mineOpeningPermission"
-                      value={formData.mineOpeningPermission}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Mine Opening Permission</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                    {errors.mineOpeningPermission && <div className="invalid-feedback">{errors.mineOpeningPermission}</div>}
-                  </td>
-                </tr>
+                  return (
+                    <tr key={key}>
+                      <th style={styles.th}>{moduleName}</th>
+                      <td style={styles.td}>
+                        <select
+                          style={styles.select}
+                          className={`form-select ${errors[key] ? "is-invalid" : ""}`}
+                          id={key}
+                          name={key}
+                          value={formData[key] || ""}
+                          onChange={(e) => handleRowChange(e, index)}
+                        >
+                          <option value="">Select {moduleName}</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                        {errors[key] && (
+                          <div className="invalid-feedback">{errors[key]}</div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -852,46 +655,368 @@ export const RegisterNewProject: React.FC = () => {
     }
   };
 
-
   return (
-    <div style={{ padding: 10, display: 'flex', flexDirection: 'column', height: '85vh' }}>
-      <div className="card mb-3" style={{ flex: 1 }}>
-        {renderStepContent()}
-      </div>
-      <div className="d-flex justify-content-between" style={{ marginTop: '20px' }}>
-        <button
-          className="btn btn-secondary"
-          disabled={currentStep === 1}
-          onClick={() => setCurrentStep((prevStep) => prevStep - 1)}
-        >
-          Previous
-        </button>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {currentStep === 4 ? (
-            <button className="btn btn-success" onClick={handleSaveAndNext}>
-              Save
-            </button>
-          ) : (
-            <>
-              <button
-                className="btn btn-success"
-                onClick={handleSaveAndNext}
-              >
-                Save and Next
-              </button>
-              {/* <button
-              className="btn btn-primary"
-              onClick={handleNextStep}
-              disabled={currentStep === 4} // Disable on the last step
-            >
-              {currentStep === 4 ? "Finish" : "Next"}
-            </button> */}
-            </>
-          )}
+    <div style={styles.registrationContainer}>
+      <h1>Register New Project</h1>
+      <p></p>
+      <ul style={styles.tabNavigation}>
+        
+        {tabs.map((tab, index) => (
+          <li
+          
+            key={index}
+            style={
+              currentTab === index
+                ? { ...styles.tab, ...styles.activeTab }
+                : styles.tab
+            }
+            onClick={() => setCurrentTab(index)}
+          >
+            <CheckCircleIcon
+              style={{
+                color: tabCompletionStatus[index] ? "green" : "grey", // Green if completed, grey otherwise
+                fontSize: "20px",
+                padding: "1px",
+                margin: "5px",
+              }}
+              titleAccess={
+                tabCompletionStatus[index] ? "Completed" : "Incomplete"
+              }
+            />
+            {tab}
+          </li>
+        ))}
+      </ul>
+      <form>
+        {renderTabContent()}
+        <div style={styles.formNavigation}>
+          <button
+            type="button"
+            disabled={currentTab === 0}
+            onClick={() => setCurrentTab((prev) => prev - 1)}
+            style={
+              currentTab === 0
+                ? { ...styles.button, ...styles.disabledButton }
+                : styles.button
+            }
+          >
+            Previous
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (validateStep()) {
+                // / Mark the current tab as completed
+      setTabCompletionStatus((prevStatus) => {
+        const updatedStatus = [...prevStatus];
+        updatedStatus[currentTab] = true;
+        return updatedStatus;
+      });
+
+                if (currentTab < tabs.length - 1) {
+                  setCurrentTab((prev) => prev + 1);
+                } else {
+                  if (errors !== null) {
+                    console.log("Saving final step data and navigating...");
+                    saveFinalData(); // Logic to save the final step data
+                    navigateToNextPage(); // Logic to navigate to the next page
+                  } else {
+                    console.log("Validation failed with error: ", errors);
+                    alert("Fill the required field of each tab!");
+                  }
+                }
+              } else {
+                console.log("Validation failed");
+              }
+            }}
+            style={
+              currentTab === tabs.length - 1
+                ? { ...styles.button, ...styles.disabledButton }
+                : styles.button
+            }
+            disabled={errors !== null || currentTab === tabs.length - 1 ? false : true}
+          >
+             {currentTab === tabs.length - 1 ? (
+      "Submit"
+    ) : (
+      <>
+        Continue
+        <ArrowForwardIcon
+          style={{
+            fontSize: "16px",
+            marginLeft: "5px",
+            verticalAlign: "middle",
+          }}
+        />
+      </>
+    )}
+  </button>
         </div>
-      </div>
+      </form>
     </div>
-
-
   );
+};
+
+const containerStyle = {
+  padding: "20px",
+  background: "#f9f9f9",
+  borderRadius: "8px",
+};
+
+const tableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+};
+
+const thStyle = {
+  textAlign: "left",
+  padding: "8px",
+  background: "#e6e6e6",
+  // border: "1px solid #ccc",
+};
+
+const tdStyle = {
+  padding: "8px",
+  // border: "1px solid #ccc",
+};
+
+const inputStyle = {
+  width: "100%",
+  padding: "8px",
+  border: "1px solid #ccc",
+  borderRadius: "4px",
+};
+
+const selectStyle = {
+  ...inputStyle,
+};
+
+const commonContainerStyle = {
+  padding: "20px",
+  background: "#ffffff",
+  borderRadius: "12px",
+  boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.1)",
+};
+
+const commonTableStyle = {
+  width: "100%",
+  borderCollapse: "collapse",
+  marginBottom: "20px",
+};
+
+const commonThStyle = {
+  textAlign: "left",
+  padding: "12px",
+  background: "#4caf50",
+  color: "white",
+  fontSize: "14px",
+  border: "1px solid #ccc",
+};
+
+const commonTdStyle = {
+  padding: "12px",
+  fontSize: "14px",
+  border: "1px solid #ccc",
+};
+
+const commonInputStyle = {
+  width: "100%",
+  padding: "10px",
+  border: "1px solid #ccc",
+  borderRadius: "4px",
+  fontSize: "14px",
+};
+
+const commonSelectStyle = {
+  ...commonInputStyle,
+  background: "white",
+};
+
+const buttonStyle = {
+  padding: "12px 25px",
+  borderRadius: "8px",
+  fontWeight: "bold",
+  fontSize: "14px",
+  border: "none",
+  cursor: "pointer",
+  transition: "background 0.3s ease",
+};
+
+const activeButtonStyle = {
+  ...buttonStyle,
+  background: "#4caf50",
+  color: "white",
+};
+
+const disabledButtonStyle = {
+  ...buttonStyle,
+  background: "#ddd",
+  color: "#888",
+  cursor: "not-allowed",
+};
+
+const tabStyle = {
+  cursor: "pointer",
+  padding: "12px 25px",
+  borderRadius: "8px",
+  textAlign: "center",
+  background: "#e6e6e6",
+  fontWeight: "bold",
+  fontSize: "14px",
+  transition: "background 0.3s ease",
+};
+
+const activeTabStyle = {
+  ...tabStyle,
+  background: "#4caf50",
+  color: "white",
+  boxShadow: "0px 2px 10px rgba(0, 0, 0, 0.2)",
+};
+
+const styles = {
+  registrationContainer: {
+    width: "80%",
+    margin: "0 auto",
+    padding: "30px",
+    background: "#ffffff", // Cleaner white background for better contrast
+    borderRadius: "12px",
+    boxShadow: "0px 6px 20px rgba(0, 0, 0, 0.15)", // Softer shadow for a polished look
+  },
+  tabNavigation: {
+    display: "flex",
+    justifyContent: "space-evenly", // Evenly distribute tabs
+    alignItems: "center",
+    marginBottom: "30px", // Extra spacing below tabs
+    padding: "0", // Removed extra padding for a cleaner look
+    listStyle: "none",
+  },
+  tab: {
+    cursor: "pointer",
+    padding: "12px 25px", // Slightly larger padding for better clickability
+    // borderRadius: "8px",
+    background: "#e6e6e6", // Lighter gray for a more modern feel
+    flex: "1",
+    textAlign: "left",
+    // margin: "0 8px", // Reduced margin for tighter spacing
+    fontWeight: "bold",
+    fontSize: "16px",
+    transition: "background 0.3s ease, color 0.3s ease", // Smooth hover/active effects
+    borderRight: "1px solid #ccc",
+  },
+  activeTab: {
+    borderBottom: "2px solid #4caf50", 
+    color: "#4caf50", // Green text for the active tab
+    boxShadow: "0px 2px 10px rgba(0, 0, 0, 0.2)", // Optional highlighted effect
+  },
+  formContainer: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "25px", // Increased gap for better spacing between fields
+    marginBottom: "20px", // Added spacing at the bottom of the form
+  },
+  formGroup: {
+    flex: "1 1 calc(50% - 20px)", // Two columns with space in between
+    display: "flex",
+    flexDirection: "column",
+  },
+  formLabel: {
+    fontSize: "14px",
+    fontWeight: "bold",
+    marginBottom: "8px", // Space between label and input
+    color: "#333", // Darker color for better readability
+  },
+  formInput: {
+    padding: "12px",
+    border: "1px solid #ccc",
+    borderRadius: "6px",
+    fontSize: "14px",
+  },
+  formNavigation: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "30px", // Extra spacing above navigation
+  },
+  button: {
+    padding: "20px 30px", // Larger button size for better usability
+    border: "none",
+    borderRadius: "8px",
+    background: "#4caf50",
+    color: "white",
+    fontWeight: "bold",
+    fontSize: "16px",
+    cursor: "pointer",
+    transition: "background 0.3s ease", // Smooth hover effect
+  },
+  buttonHover: {
+    background: "#45a049", // Slightly darker shade for hover effect
+  },
+  disabledButton: {
+    background: "#ddd",
+    color: "#888",
+    cursor: "not-allowed",
+  },
+  container: {
+    width: "70%",
+    margin: "0 auto",
+    background: "#ffffff",
+    borderRadius: "12px",
+    boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.1)",
+  },
+  sectionHeading: {
+    fontSize: "22px",
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: "15px",
+  },
+  instructionText: {
+    fontSize: "14px",
+    color: "#666",
+    marginBottom: "20px",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    marginBottom: "20px",
+  },
+  th: {
+    background: "#e6e6e6",
+    // color: "white",
+    padding: "12px",
+    fontSize: "14px",
+    border: "1px solid #ccc",
+  },
+  td: {
+    padding: "10px",
+    border: "1px solid #ccc",
+    fontSize: "14px",
+  },
+  select: {
+    width: "100%",
+    padding: "10px",
+    border: "1px solid #ccc",
+    borderRadius: "4px",
+    background: "white",
+    fontSize: "14px",
+  },
+  errorText: {
+    color: "#d9534f",
+    fontSize: "12px",
+    marginTop: "5px",
+  },
+  loadMoreButton: {
+    display: "block",
+    margin: "20px auto",
+    padding: "10px 20px",
+    background: "#4caf50",
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "14px",
+  },
+  loadMoreButtonHover: {
+    background: "#45a049",
+  },
 };

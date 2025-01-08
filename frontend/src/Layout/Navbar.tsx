@@ -36,17 +36,19 @@ export const Navbar = () => {
   };
 
   const handleProjectClick = (projectName: string) => {
+    console.log("Redirecting on the project:", projectName);
+
     const selectedFormData = getFormDataByProjectName(projectName);
-  
+    console.log("Selected Form Data:", selectedFormData);
+
     if (selectedFormData) {
-      console.log("Selected Form Data:", selectedFormData);
-      navigate(`/projectdetails`, { state: { selectedFormData } });
+      const { projectName } = selectedFormData; // Extract the project_id
+      navigate(`/projectdetails/${projectName.replace(/\s+/g, '')}`, { state: { selectedFormData } });
     } else {
       console.error("No formData found for project:", projectName);
       alert("No data available for the selected project.");
     }
-  };  
-  
+  };
 
   return (
     <>
@@ -95,7 +97,11 @@ export const Navbar = () => {
                       <a
                         className="dropdown-item"
                         href="#"
-                        onClick={() => handleProjectClick(projectName)}
+                        role="button" // Optional but recommended
+                        onClick={(e) => {
+                          e.preventDefault(); // Prevent default anchor behavior
+                          handleProjectClick(projectName);
+                        }}
                       >
                         {projectName}
                       </a>
