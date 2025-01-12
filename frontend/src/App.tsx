@@ -16,6 +16,8 @@ import {
 } from './Utils/moduleStorage';
 import { ProjectDetails } from "./Components/ProjectDetails";
 import ProjectParametersPage from "./Components/ProjectParameterPage";
+import ManageUser from "./Components/ManageUser";
+import ViewUser from "./Components/ViewUser";
 
 function App() {
 
@@ -52,6 +54,9 @@ function App() {
         <Route path="/module/:moduleName" element={<ModuleDetails />} />
         <Route path="/projectdetails/:projectName" element={<ProjectDetails />} />
         <Route path="/project-parameters" element={<ProjectParametersPage />} />
+        <Route path="/manageuser" element={<ManageUser />} />
+        <Route path="/view-user" element={<ViewUser />} />
+
       </Routes>
     </>
   );

@@ -1,15 +1,25 @@
 import { Height, WidthFull } from "@mui/icons-material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import {
   saveFormDataToListInLocalStorage,
   isDuplicateProjectName,
-  getOrderedModuleNames
+  getOrderedModuleNames,
+  getAllMineType
 } from '../Utils/moduleStorage';
 
 export const RegisterNewProject: React.FC = () => {
+
+  const [mineTypes, setMineTypes] = useState([{}]);
+
+  useEffect(() => {
+    // Retrieve the mine types from localStorage using the updated function
+    const savedMineTypes = getAllMineType(); // No need for JSON.parse() here, it's already handled
+    setMineTypes(savedMineTypes);
+  }, []);
+
 
   const [formData, setFormData] = useState({
     project_id: 0,
@@ -62,7 +72,7 @@ export const RegisterNewProject: React.FC = () => {
     "Initial Status of the project",
   ];
 
-  
+
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -83,7 +93,7 @@ export const RegisterNewProject: React.FC = () => {
   const [tabCompletionStatus, setTabCompletionStatus] = React.useState(
     Array(tabs.length).fill(false) // Track completion status of tabs
   );
-  
+
 
   // Validation logic
   // Function to alert a message for a specific field
@@ -220,7 +230,7 @@ export const RegisterNewProject: React.FC = () => {
       setVisibleRows((prev) => prev + 1);
     }
   };
-  
+
 
   const renderTabContent = () => {
     switch (currentTab) {
@@ -272,12 +282,18 @@ export const RegisterNewProject: React.FC = () => {
                       style={selectStyle}
                       className="form-select"
                       id="mineType"
+                      name="mineType"  // Ensure the correct field name is used
                       value={formData.mineType}
                       onChange={handleInputChange}
                     >
                       <option value="">Select Mine Type</option>
-                      <option value="OC">OC</option>
-                      <option value="UG">UG</option>
+                      {mineTypes && mineTypes.length > 0 ? (
+                        mineTypes.map((type, index) => (
+                          <option key={index} value={type.code}>
+                            {type.code} {/* Displaying the "name" property */}
+                          </option>
+                        ))
+                      ) : null} {/* No options if mineTypes is empty */}
                     </select>
                   </td>
                 </tr>
@@ -660,10 +676,10 @@ export const RegisterNewProject: React.FC = () => {
       <h1>Register New Project</h1>
       <p></p>
       <ul style={styles.tabNavigation}>
-        
+
         {tabs.map((tab, index) => (
           <li
-          
+
             key={index}
             style={
               currentTab === index
@@ -708,11 +724,11 @@ export const RegisterNewProject: React.FC = () => {
             onClick={() => {
               if (validateStep()) {
                 // / Mark the current tab as completed
-      setTabCompletionStatus((prevStatus) => {
-        const updatedStatus = [...prevStatus];
-        updatedStatus[currentTab] = true;
-        return updatedStatus;
-      });
+                setTabCompletionStatus((prevStatus) => {
+                  const updatedStatus = [...prevStatus];
+                  updatedStatus[currentTab] = true;
+                  return updatedStatus;
+                });
 
                 if (currentTab < tabs.length - 1) {
                   setCurrentTab((prev) => prev + 1);
@@ -737,21 +753,21 @@ export const RegisterNewProject: React.FC = () => {
             }
             disabled={errors !== null || currentTab === tabs.length - 1 ? false : true}
           >
-             {currentTab === tabs.length - 1 ? (
-      "Submit"
-    ) : (
-      <>
-        Continue
-        <ArrowForwardIcon
-          style={{
-            fontSize: "16px",
-            marginLeft: "5px",
-            verticalAlign: "middle",
-          }}
-        />
-      </>
-    )}
-  </button>
+            {currentTab === tabs.length - 1 ? (
+              "Submit"
+            ) : (
+              <>
+                Continue
+                <ArrowForwardIcon
+                  style={{
+                    fontSize: "16px",
+                    marginLeft: "5px",
+                    verticalAlign: "middle",
+                  }}
+                />
+              </>
+            )}
+          </button>
         </div>
       </form>
     </div>
@@ -905,7 +921,7 @@ const styles = {
     borderRight: "1px solid #ccc",
   },
   activeTab: {
-    borderBottom: "2px solid #4caf50", 
+    borderBottom: "2px solid #4caf50",
     color: "#4caf50", // Green text for the active tab
     boxShadow: "0px 2px 10px rgba(0, 0, 0, 0.2)", // Optional highlighted effect
   },

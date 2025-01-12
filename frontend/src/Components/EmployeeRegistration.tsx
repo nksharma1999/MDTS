@@ -1,626 +1,273 @@
-interface props {}
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
-export const EmployeeRegistration: React.FC<props> = () => {
+interface Props {}
+
+export const EmployeeRegistration: React.FC<Props> = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isEdit } = location.state || {};
+
+  const handleSave = () => {
+    navigate("/manageuser");
+  };
+
+  // State for form fields (pre-filled in edit mode)
+  const [formData, setFormData] = useState({
+    name: user?.name || "",
+    company: user?.company || "",
+    project: user?.project || "",
+    mobile: user?.mobile || "",
+    email: user?.email || "",
+    whatsapp: user?.whatsapp || "",
+  });
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  // Save or Update Logic
+  const handleSaveOrUpdate = () => {
+    if (isEdit) {
+      console.log("Updating user:", formData);
+      // Perform update logic
+    } else {
+      console.log("Saving new user:", formData);
+      // Perform save logic
+    }
+    navigate("/manageuser");
+  };
+
+  // Cancel Action
+  const handleCancel = () => {
+    navigate("/manageuser");
+  };
+
   return (
-    <div style={{ padding: 10 }}>
-      <div></div>
-      <div className="card mb-3">
-        <div className="card-header">
-          <h4 style={{ textAlign: "center" }}>Amrendra Kumar</h4>
+    <div style={{ padding: "30px", fontFamily: "Arial, sans-serif" }}>
+      <div
+        className="card mb-3"
+        style={{
+          borderRadius: "8px",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+          border: "none",
+        }}
+      >
+        <div
+          className="card-header"
+          style={{
+            textAlign: "center",
+            fontSize: "24px",
+            fontWeight: "bold",
+            color: "black",
+            backgroundColor: "grey",
+            borderTopLeftRadius: "8px",
+            borderTopRightRadius: "8px",
+            padding: "15px",
+          }}
+        >
+          {isEdit ? "Edit Employee Details" : "Employee Registration"}
+
         </div>
-        <div className="card-body">
-          <div className="row">
-            <div className="col-lg-4 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="email"
-                  className="form-control"
-                  id="floatingInput12"
-                  placeholder="Email"
-                />
-                <label htmlFor="floatingInput12">Email</label>
-              </div>
-            </div>
-            <div className="col-lg-4 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
+        <div className="card-body" style={{ padding: "30px" }}>
+          <form>
+            {/* Name Field */}
+            <div className="row mb-3">
+              <label
+                htmlFor="floatingName"
+                className="col-sm-3 col-form-label"
+                style={{ fontSize: "16px", fontWeight: "Bold" }}
+              >
+                Name
+              </label>
+              <div className="col-sm-9">
                 <input
                   type="text"
                   className="form-control"
-                  id="floatingInput13"
-                  placeholder="WhatsApp"
+                  id="floatingName"
+                  placeholder="Enter Name"
+                  style={{
+                    padding: "10px",
+                    fontSize: "16px",
+                    borderRadius: "5px",
+                    borderColor: "#ccc",
+                    fontWeight: "500",
+                  }}
                 />
-                <label htmlFor="floatingInput13">WhatsApp</label>
               </div>
             </div>
-            <div className="col-lg-4 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
+
+            {/* Company Field */}
+            <div className="row mb-3">
+              <label
+                htmlFor="floatingCompany"
+                className="col-sm-3 col-form-label"
+                style={{ fontSize: "16px", fontWeight: "Bold" }}
+              >
+                Company
+              </label>
+              <div className="col-sm-9">
+                <input
+                  type="text"
+                  className="form-control"
+                  id="floatingCompany"
+                  placeholder="Enter Company Name"
+                  style={{
+                    padding: "10px",
+                    fontSize: "16px",
+                    borderRadius: "5px",
+                    borderColor: "#ccc",
+                    fontWeight: "500",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Project Field - Dropdown */}
+            <div className="row mb-3">
+              <label
+                htmlFor="floatingProject"
+                className="col-sm-3 col-form-label"
+                style={{ fontSize: "16px", fontWeight: "Bold" }}
+              >
+                Project
+              </label>
+              <div className="col-sm-9">
+                <select
+                  className="form-control"
+                  id="floatingProject"
+                  style={{
+                    padding: "10px",
+                    fontSize: "16px",
+                    borderRadius: "5px",
+                    borderColor: "#ccc",
+                    fontWeight: "500",
+                  }}
+                >
+                  <option value="" disabled selected>
+                    Select Project
+                  </option>
+                  <option value="Project A">Project A</option>
+                  <option value="Project B">Project B</option>
+                  <option value="Project C">Project C</option>
+                  <option value="Project D">Project D</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Mobile No Field */}
+            <div className="row mb-3">
+              <label
+                htmlFor="floatingMobile"
+                className="col-sm-3 col-form-label"
+                style={{ fontSize: "16px", fontWeight: "Bold" }}
+              >
+                Mobile No
+              </label>
+              <div className="col-sm-9">
                 <input
                   type="number"
                   className="form-control"
-                  id="floatingInput14"
-                  placeholder="Mobile"
+                  id="floatingMobile"
+                  placeholder="Enter Mobile Number"
+                  style={{
+                    padding: "10px",
+                    fontSize: "16px",
+                    borderRadius: "5px",
+                    borderColor: "#ccc",
+                    fontWeight: "500",
+                  }}
                 />
-                <label htmlFor="floatingInput14">Mobile</label>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div className="card mb-3">
-        <div className="card-header">
-          <h5>Desired Notification</h5>
-        </div>
-        <div className="card-body">
-          <div className="row">
-            <div className="col">
-              <div className="form-check">
-                <label className="form-check-label" htmlFor="defaultCheck1">
-                  Email
-                </label>
+
+            {/* Email ID Field */}
+            <div className="row mb-3">
+              <label
+                htmlFor="floatingEmail"
+                className="col-sm-3 col-form-label"
+                style={{ fontSize: "16px", fontWeight: "Bold" }}
+              >
+                Email ID
+              </label>
+              <div className="col-sm-9">
                 <input
-                  className="form-check-input"
-                  type="checkbox"
-                  value=""
-                  id="defaultCheck1"
+                  type="email"
+                  className="form-control"
+                  id="floatingEmail"
+                  placeholder="Enter Email"
+                  style={{
+                    padding: "10px",
+                    fontSize: "16px",
+                    borderRadius: "5px",
+                    borderColor: "#ccc",
+                    fontWeight: "500",
+                  }}
                 />
               </div>
             </div>
-            <div className="col">
-              <div className="form-check">
-                <label className="form-check-label" htmlFor="defaultCheck2">
-                  WhatsApp
-                </label>
+
+            {/* WhatsApp No Field */}
+            <div className="row mb-3">
+              <label
+                htmlFor="floatingWhatsApp"
+                className="col-sm-3 col-form-label"
+                style={{ fontSize: "16px", fontWeight: "Bold" }}
+              >
+                WhatsApp No
+              </label>
+              <div className="col-sm-9">
                 <input
-                  className="form-check-input"
-                  type="checkbox"
-                  value=""
-                  id="defaultCheck2"
+                  type="text"
+                  className="form-control"
+                  id="floatingWhatsApp"
+                  placeholder="Enter WhatsApp Number"
+                  style={{
+                    padding: "10px",
+                    fontSize: "16px",
+                    borderRadius: "5px",
+                    borderColor: "#ccc",
+                    fontWeight: "500",
+                  }}
                 />
               </div>
             </div>
-            <div className="col">
-              <div className="form-check">
-                <label className="form-check-label" htmlFor="defaultCheck3">
-                  Mobile
-                </label>
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  value=""
-                  id="defaultCheck3"
-                />
-              </div>
+
+            {/* Save and Cancel Buttons */}
+            <div className="d-flex justify-content-between mt-4">
+              <button
+                className="btn btn-secondary"
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  borderRadius: "5px",
+                  border: "none",
+                  backgroundColor: "#f0ad4e",
+                  color: "#fff",
+                  marginLeft:'1600px',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleSave}
+                style={{
+                  padding: "10px 20px",
+                  fontSize: "16px",
+                  borderRadius: "5px",
+                  border: "none",
+                  backgroundColor: "#4a90e2",
+                  color: "#fff",
+                }}
+              >
+                 {isEdit ? "Update" : "Save"}
+              </button>
             </div>
-          </div>
-        </div>
-      </div>
-      <div className="card mb-3">
-        <div className="card-header">
-          <h5>Modules</h5>
-        </div>
-        <div className="card-body">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th scope="col">#Code</th>
-                <th scope="col">Select Modules</th>
-                <th scope="col">YES/NO</th>
-                <th scope="col">Responsible</th>
-                <th scope="col">Accountable</th>
-                <th scope="col">Consulted</th>
-                <th scope="col">Informed</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row">CF</th>
-                <td>Contract Formulation</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">BP</th>
-                <td>Budgetary Planning</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">BC</th>
-                <td>Boundary Coordinate Certification by CMPDI</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">DG</th>
-                <td>DGPS Survey, Land Schedule and Cadestral Map</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">GR</th>
-                <td>Geological Report</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">MP</th>
-                <td>Mine Plan Approval</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">FC</th>
-                <td>Forest Clearance</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">TOR</th>
-                <td>Terms of Reference</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">EC</th>
-                <td>Environment Clearance</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">ML</th>
-                <td>Mining Lease</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">CTE</th>
-                <td>Consent to Establish</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">CTO</th>
-                <td>Consent to Operate</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <th scope="row">MO</th>
-                <td>Mine Opening Permission</td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-                <td>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    value=""
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          </form>
         </div>
       </div>
     </div>

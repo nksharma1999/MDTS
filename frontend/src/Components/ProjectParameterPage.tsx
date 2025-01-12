@@ -12,15 +12,26 @@ import {
   Button,
   Divider
 } from "@mui/material";
+import {
+  getAllMineType
+} from '../Utils/moduleStorage';
 
 function ProjectParametersPage() {
-//   const { section, formData } = location.state || {};
+  //   const { section, formData } = location.state || {};
   const location = useLocation();
-//   const navigate = useNavigate();
-  const { sectionData , section} = location.state || {};
+  //   const navigate = useNavigate();
+  const { sectionData, section } = location.state || {};
   const [mineral, setMineral] = useState(sectionData?.mineral || "");
-const [mineType, setMineType] = useState(sectionData?.mineType || "");
-const [grade, setGrade] = useState(sectionData?.grade || "");
+  const [mineType, setMineType] = useState(sectionData?.mineType || "");
+  const [grade, setGrade] = useState(sectionData?.grade || "");
+
+  const [mineTypes, setMineTypes] = useState([{}]);
+
+  useEffect(() => {
+    // Retrieve the mine types from localStorage using the updated function
+    const savedMineTypes = getAllMineType(); // No need for JSON.parse() here, it's already handled
+    setMineTypes(savedMineTypes);
+  }, []);
 
 
   const [formData, setFormData] = useState({
@@ -169,48 +180,53 @@ const [grade, setGrade] = useState(sectionData?.grade || "");
                 <Grid item xs={12} md={6} key={index}>
                   {row.type === "select" ? (
                     <FormControl fullWidth>
-                    <InputLabel style={styles.fieldLabel}>{row.label}</InputLabel>
-                    <Select
-                      value={row.label === "Mineral" ? mineral : row.label === "Type of Mine" ? mineType : grade}
-                      onChange={(e) => {
-                        if (row.label === "Mineral") {
-                          setMineral(e.target.value);
-                        } else if (row.label === "Type of Mine") {
-                          setMineType(e.target.value);
-                        } else if (row.label === "Grade (in case of Coal)") {
-                          setGrade(e.target.value);
-                        }
-                      }}
-                      style={styles.inputField}
-                    >
-                      {/* Replace with actual options for Mineral */}
-                      {row.label === "mineral" && (
-                        <>
-                          <MenuItem value="Select Mineral">Select Mineral</MenuItem>
-                          <MenuItem value="Coal">Coal</MenuItem>
-                          <MenuItem value="Iron Ore">Iron Ore</MenuItem>
-                        </>
-                      )}
-                      {/* Replace with actual options for Type of Mine */}
-                      {row.label === "Type of Mine" && (
-                        <>
-                          <MenuItem value="Select Type of Mine">Select Type of Mine</MenuItem>
-                          <MenuItem value="OC">OC</MenuItem>
-                          <MenuItem value="UG">UG</MenuItem>
-                        </>
-                      )}
-                      {/* Replace with actual options for Grade */}
-                      {row.label === "Grade (in case of Coal)" && (
-                        <>
-                          <MenuItem value="Select Grade">Select Grade</MenuItem>
-                          <MenuItem value="G1">G1</MenuItem>
-                          <MenuItem value="G2">G2</MenuItem>
-                          <MenuItem value="G3">G3</MenuItem>
-                        </>
-                      )}
-                    </Select>
-                  </FormControl>
-                    
+                      <InputLabel style={styles.fieldLabel}>{row.label}</InputLabel>
+                      <Select
+                        value={row.label === "Mineral" ? mineral : row.label === "Type of Mine" ? mineType : grade}
+                        onChange={(e) => {
+                          if (row.label === "Mineral") {
+                            setMineral(e.target.value);
+                          } else if (row.label === "Type of Mine") {
+                            setMineType(e.target.value);
+                          } else if (row.label === "Grade (in case of Coal)") {
+                            setGrade(e.target.value);
+                          }
+                        }}
+                        style={styles.inputField}
+                      >
+                        {/* Replace with actual options for Grade */}
+                        {row.label === "Mineral" && (
+                          <>
+                            <MenuItem value="">Select Mineral</MenuItem>
+                            <MenuItem value="Coal">Coal</MenuItem>
+                            <MenuItem value="Iron Ore">Iron Ore</MenuItem>
+                          </>
+                        )}
+                        {/* Replace with actual options for Type of Mine */}
+                        {row.label === "Type of Mine" && (
+                          <>
+                            <MenuItem value="">Select Type of Mine</MenuItem>
+                            {mineTypes && mineTypes.length > 0 ? (
+                              mineTypes.map((type, index) => (
+                                <MenuItem key={index} value={type.code}>
+                                  {type.code}
+                                </MenuItem>
+                              ))
+                            ) : null} {/* No options if mineTypes is empty */}
+                          </>
+                        )}
+                        {/* Replace with actual options for Grade */}
+                        {row.label === "Grade (in case of Coal)" && (
+                          <>
+                            <MenuItem value="Select Grade">Select Grade</MenuItem>
+                            <MenuItem value="G1">G1</MenuItem>
+                            <MenuItem value="G2">G2</MenuItem>
+                            <MenuItem value="G3">G3</MenuItem>
+                          </>
+                        )}
+                      </Select>
+                    </FormControl>
+
                   ) : (
                     <TextField
                       fullWidth

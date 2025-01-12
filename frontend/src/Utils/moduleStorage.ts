@@ -2,6 +2,7 @@
 
 const MODULE_KEY = "modules";
 const FORM_DATA = "formDatas";
+const MINE_TYPE_KEY = "mineTypes";
 
 // Get all modules from local storage
 // Flatten nested arrays from local storage
@@ -189,6 +190,54 @@ const getNewProjectId = () => {
 
   return maxProjectId + 1;
 };
+
+
+//       Mine Type.....
+
+export const getAllMineType = () => {
+  const savedModules = localStorage.getItem(MINE_TYPE_KEY);
+
+  // Check if savedModules is null or undefined
+  if (savedModules === null || savedModules === 'undefined') {
+    console.warn("mineTypes is not available or is 'undefined' in localStorage.");
+    return []; // Return an empty array if no valid data exists
+  }
+
+  let modules = [];
+  try {
+    // Parse the saved data
+    modules = JSON.parse(savedModules);
+    if (!Array.isArray(modules)) {
+      // Fallback if the data is not an array
+      console.warn("Parsed mineTypes is not an array. Returning empty array.");
+      modules = [];
+    }
+  } catch (error) {
+    console.error("Error parsing mine types from localStorage:", error);
+    modules = []; // Fallback to an empty array if parsing fails
+  }
+
+  return modules;
+};
+
+
+export const updateMineType = (mineTypes: any) => {
+  // Check if mineTypes is undefined or null and set it to a default value (e.g., [])
+  if (mineTypes === undefined || mineTypes === null) {
+    console.warn("mineTypes is undefined or null. Setting to default empty array.");
+    mineTypes = []; // Default to an empty array or any valid data structure
+  }
+
+  try {
+    const serializedMineTypes = JSON.stringify(mineTypes);
+    localStorage.setItem(MINE_TYPE_KEY, serializedMineTypes);
+  } catch (error) {
+    console.error("Error saving mine types to localStorage:", error);
+  }
+};
+
+
+
 
 
 
