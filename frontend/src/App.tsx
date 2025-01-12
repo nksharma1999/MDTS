@@ -16,6 +16,7 @@ import {
   initializeModules,
 } from './Utils/moduleStorage';
 import { ProjectDetails } from "./Components/ProjectDetails";
+import { TimelineBuilder } from "./Components/TimelineBuilder";
 
 function App() {
 
@@ -50,6 +51,7 @@ function App() {
         <Route path="/HolidayCalender" element={<HolidayCalender />} />
         <Route path="/module/:moduleName" element={<ModuleDetails />} />
         <Route path="/projectdetails" element={<ProjectDetails />} />
+        <Route path="/timeline-builder" element={<TimelineBuilder />} />
       </Routes>
     </>
   );

@@ -152,9 +152,10 @@ export const Navbar = () => {
                     </a>
                   </li>
                   <li>
-                    <a className="dropdown-item" href="#" onClick={handleNavigation}>
-                      Timeline Builder
-                    </a>
+                    
+                    <NavLink className="dropdown-item" to="/timeline-builder">
+                    Timeline Builder
+                    </NavLink>
                   </li>
                   <li>
                     <a className="dropdown-item" href="/HolidayCalender">
