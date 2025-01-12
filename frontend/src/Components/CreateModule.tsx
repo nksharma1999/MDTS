@@ -27,7 +27,7 @@ import { useNavigate } from 'react-router-dom';
 export const CreateModule = () => {
   const [newModelName, setNewModelName] = useState<string>("");
   const location = useLocation();
-  const { moduleName, moduleCode } = location.state || {};
+  const { moduleName, mineType, moduleLevel } = location.state || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [collapsedModules, setCollapsedModules] = useState({});
@@ -49,7 +49,8 @@ export const CreateModule = () => {
     {
       parentModuleCode: "", // Initialize as an empty string
       moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
-      lavel: 0,
+      mineType:mineType,
+      lavel: moduleLevel ? moduleLevel : 'L1',
       plus: 0,
       activitys: [],
     },
@@ -105,33 +106,36 @@ export const CreateModule = () => {
   useEffect(() => {
     if (moduleName) {
       const acronym = generateModuleCode(moduleName);
+      console.log("Code, mineType, level : ", acronym, mineType, module);
       setModule((prevModule) =>
         prevModule.map((mod) => ({
           ...mod,
           parentModuleCode: acronym, // Update parentModuleCode
+          mineType: mineType,
+          level: moduleLevel ? moduleLevel: "L1",
         }))
       );
     }
   }, [moduleName]);
 
-  const handleModulePlus = () => {
-    try {
-      const acronym = generateTwoLetterAcronym(newModelName, existingAcronyms);
-      setExistingAcronyms([...existingAcronyms, acronym]);
-      setModule((pre) => [
-        ...pre,
-        {
-          parentModuleCode: acronym,
-          name: newModelName,
-          activitys: [],
-          lavel: 1,
-          plus: 0,
-        },
-      ]);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  // const handleModulePlus = () => {
+  //   try {
+  //     const acronym = generateTwoLetterAcronym(newModelName, existingAcronyms);
+  //     setExistingAcronyms([...existingAcronyms, acronym]);
+  //     setModule((pre) => [
+  //       ...pre,
+  //       {
+  //         parentModuleCode: acronym,
+  //         name: newModelName,
+  //         activitys: [],
+  //         lavel: 1,
+  //         plus: 0,
+  //       },
+  //     ]);
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // };
 
   const handleDelete = () => {
     const { moduleIndex, activityIndex } = selectedRow;
@@ -738,7 +742,10 @@ export const CreateModule = () => {
                     <td>{val.duration}</td>
                     <td>{val.prerequisites}</td>
                     <td>
-                      {`L${val.lavel}`} {/* Level remains non-editable */}
+                      {/* Old code where level L was added on parent module */}
+                      {/* {`L${val.lavel}`} Level remains non-editable */}
+                      {/* new code either auto generated or use provided */}
+                      {`${val.lavel}`}
                     </td>
                   </tr>
                 );

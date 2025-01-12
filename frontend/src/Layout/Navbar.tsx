@@ -1,29 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Link } from "react-router-dom";
 import {
   listOfProjectName,
-  getFormDataByProjectName
+  getFormDataByProjectName,
+  getAllMineType,
+  updateMineType
 } from '../Utils/moduleStorage';
 
 export const Navbar = () => {
   const [newModelName, setNewModelName] = useState("");
-  const [newCode, setNewCode] = useState("");
   const navigate = useNavigate();
   const [projectNames, setProjectNames] = useState([]);
+  const [moduleLevel, setModuleLevel] = useState("");
+  const [options, setOptions] = useState([""]); // Dropdown options
+  const [selectedOption, setSelectedOption] = useState("");
+  const [newOption, setNewOption] = useState("");
+  const [shorthandCode, setShorthandCode] = useState("");
+  const [mineTypes, setMineTypes] = useState<any[]>([]); // Store the mine types
 
-  const handleModulePlus = () => {
-    if (newModelName.trim()) {
-      navigate("/CreateModule", {
-        state: { moduleName: newModelName },
-      });
-      // Close the modal
-      const modal = document.getElementById("exampleModal");
-      const modalInstance = bootstrap.Modal.getInstance(modal);
-      modalInstance.hide(); // Close the modal
-    } else {
-      alert("Please enter both module name and code");
-    }
-  };
+  // Fetch mine types on page load
+  useEffect(() => {
+    const fetchMineTypes = async () => {
+      const fetchedMineTypes = await getAllMineType(); // Function to fetch mine types
+      setMineTypes(fetchedMineTypes);
+      const options = fetchedMineTypes.map((type) => type.code);
+      setOptions(options); // Set options for dropdown
+    };
+    fetchMineTypes();
+
+    const names = listOfProjectName();
+    setProjectNames(names);
+  }, []);
 
   useEffect(() => {
     const names = listOfProjectName();
@@ -31,22 +38,82 @@ export const Navbar = () => {
   }, []);
 
 
+  const handleAddOption = async () => {
+    if (newOption.trim()) {
+      const shorthandCode = newOption
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase())
+        .join("")
+        .slice(0, 3);
+
+      const newMineType = { name: newOption, code: shorthandCode };
+      const updatedMineTypes = [...mineTypes, newMineType];
+
+      setMineTypes(updatedMineTypes);
+      setOptions((prevOptions) => [...prevOptions, shorthandCode]);
+      setNewOption("");
+
+      // Call to update mine types in the database or storage
+      await updateMineType(updatedMineTypes);
+
+      // Close modals
+      const addOptionModal = document.getElementById("addOptionModal");
+      const addOptionModalInstance = bootstrap.Modal.getInstance(addOptionModal);
+      addOptionModalInstance.hide();
+
+      const mainModal = document.getElementById("exampleModal");
+      const mainModalInstance = new bootstrap.Modal(mainModal);
+      mainModalInstance.show();
+    } else {
+      alert("Mine Type cannot be empty!");
+    }
+  };
+
+  // Handle mine type change
+  const handleMineTypeChange = (value: string) => {
+    setNewOption(value);
+    const code = value
+      .split(" ")
+      .map(word => word.charAt(0).toUpperCase())
+      .join("")
+      .slice(0, 3);
+    setShorthandCode(code);
+  };
+
+
+  // Handle adding module
+  const handleModulePlus = () => {
+    if (newModelName.trim()) {
+      navigate("/CreateModule", {
+        state: {
+          moduleName: newModelName,
+          mineType: selectedOption,
+          moduleLevel: moduleLevel,
+        },
+      });
+
+      const modal = document.getElementById("exampleModal");
+      const modalInstance = bootstrap.Modal.getInstance(modal);
+      modalInstance.hide();
+    } else {
+      alert("Please enter both module name and code");
+    }
+  };
+
   const handleNavigation = () => {
     navigate('/modulebuilder');
   };
 
   const handleProjectClick = (projectName: string) => {
     const selectedFormData = getFormDataByProjectName(projectName);
-  
     if (selectedFormData) {
-      console.log("Selected Form Data:", selectedFormData);
-      navigate(`/projectdetails`, { state: { selectedFormData } });
+      const { projectName } = selectedFormData;
+      navigate(`/projectdetails/${projectName.replace(/\s+/g, '')}`, { state: { selectedFormData } });
     } else {
       console.error("No formData found for project:", projectName);
       alert("No data available for the selected project.");
     }
-  };  
-  
+  };
 
   return (
     <>
@@ -95,7 +162,11 @@ export const Navbar = () => {
                       <a
                         className="dropdown-item"
                         href="#"
-                        onClick={() => handleProjectClick(projectName)}
+                        role="button" // Optional but recommended
+                        onClick={(e) => {
+                          e.preventDefault(); // Prevent default anchor behavior
+                          handleProjectClick(projectName);
+                        }}
                       >
                         {projectName}
                       </a>
@@ -197,10 +268,11 @@ export const Navbar = () => {
                     </a>
                   </li>
                   <li>
-                    <a className="dropdown-item" href="#">
+                    <Link className="dropdown-item" to="/manageuser">
                       RACI, Alert & Notification
-                    </a>
+                    </Link>
                   </li>
+
                   <li>
                     <a className="dropdown-item" href="#">
                       Dashboard
@@ -234,14 +306,28 @@ export const Navbar = () => {
 
 
       {/* Modal for Adding New Module */}
-      <div className="modal fade" id="exampleModal" tabIndex={-1} aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div
+        className="modal fade"
+        id="exampleModal"
+        tabIndex={-1}
+        aria-labelledby="exampleModalLabel"
+        aria-hidden="true"
+      >
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title" id="exampleModalLabel">Add New Module</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              <h5 className="modal-title" id="exampleModalLabel">
+                Add New Module
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
             </div>
             <div className="modal-body">
+              {/* Module Name */}
               <div className="form-floating mb-3">
                 <input
                   type="text"
@@ -252,24 +338,141 @@ export const Navbar = () => {
                 />
                 <label>Module Name</label>
               </div>
-              {/* <div className="form-floating mb-3">
+
+              <div className="border p-3 mb-3" style={{ borderRadius: "8px" }}>
+                <div
+                  className="d-flex align-items-center justify-content-between"
+                  style={{ gap: "10px", }}
+                >
+                  <label
+                    className="form-label"
+                    style={{
+                      fontWeight: "bold",
+                      fontSize: "16px",
+                      marginBottom: "0",
+                      color: "#000",
+                    }}
+                  >
+                    Applicable Mine Type
+                  </label>
+                  <button
+                    type="button"
+                    className="btn btn-link text-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addOptionModal"
+                    style={{
+                      fontSize: "25px",
+                      textDecoration: "none",
+                    }}
+                  >
+                    +
+                  </button>
+
+                  <select
+                    className="form-select"
+                    value={selectedOption}
+                    onChange={(e) => setSelectedOption(e.target.value)}
+                    style={{ width: "40%", height: "40px", fontSize: "14px" }}
+                  >
+                    <option value="">--select--</option>
+                    {options.map((option, index) => (
+                      <option key={index} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+
+                </div>
+              </div>
+
+              {/* Module Level */}
+              <div className="form-floating mb-3">
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Code"
-                  value={newCode}
-                  onChange={(e) => setNewCode(e.target.value)}
+                  placeholder="Module Level"
+                  value={moduleLevel}
+                  onChange={(e) => setModuleLevel(e.target.value)}
                 />
-                <label>Code</label>
-              </div> */}
+                <label>Module Level</label>
+              </div>
             </div>
             <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" className="btn btn-primary" onClick={handleModulePlus}>Add Module</button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleModulePlus}
+              >
+                Add Module
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+
+      {/* Modal for Adding New Mine Type */}
+      <div
+        className="modal fade"
+        id="addOptionModal"
+        tabIndex={-1}
+        aria-labelledby="addOptionModalLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content" style={{ width: "60%", margin: "0 auto" }}>
+            <div className="modal-header">
+              <h5 className="modal-title" id="addOptionModalLabel">
+                Add Mine Type
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body">
+              {/* Input for Mine Type */}
+              <input
+                type="text"
+                className="form-control mb-3"
+                placeholder="Enter Mine Type"
+                value={newOption}
+                onChange={(e) => handleMineTypeChange(e.target.value)}
+              />
+              {/* Display Auto-Generated Shorthand Code */}
+              <div className="form-control mb-3" style={{ background: "#f8f9fa" }}>
+                Shorthand Code <strong>{shorthandCode}</strong>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                data-bs-dismiss="modal"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleAddOption}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </>
   );
 };

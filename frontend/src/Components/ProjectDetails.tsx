@@ -1,545 +1,360 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 
 
 export const ProjectDetails = () => {
 
-    const location = useLocation();
-    const { selectedFormData } = location.state;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { selectedFormData } = location.state || {};
 
-    const {
-        projectName,
-        mineral,
-        mineType,
-        reserve,
-        forestLand,
-        pvtLand,
-        govtLand,
-        totalCoalBlockArea,
-        netGeologicalReserve,
-        extractableReserve,
-        grade,
-        stripRatio,
-        peakCapacity,
-        mineLife,
-        mineOwner,
-        dateOfH1Bidder,
-        cbdpaDate,
-        vestingOrderDate,
-        pbgAmount,
-        state,
-        district,
-        nearestTown,
-        nearestAirport,
-        nearestRailwayStation,
-        nearestRailwaySiding,
-        grApproved,
-        minePlanApproved,
-        grantOfTOR,
-        ec,
-        fc,
-        cte,
-        cto,
-        mineOpeningPermission,
-      } = selectedFormData;
-      
+  const [formData, setFormData] = useState({
+    project_id: 0,
+    projectName: "",
+    mineral: "",
+    mineType: "",
+    reserve: 0,
+    forestLand: 1,
+    pvtLand: '',
+    govtLand: '',
+    totalCoalBlockArea: 0,
+    netGeologicalReserve: 0,
+    extractableReserve: 0,
+    grade: "",
+    stripRatio: 0,
+    peakCapacity: 0,
+    mineLife: 0,
+    mineOwner: '',
+    dateOfH1Bidder: '',
+    cbdpaDate: '',
+    vestingOrderDate: '',
+    pbgAmount: 0,
+    state: '',
+    district: '',
+    nearestTown: '',
+    nearestAirport: '',
+    nearestRailwayStation: '',
+    nearestRailwaySiding: '',
+    explored: '',
+    grApproved: "",
+    minePlanApproved: "",
+    grantOfTOR: "",
+    ec: "",
+    fc: "",
+    cte: "",
+    cto: "",
+    mineOpeningPermission: "",
+
+  });
+
+  // Initialize state with selectedFormData values
+  useEffect(() => {
+    if (selectedFormData) {
+      setFormData((prevState) => ({
+        ...prevState,
+        ...selectedFormData, // Merge incoming data with default state
+      }));
+    }
+  }, [selectedFormData]);
+
+  // Generic handler for dropdowns or input fields
+  const handleInputChange = (event: any) => {
+    const { name, value } = event.target; // Get field name and value
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value, // Update only the specific field
+    }));
+  };
+
+    // Handle the Edit button click for each section
+    const handleEditClick = (section: string, sectionData: any) => {
+      navigate(`/project-parameters`, {
+        state: { sectionData, section} // Pass the section and data for that section
+      });
+    };
+
+
   return (
-    <div style={{ padding: 10 }}>
-      <div className="card mb-3">
-        <div className="card-header">
-          <h5>Project Parameters</h5>
-        </div>
-        <div className="card-body">
-          <div className="row">
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput1"
-                  placeholder="Project Name"
-                  value={projectName}
-                />
-                <label htmlFor="floatingInput1">Project Name</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid2"
-                  // onChange={handleMineralChange}
-                  value={mineral}
-                >
-                  <option value="select">---Select Mineral---</option>
-                  <option value="1">Coal</option>
-                  <option value="2">Bauxite</option>
-                  <option value="3">Zinc</option>
-                </select>
-                <label htmlFor="floatingSelectGrid2">Mineral</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid3"
-                  // onChange={handleMineralChange}
-                  value={mineType}
-                >
-                  <option value="select">---Select Mine Type---</option>
-                  <option value="1">UG</option>
-                  <option value="2">OC</option>
-                  <option value="3">OC/UG</option>
-                </select>
-                <label htmlFor="floatingSelectGrid3">Type of Mine</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput2"
-                  placeholder="Reserve"
-                  value={reserve}
-                />
-                <label htmlFor="floatingInput2">Reserve</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput3"
-                  placeholder="Net Geological Reserve (Mn T)"
-                  value={netGeologicalReserve}
-                />
-                <label htmlFor="floatingInput3">
-                  Net Geological Reserve (Mn T)
-                </label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput4"
-                  placeholder="Extractable Reserve (Mn T)"
-                  value={extractableReserve}
-                />
-                <label htmlFor="floatingInput4">
-                  Extractable Reserve (Mn T)
-                </label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid4"
-                  // onChange={handleMineralChange}
-                  value={grade}
-                >
-                  <option value="select">---Select Grade---</option>
-                  <option value="1">G1</option>
-                  <option value="2">G2</option>
-                  <option value="3">G3</option>
-                  <option value="4">G4</option>
-                  <option value="5">G5</option>
-                  <option value="6">G6</option>
-                  <option value="7">G7</option>
-                  <option value="8">G8</option>
-                  <option value="9">G9</option>
-                  <option value="10">G10</option>
-                  <option value="11">G11</option>
-                  <option value="12">G12</option>
-                  <option value="13">G13</option>
-                  <option value="14">NA</option>
-                </select>
-                <label htmlFor="floatingSelectGrid4">
-                  Grade (in case of Coal)
-                </label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput5"
-                  placeholder="Strip Ratio (Cum / T)"
-                  value={stripRatio}
-                />
-                <label htmlFor="floatingInput5">Strip Ratio (Cum / T)</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput6"
-                  placeholder="Peak Capacity (MTPA)"
-                  value={peakCapacity}
-                />
-                <label htmlFor="floatingInput6">Peak Capacity (MTPA)</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput7"
-                  placeholder="Mine Life (years)"
-                  value={mineLife}
-                />
-                <label htmlFor="floatingInput7">Mine Life (years)</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput8"
-                  placeholder="Total Coal Block Area (Ha)"
-                  value={totalCoalBlockArea}
-                  disabled
-                />
-                <label htmlFor="floatingInput8">
-                  Total Coal Block Area (Ha)
-                </label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput9"
-                  placeholder="Forest Land (Ha)"
-                  value={forestLand}
-                />
-                <label htmlFor="floatingInput9">Forest Land (Ha)</label>
-              </div>
-            </div>
-            <div className="col-lg-6 col-md-6 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput10"
-                  placeholder="Pvt. Land (Ha)"
-                  value={pvtLand}
-                />
-                <label htmlFor="floatingInput10">Pvt. Land (Ha)</label>
-              </div>
-            </div>
-            <div className="col-lg-6 col-md-6 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput11"
-                  placeholder="Govt. land (Ha)"
-                  value={govtLand}
-                />
-                <label htmlFor="floatingInput11">Govt. land (Ha)</label>
-              </div>
-            </div>
+    <div style={{ padding: "30px", backgroundColor: "#e6e6e6", width: '100%' }}>
+      <div className="card mb-3" style={{ borderRadius: "8px", width: '80%' }}>
+        <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: "#6c757d", color: "Black", display: "flex", justifyContent: "space-between", position: "relative" }}>
+          <h5 style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)", margin: 0
+          }}>Project Parameters</h5>
+          <div style={{ marginLeft: "auto" }}>
+          <button
+              className="btn btn-primary btn-sm"
+              style={{ marginRight: '8px' }}
+              onClick={() => handleEditClick("project-parameters", formData)}
+            >
+              Edit
+            </button>
           </div>
+
+        </div>
+        <div className="card-body" style={{ backgroundColor: "#f9f9f9", padding: "15px", width: '100%' }}>
+          <table className="table table-sm" style={{ marginBottom: "0", borderCollapse: "collapse", }}>
+
+            <tbody>
+              {[
+                { label: "Project Name", value: formData.projectName },
+                { label: "Mineral", value: formData.mineral },
+                { label: "Type of Mine", value: formData.mineType },
+                { label: "Reserve", value: formData.reserve },
+                { label: "Net Geological Reserve (Mn T)", value: formData.netGeologicalReserve },
+                { label: "Extractable Reserve (Mn T)", value: formData.extractableReserve },
+                { label: "Grade (in case of Coal)", value: formData.grade },
+                { label: "Strip Ratio (Cum / T)", value: formData.stripRatio },
+                { label: "Peak Capacity (MTPA)", value: formData.peakCapacity },
+                { label: "Mine Life (years)", value: formData.mineLife },
+                { label: "Total Coal Block Area (Ha)", value: formData.totalCoalBlockArea },
+                { label: "Forest Land (Ha)", value: formData.forestLand },
+                { label: "Pvt. Land (Ha)", value: formData.pvtLand },
+                { label: "Govt. Land (Ha)", value: formData.govtLand },
+              ].map((row, index) => (
+                <tr key={index} style={{ borderBottom: "none" }}>
+                  <td
+                    style={{
+                      width: "40%",
+                      border: "none",
+                      borderRight: "1px solid #ccc", // Keeps the vertical divider intact
+                      padding: "8px",
+                    }}
+                  >
+                    <label>{row.label}</label>
+                  </td>
+                  <td
+                    style={{
+                      border: "none",
+                      padding: "8px", // Add padding to maintain alignment
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={row.value || ""}
+                      readOnly
+                      style={{
+                        backgroundColor: "#f9f9f9", // Keeps the input field visible but styled
+                        border: "1px solid #ccc", // Adds a border to the input box only
+                        borderRadius: "4px",
+                        padding: "4px 8px", // Adjust padding for better spacing
+                        width: "100%",
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-      <div className="card mb-3">
-        <div className="card-header">
-          <h5>Contractual Details</h5>
-        </div>
-        <div className="card-body">
-          <div className="row">
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput12"
-                  placeholder="Mine Owner"
-                  value={mineOwner}
-                />
-                <label htmlFor="floatingInput12">Mine Owner</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput13"
-                  placeholder="Date of H1 Bidder"
-                  value={dateOfH1Bidder}
-                />
-                <label htmlFor="floatingInput13">Date of H1 Bidder</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="date"
-                  className="form-control"
-                  id="floatingInput14"
-                  placeholder="CBDPA Date"
-                  value={cbdpaDate}
-                />
-                <label htmlFor="floatingInput14">CBDPA Date</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="date"
-                  className="form-control"
-                  id="floatingInput15"
-                  placeholder="Vesting Order Date"
-                  value={vestingOrderDate}
-                />
-                <label htmlFor="floatingInput15">Vesting Order Date</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput17"
-                  placeholder="PBG Amount"
-                  value={pbgAmount}
-                />
-                <label htmlFor="floatingInput17">PBG Amount</label>
-              </div>
-            </div>
+
+      <div className="card mb-3" style={{ borderRadius: "8px", width: '80%' }}>
+        <div className="card-header d-flex justify-content-between align-items-cente" style={{ backgroundColor: "#6c757d", color: "Black", display: "flex", justifyContent: "space-between", position: "relative" }}>
+          <h5 style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)", margin: 0
+          }}>Contractual Details</h5>
+          <div style={{ marginLeft: "auto" }}>
+          <button
+              className="btn btn-primary btn-sm"
+              style={{ marginRight: '8px' }}
+              onClick={() => handleEditClick("contractual-details", formData)}
+            >
+              Edit
+            </button>
           </div>
+        </div>
+        <div className="card-body" style={{ backgroundColor: "#ffffff", padding: "15px", width: '100%' }}>
+          <table className="table table-sm" style={{ marginBottom: "0", borderCollapse: "collapse" }}>
+            <tbody>
+              {[
+                { label: "Mine Owner", value: formData.mineOwner },
+                { label: "Date of H1 Bidder", value: formData.dateOfH1Bidder },
+                { label: "CBDPA Date", value: formData.cbdpaDate },
+                { label: "Vesting Order Date", value: formData.vestingOrderDate },
+                { label: "PBG Amount", value: formData.pbgAmount },
+              ].map((row, index) => (
+                <tr key={index} style={{ borderBottom: "none" }}>
+                  <td
+                    style={{
+                      width: "40%",
+                      border: "none",
+                      borderRight: "1px solid #ccc", // Keeps the vertical divider intact
+                      padding: "8px",
+                    }}
+                  >
+                    <label>{row.label}</label>
+                  </td>
+                  <td
+                    style={{
+                      border: "none",
+                      padding: "8px", // Add padding to maintain alignment
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={row.value || ""}
+                      readOnly
+                      style={{
+                        backgroundColor: "#f9f9f9", // Keeps the input field visible but styled
+                        border: "1px solid #ccc", // Adds a border to the input box only
+                        borderRadius: "4px",
+                        padding: "4px 8px", // Adjust padding for better spacing
+                        width: "100%", // Ensures the input fills the column width
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+
+          </table>
         </div>
       </div>
-      <div className="card mb-3">
-        <div className="card-header">
-          <h5>Locations</h5>
-        </div>
-        <div className="card-body">
-          <div className="row">
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput18"
-                  placeholder="State"
-                  value={state}
-                />
-                <label htmlFor="floatingInput18">State</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput19"
-                  placeholder="District"
-                  value={district}
-                />
-                <label htmlFor="floatingInput19">District</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput20"
-                  placeholder="Nearest Town"
-                  value={nearestTown}
-                />
-                <label htmlFor="floatingInput20">Nearest Town</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput21"
-                  placeholder="Nearest Airport"
-                  value={nearestAirport}
-                />
-                <label htmlFor="floatingInput21">Nearest Airport</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  id="floatingInput22"
-                  placeholder="Nearest Raiway Station"
-                  value={nearestRailwayStation}
-                />
-                <label htmlFor="floatingInput22">Nearest Raiway Station</label>
-              </div>
-            </div>
+
+      <div className="card mb-3" style={{ borderRadius: "8px", width: '80%' }}>
+        <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: "#6c757d", color: "Black", display: "flex", justifyContent: "space-between", position: "relative" }}>
+          <h5 style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)", margin: 0
+          }}>Location</h5>
+          <div style={{ marginLeft: "auto" }}>
+          <button
+              className="btn btn-primary btn-sm"
+              style={{ marginRight: '8px' }}
+              onClick={() => handleEditClick("location", formData)}
+            >
+              Edit
+            </button>
           </div>
+        </div>
+        <div className="card-body" style={{ backgroundColor: "#ffffff", padding: "15px", width: '100%' }}>
+          <table className="table table-sm" style={{ marginBottom: "0", borderCollapse: "collapse", }}>
+            <tbody>
+              {[
+                { label: "State", value: formData.state },
+                { label: "District", value: formData.district },
+                { label: "Nearest Town", value: formData.nearestTown },
+                { label: "Nearest Airport", value: formData.nearestAirport },
+                { label: "Nearest Railway Station", value: formData.nearestRailwayStation },
+              ].map((row, index) => (
+                <tr key={index} style={{ borderBottom: "none" }}>
+                  <td
+                    style={{
+                      width: "40%",
+                      border: "none",
+                      borderRight: "1px solid #ccc", // Keeps the vertical divider intact
+                      padding: "8px",
+                    }}
+                  >
+                    <label>{row.label}</label>
+                  </td>
+                  <td
+                    style={{
+                      border: "none",
+                      padding: "8px", // Adds padding to keep the fields aligned
+                    }}
+                  >
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={row.value || ""}
+                      readOnly
+                      style={{
+                        backgroundColor: "#f9f9f9", // Keeps the input field visible but styled
+                        border: "1px solid #ccc", // Adds a border to the input box only
+                        borderRadius: "4px",
+                        padding: "4px 8px", // Adjust padding for better spacing
+                        width: "100%", // Ensures the input fills the entire column width
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+
+          </table>
         </div>
       </div>
-      <div className="card mb-3">
-        <div className="card-header">
-          <h5>Please provide Initial Status of the project</h5>
-        </div>
-        <div className="card-body">
-          <div className="row">
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid5"
-                  // onChange={handleMineralChange}
-                  // value={selectedMineral}
-                >
-                  <option value="select">---Select Explored---</option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid5">Explored</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid6"
-                  // onChange={handleMineralChange}
-                  value={grApproved}
-                >
-                  <option value="select">---Select GR Approved---</option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid6">GR Approved</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid7"
-                  // onChange={handleMineralChange}
-                  value={minePlanApproved}
-                >
-                  <option value="select">
-                    Select Mine Plan Approved
-                  </option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid7">Mine Plan Approved</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid8"
-                  // onChange={handleMineralChange}
-                  value={grantOfTOR}
-                >
-                  <option value="select">Select Grant of TOR</option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid8">Grant of TOR</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid9"
-                  // onChange={handleMineralChange}
-                  value={ec}
-                >
-                  <option value="select">Select EC</option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid9">EC</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid10"
-                  // onChange={handleMineralChange}
-                  value={fc}
-                >
-                  <option value="select">Select FC</option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid10">FC</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid11"
-                  // onChange={handleMineralChange}
-                  value={cte}
-                >
-                  <option value="select">Select CTE</option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid11">CTE</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid12"
-                  // onChange={handleMineralChange}
-                  value={cto}
-                >
-                  <option value="select">---Select CTO---</option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid12">CTO</label>
-              </div>
-            </div>
-            <div className="col-lg-3 col-md-4 col-sm-6">
-              <div className="form-floating mb-3">
-                <select
-                  className="form-select"
-                  id="floatingSelectGrid13"
-                  // onChange={handleMineralChange}
-                  value={mineOpeningPermission}
-                >
-                  <option value="select">
-                    Select Mine Opening Permission
-                  </option>
-                  <option value="1">Yes</option>
-                  <option value="2">NO</option>
-                </select>
-                <label htmlFor="floatingSelectGrid13">
-                  Mine Opening Permission
-                </label>
-              </div>
-            </div>
+      {/* Initial Status of the Project Table */}
+      <div className="card mb-3" style={{ borderRadius: "8px", width: '80%' }}>
+        <div className="card-header d-flex justify-content-between align-items-center" style={{ backgroundColor: "#6c757d", color: "Black", display: "flex", justifyContent: "space-between", position: "relative" }}>
+          <h5 style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)", margin: 0
+          }}>Initial Status of the Project Table</h5>
+          <div style={{ marginLeft: "auto" }}>
+          <button
+              className="btn btn-primary btn-sm"
+              style={{ marginRight: '8px' }}
+              onClick={() => handleEditClick("statusOfTheProject", formData)}
+            >
+              Edit
+            </button>
           </div>
+        </div>
+        <div className="card-body" style={{ backgroundColor: "#ffffff", padding: "15px", width: '80%' }}>
+          <table className="table table-sm" style={{ marginBottom: "0", borderCollapse: "collapse" }}>
+
+            <tbody>
+              {[
+                { id: "explored", label: "Explored", value: formData.explored },
+                { id: "grApproved", label: "GR Approved", value: formData.grApproved },
+                { id: "minePlanApproved", label: "Mine Plan Approved", value: formData.minePlanApproved },
+                { id: "grantOfTOR", label: "Grant of TOR", value: formData.grantOfTOR },
+                { id: "ec", label: "EC", value: formData.ec },
+                { id: "fc", label: "FC", value: formData.fc },
+                { id: "cte", label: "CTE", value: formData.cte },
+                { id: "cto", label: "CTO", value: formData.cto },
+                { id: "mineOpeningPermission", label: "Mine Opening Permission", value: formData.mineOpeningPermission },
+              ].map((row, index) => (
+                <tr
+                  key={row.id}
+                  style={{
+                    borderBottom: index === 8 ? "none" : "none", // Removes bottom borders for all rows
+                  }}
+                >
+                  <td
+                    style={{
+                      width: "50%",
+                      borderRight: "1px solid #ccc", // Middle border
+                      padding: "8px",
+                      borderBottom: "none", // Ensure no row borders are displayed
+                    }}
+                  >
+                    <label htmlFor={row.id}>{row.label}</label>
+                  </td>
+                  <td
+                    style={{
+                      padding: "8px",
+                      borderBottom: "none", // Ensure no row borders are displayed
+                    }}
+                  >
+                    <select
+                      className="form-select"
+                      id={row.id}
+                      name={row.id}
+                      value={row.value}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select {row.label}</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
