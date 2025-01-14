@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
-interface Props {}
+interface Props { }
 
 export const EmployeeRegistration: React.FC<Props> = () => {
   const navigate = useNavigate();
@@ -79,7 +79,7 @@ export const EmployeeRegistration: React.FC<Props> = () => {
               <label
                 htmlFor="floatingName"
                 className="col-sm-3 col-form-label"
-                style={{ fontSize: "16px", fontWeight: "Bold" }}
+                style={{ fontSize: "20px", fontWeight: "Bold" ,width:'300px'}}
               >
                 Name
               </label>
@@ -100,21 +100,19 @@ export const EmployeeRegistration: React.FC<Props> = () => {
               </div>
             </div>
 
-            {/* Company Field */}
+            {/* Company Field - Dropdown */}
             <div className="row mb-3">
               <label
                 htmlFor="floatingCompany"
                 className="col-sm-3 col-form-label"
-                style={{ fontSize: "16px", fontWeight: "Bold" }}
+                style={{ fontSize: "20px", fontWeight: "Bold",width:'300px' }}
               >
                 Company
               </label>
               <div className="col-sm-9">
-                <input
-                  type="text"
+                <select
                   className="form-control"
                   id="floatingCompany"
-                  placeholder="Enter Company Name"
                   style={{
                     padding: "10px",
                     fontSize: "16px",
@@ -122,16 +120,25 @@ export const EmployeeRegistration: React.FC<Props> = () => {
                     borderColor: "#ccc",
                     fontWeight: "500",
                   }}
-                />
+                >
+                  <option value="" disabled selected>
+                    Select Company
+                  </option>
+                  <option value="Company A">Company A</option>
+                  <option value="Company B">Company B</option>
+                  <option value="Company C">Company C</option>
+                  <option value="Company D">Company D</option>
+                </select>
               </div>
             </div>
+
 
             {/* Project Field - Dropdown */}
             <div className="row mb-3">
               <label
                 htmlFor="floatingProject"
                 className="col-sm-3 col-form-label"
-                style={{ fontSize: "16px", fontWeight: "Bold" }}
+                style={{ fontSize: "20px", fontWeight: "Bold" ,width:'300px'}}
               >
                 Project
               </label>
@@ -163,7 +170,7 @@ export const EmployeeRegistration: React.FC<Props> = () => {
               <label
                 htmlFor="floatingMobile"
                 className="col-sm-3 col-form-label"
-                style={{ fontSize: "16px", fontWeight: "Bold" }}
+                style={{ fontSize: "20px", fontWeight: "Bold",width:'300px' }}
               >
                 Mobile No
               </label>
@@ -189,7 +196,7 @@ export const EmployeeRegistration: React.FC<Props> = () => {
               <label
                 htmlFor="floatingEmail"
                 className="col-sm-3 col-form-label"
-                style={{ fontSize: "16px", fontWeight: "Bold" }}
+                style={{ fontSize: "20px", fontWeight: "Bold",width:'300px' }}
               >
                 Email ID
               </label>
@@ -215,7 +222,7 @@ export const EmployeeRegistration: React.FC<Props> = () => {
               <label
                 htmlFor="floatingWhatsApp"
                 className="col-sm-3 col-form-label"
-                style={{ fontSize: "16px", fontWeight: "Bold" }}
+                style={{ fontSize: "20px", fontWeight: "Bold" ,width:'300px'}}
               >
                 WhatsApp No
               </label>
@@ -247,7 +254,7 @@ export const EmployeeRegistration: React.FC<Props> = () => {
                   border: "none",
                   backgroundColor: "#f0ad4e",
                   color: "#fff",
-                  marginLeft:'1600px',
+                  marginLeft: '1600px',
                 }}
               >
                 Cancel
@@ -264,7 +271,7 @@ export const EmployeeRegistration: React.FC<Props> = () => {
                   color: "#fff",
                 }}
               >
-                 {isEdit ? "Update" : "Save"}
+                {isEdit ? "Update" : "Save"}
               </button>
             </div>
           </form>

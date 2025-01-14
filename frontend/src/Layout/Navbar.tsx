@@ -223,9 +223,8 @@ export const Navbar = () => {
                     </a>
                   </li>
                   <li>
-                    
                     <NavLink className="dropdown-item" to="/timeline-builder">
-                    Timeline Builder
+                      Timeline Builder
                     </NavLink>
                   </li>
                   <li>
@@ -263,7 +262,7 @@ export const Navbar = () => {
                   </li>
 
                   <li>
-                    <a className="dropdown-item" href="#">
+                    <a className="dropdown-item" href="/modulebuilder">
                       Status Update
                     </a>
                   </li>
@@ -279,7 +278,7 @@ export const Navbar = () => {
                     </a>
                   </li>
                   <li>
-                    <a className="dropdown-item" href="#">
+                    <a className="dropdown-item" href="/documentpage">
                       Document
                     </a>
                   </li>

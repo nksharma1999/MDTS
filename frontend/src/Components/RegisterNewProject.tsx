@@ -13,6 +13,8 @@ import {
 export const RegisterNewProject: React.FC = () => {
 
   const [mineTypes, setMineTypes] = useState([{}]);
+  const [companyOptions, setCompanyOptions] = useState([""]);
+
 
   useEffect(() => {
     // Retrieve the mine types from localStorage using the updated function
@@ -23,6 +25,7 @@ export const RegisterNewProject: React.FC = () => {
 
   const [formData, setFormData] = useState({
     project_id: 0,
+    companyName: "",
     projectName: "",
     mineral: "",
     mineType: "",
@@ -77,6 +80,7 @@ export const RegisterNewProject: React.FC = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const navigate = useNavigate();
   const orderedModuleNames = getOrderedModuleNames();
+  const [newCompany, setNewCompany] = useState("");
   const [tabCompletionStatus, setTabCompletionStatus] = React.useState(
     Array(tabs.length).fill(false) // Track completion status of tabs
   );
@@ -230,6 +234,42 @@ export const RegisterNewProject: React.FC = () => {
             <table style={tableStyle}>
               <tbody>
                 {/* Project Name */}
+                {/* Company Name */}
+                {/* Company Name */}
+                <tr>
+                  <th style={thStyle}>Company Name</th>
+                  <td style={tdStyle}>
+                    <div className="d-flex align-items-center" style={{ gap: "10px" }}>
+                      <select
+                        className="form-select"
+                        value={formData.companyName}
+                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                        style={{ width: "70%", height: "40px", fontSize: "14px" }}
+                      >
+                        <option value="">--Select Company--</option>
+                        {companyOptions.map((company, index) => (
+                          <option key={index} value={company}>
+                            {company}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        className="btn btn-link text-primary p-0"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addCompanyModal"
+                        style={{
+                          fontSize: "20px",
+                          textDecoration: "none",
+                          marginLeft: "5px",
+                        }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
                 <tr>
                   <th style={thStyle}>Project Name</th>
                   <td style={tdStyle}>
@@ -760,6 +800,44 @@ export const RegisterNewProject: React.FC = () => {
           </button>
         </div>
       </form>
+      <div className="modal fade" id="addCompanyModal" tabIndex="-1" aria-hidden="true">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Add Company</h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+            <div className="modal-body">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Enter Company Name"
+                value={newCompany}
+                onChange={(e) => setNewCompany(e.target.value)}
+              />
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  setCompanyOptions([...companyOptions, newCompany]);
+                  setNewCompany("");
+                  document.getElementById("addCompanyModal").click(); // Close modal
+                }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };

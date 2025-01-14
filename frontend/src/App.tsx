@@ -10,7 +10,6 @@ import { ModuleLibrary } from './Components/ModuleLibrary';
 import React, { useEffect } from "react";
 import {ModuleDetails} from './Components/ModuleDetail';
 import {HolidayCalender} from './Components/HolidayCalender';
-
 import {
   initializeModules,
 } from './Utils/moduleStorage';
@@ -19,6 +18,7 @@ import ProjectParametersPage from "./Components/ProjectParameterPage";
 import ManageUser from "./Components/ManageUser";
 import ViewUser from "./Components/ViewUser";
 import { TimelineBuilder } from "./Components/TimelineBuilder";
+import DocumentPage from "./Components/Document";
 
 function App() {
 
@@ -57,6 +57,7 @@ function App() {
         <Route path="/project-parameters" element={<ProjectParametersPage />} />
         <Route path="/manageuser" element={<ManageUser />} />
         <Route path="/view-user" element={<ViewUser />} />
+        <Route path="/documentpage" element={<DocumentPage />} />
 
         <Route path="/timeline-builder" element={<TimelineBuilder />} />
       </Routes>

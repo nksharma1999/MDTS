@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -24,7 +24,7 @@ import {
 import { Visibility, Edit, Delete } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import {
-  getOrderedModuleNames
+  getModules
 } from '../Utils/moduleStorage';
 
 const ManageUser = () => {
@@ -32,12 +32,14 @@ const ManageUser = () => {
   const [openRACIModal, setOpenRACIModal] = useState(false);  // Separate state for RACI modal
   const [openAlertModal, setOpenAlertModal] = useState(false);  // Separate state for Alert modal
   const [isRACIValid, setIsRACIValid] = useState(false);
+  const alertButtonRef = useRef(null);
+  const [dialogPosition, setDialogPosition] = useState({ top: 0, left: 0 });
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
     whatsapp: true,
     mobile: true,
   });
-  
+
   const [selectedUser, setSelectedUser] = React.useState({
     raci: {
       CF: { responsible: false, accountable: false, consulted: false, informed: false },
@@ -50,10 +52,12 @@ const ManageUser = () => {
     },
   });
   const [modules, setModules] = useState([{}]);
+
   useEffect(() => {
     // Retrieve the mine types from localStorage using the updated function
-    const savedMineTypes = getOrderedModuleNames(); // No need for JSON.parse() here, it's already handled
-    setModules(savedMineTypes);
+    const savedModules = getModules(); // No need for JSON.parse() here, it's already handled
+    setModules(savedModules);
+    console.log("Module : ", savedModules);
   }, []);
 
   //Hard coded to be removed
@@ -89,13 +93,21 @@ const ManageUser = () => {
   //   );
   // };
 
+
   const handleOpenRACIModal = (user: any) => {
     setSelectedUser(user);
     setOpenRACIModal(true); // Open the RACI modal when the button is clicked
   };
 
   const handleOpenAlertModal = () => {
-    setOpenAlertModal(true); // Open the alert modal
+    if (alertButtonRef.current) {
+      const rect = alertButtonRef.current.getBoundingClientRect(); // Get button's position
+      setDialogPosition({
+        top: rect.bottom + window.scrollY + 10, // Below the button
+        left: rect.left + rect.width / 2 - 150, // Centered horizontally (adjust based on dialog width)
+      });
+    }
+    setOpenAlertModal(true);
   };
 
   const handleCloseModal = () => {
@@ -160,6 +172,7 @@ const ManageUser = () => {
           Assign RACI
         </Button>
         <Button
+          id="alertNotificationButton" 
           variant="contained"
           onClick={handleOpenAlertModal}
           style={styles.actionButton}
@@ -214,8 +227,44 @@ const ManageUser = () => {
         </Table>
       </TableContainer>
 
-      {/* Modal for Alert & Notification */}
-      <Dialog open={openAlertModal} onClose={handleCloseModal}>
+      <Dialog
+        open={openAlertModal}
+        onClose={handleCloseModal}
+        PaperProps={{
+          style: {
+            position: "absolute",
+            // top: document
+            //   ?.getElementById("alertNotificationButton")
+            //   ?.getBoundingClientRect()?.bottom + 10 || "10%",
+            // left: document
+            //   ?.getElementById("alertNotificationButton")
+            //   ?.getBoundingClientRect()?.left || "10%",
+            marginRight: 0,
+            width: "300px",
+            borderRadius: "8px",
+            padding: "10px",
+            overflow: "visible",
+            top: "212.5px",
+            left: "1510.63px"
+          },
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: -10, // Adjust position above the dialog
+            right: 20, // Position the arrow towards the right
+            width: 0,
+            height: 0,
+            borderLeft: "10px solid transparent", // Make the left side transparent
+            borderRight: "10px solid transparent", // Make the right side transparent
+            borderBottom: "10px solid white", // Match with the dialog background color
+            zIndex: 1,
+          }}
+        ></div>
+
+
+        {/* Dialog Content */}
         <DialogTitle>Notification Preferences</DialogTitle>
         <DialogContent>
           <div>
@@ -258,6 +307,8 @@ const ManageUser = () => {
         </DialogActions>
       </Dialog>
 
+
+
       {/* Modal for RACI */}
       <Dialog
         open={openRACIModal}
@@ -276,7 +327,7 @@ const ManageUser = () => {
             <div>
               <h4 style={styles.sectionHeader}>Module Assignments</h4>
               <div style={styles.tableContainer}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse"}}>
                   <thead style={styles.tableHeader}>
                     <tr>
                       <th style={{ ...styles.headerCell, padding: "12px" }}>Code</th>
@@ -288,24 +339,20 @@ const ManageUser = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { code: "CF", module: "Contract Formulation" },
-                      { code: "BP", module: "Budgetary Planning" },
-                      { code: "BC", module: "Boundary Coordinate Certification" },
-                      { code: "DG", module: "DGPS Survey" },
-                      { code: "GR", module: "Geological Report" },
-                      { code: "MP", module: "Mine Plan Approval" },
-                      { code: "FC", module: "Forest Clearance" },
-                    ].map((item) => (
-                      <tr key={item.code}>
-                        <td style={styles.tableCell}>{item.code}</td>
-                        <td style={styles.tableCell}>{item.module}</td>
+                    {modules.map((module) => (
+                      <tr key={module.parentModuleCode}>
+                        <td style={styles.tableCell}>{module.parentModuleCode}</td>
+                        <td style={styles.tableCell}>{module.moduleName}</td>
                         <td style={styles.tableCell}>
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={selectedUser?.raci?.[item.code]?.responsible || false}
-                                onChange={(e) => handleRACIChange(e, item.code, "responsible")}
+                                checked={
+                                  selectedUser?.raci?.[module.parentModuleCode]?.responsible || false
+                                }
+                                onChange={(e) =>
+                                  handleRACIChange(e, module.parentModuleCode, "responsible")
+                                }
                               />
                             }
                             label="Responsible"
@@ -315,8 +362,12 @@ const ManageUser = () => {
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={selectedUser?.raci?.[item.code]?.accountable || false}
-                                onChange={(e) => handleRACIChange(e, item.code, "accountable")}
+                                checked={
+                                  selectedUser?.raci?.[module.parentModuleCode]?.accountable || false
+                                }
+                                onChange={(e) =>
+                                  handleRACIChange(e, module.parentModuleCode, "accountable")
+                                }
                               />
                             }
                             label="Accountable"
@@ -326,8 +377,12 @@ const ManageUser = () => {
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={selectedUser?.raci?.[item.code]?.consulted || false}
-                                onChange={(e) => handleRACIChange(e, item.code, "consulted")}
+                                checked={
+                                  selectedUser?.raci?.[module.parentModuleCode]?.consulted || false
+                                }
+                                onChange={(e) =>
+                                  handleRACIChange(e, module.parentModuleCode, "consulted")
+                                }
                               />
                             }
                             label="Consulted"
@@ -337,8 +392,12 @@ const ManageUser = () => {
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={selectedUser?.raci?.[item.code]?.informed || false}
-                                onChange={(e) => handleRACIChange(e, item.code, "informed")}
+                                checked={
+                                  selectedUser?.raci?.[module.parentModuleCode]?.informed || false
+                                }
+                                onChange={(e) =>
+                                  handleRACIChange(e, module.parentModuleCode, "informed")
+                                }
                               />
                             }
                             label="Informed"
@@ -347,6 +406,7 @@ const ManageUser = () => {
                       </tr>
                     ))}
                   </tbody>
+
                 </table>
               </div>
             </div>
@@ -360,7 +420,7 @@ const ManageUser = () => {
             onClick={handleCloseModal}
             color="primary"
             variant="contained"
-            disabled={!isRACIValid} // Disable button if RACI is invalid
+            disabled={!isRACIValid} 
           >
             Save
           </Button>
@@ -382,12 +442,16 @@ const styles = {
   },
   tableContainer: {
     borderRadius: "8px",
-    overflow: "hidden",
     boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
+    maxHeight: "800px", // Set a max height for the scrollable table
+        overflow: "auto",
   },
   tableHeader: {
     backgroundColor: "#1976d2",
-  },
+    position: "sticky",
+    top: 0, 
+    zIndex: 1000, 
+  },  
   headerCell: {
     color: "#fff",
     fontWeight: "bold",
@@ -398,7 +462,7 @@ const styles = {
     padding: "12px",
     borderBottom: "1px solid #e0e0e0",
     color: "#333",
-    textAlign: "left",
+    textAlign: "center",
   },
   pageContainer: {
     padding: "22px",
