@@ -11,7 +11,7 @@ export const Navbar = () => {
   const [newModelName, setNewModelName] = useState("");
   const navigate = useNavigate();
   const [projectNames, setProjectNames] = useState([]);
-  const [moduleLevel, setModuleLevel] = useState("");
+  const [moduleCode, setModuleCode] = useState("");
   const [options, setOptions] = useState([""]); // Dropdown options
   const [selectedOption, setSelectedOption] = useState("");
   const [newOption, setNewOption] = useState("");
@@ -88,7 +88,7 @@ export const Navbar = () => {
         state: {
           moduleName: newModelName,
           mineType: selectedOption,
-          moduleLevel: moduleLevel,
+          moduleCode: moduleCode,
         },
       });
 
@@ -390,10 +390,10 @@ export const Navbar = () => {
                   type="text"
                   className="form-control"
                   placeholder="Module Level"
-                  value={moduleLevel}
-                  onChange={(e) => setModuleLevel(e.target.value)}
+                  value={moduleCode}
+                  onChange={(e) => setModuleCode(e.target.value)}
                 />
-                <label>Module Level</label>
+                <label>Module Code</label>
               </div>
             </div>
             <div className="modal-footer">

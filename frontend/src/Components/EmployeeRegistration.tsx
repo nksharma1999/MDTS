@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
+import {
+  TextField,
+  Autocomplete,
+  Chip,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
+  Button,
+  Box,
+} from "@mui/material";
 
 interface Props { }
 
@@ -9,24 +20,37 @@ export const EmployeeRegistration: React.FC<Props> = () => {
   const location = useLocation();
   const { user, isEdit } = location.state || {};
 
-  const handleSave = () => {
-    navigate("/manageuser");
-  };
-
-  // State for form fields (pre-filled in edit mode)
   const [formData, setFormData] = useState({
     name: user?.name || "",
     company: user?.company || "",
-    project: user?.project || "",
+    project: user?.project || [],
     mobile: user?.mobile || "",
     email: user?.email || "",
     whatsapp: user?.whatsapp || "",
+    registrationDate: user?.registrationDate || "",
+    photo: user?.photo || "", // to store the uploaded photo file
   });
 
-  // Handle input change
+  const projectOptions = ["Project A", "Project B", "Project C", "Project D"];
+  const companyOptions = ["Company A", "Company B", "Company C", "Company D"];
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+  
+
+  // Handle project selection
+  const handleProjectChange = (event: any, value: string[]) => {
+    setFormData((prev) => ({ ...prev, project: value }));
+  };
+
+  // Handle photo upload
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormData((prev) => ({ ...prev, photo: URL.createObjectURL(file) }));
+    }
   };
 
   // Save or Update Logic
@@ -41,7 +65,6 @@ export const EmployeeRegistration: React.FC<Props> = () => {
     navigate("/manageuser");
   };
 
-  // Cancel Action
   const handleCancel = () => {
     navigate("/manageuser");
   };
@@ -62,215 +85,186 @@ export const EmployeeRegistration: React.FC<Props> = () => {
             textAlign: "center",
             fontSize: "24px",
             fontWeight: "bold",
-            color: "black",
-            backgroundColor: "grey",
+            color: "white",
+            backgroundColor: "blue",
             borderTopLeftRadius: "8px",
             borderTopRightRadius: "8px",
             padding: "15px",
           }}
         >
           {isEdit ? "Edit Employee Details" : "Employee Registration"}
-
         </div>
         <div className="card-body" style={{ padding: "30px" }}>
           <form>
             {/* Name Field */}
             <div className="row mb-3">
-              <label
-                htmlFor="floatingName"
-                className="col-sm-3 col-form-label"
-                style={{ fontSize: "20px", fontWeight: "Bold" ,width:'300px'}}
-              >
+              <label htmlFor="name" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
                 Name
               </label>
               <div className="col-sm-9">
                 <input
                   type="text"
                   className="form-control"
-                  id="floatingName"
+                  id="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
                   placeholder="Enter Name"
-                  style={{
-                    padding: "10px",
-                    fontSize: "16px",
-                    borderRadius: "5px",
-                    borderColor: "#ccc",
-                    fontWeight: "500",
-                  }}
                 />
               </div>
             </div>
 
             {/* Company Field - Dropdown */}
             <div className="row mb-3">
-              <label
-                htmlFor="floatingCompany"
-                className="col-sm-3 col-form-label"
-                style={{ fontSize: "20px", fontWeight: "Bold",width:'300px' }}
-              >
+              <label htmlFor="company" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
                 Company
               </label>
               <div className="col-sm-9">
-                <select
-                  className="form-control"
-                  id="floatingCompany"
-                  style={{
-                    padding: "10px",
-                    fontSize: "16px",
-                    borderRadius: "5px",
-                    borderColor: "#ccc",
-                    fontWeight: "500",
-                  }}
-                >
-                  <option value="" disabled selected>
-                    Select Company
-                  </option>
-                  <option value="Company A">Company A</option>
-                  <option value="Company B">Company B</option>
-                  <option value="Company C">Company C</option>
-                  <option value="Company D">Company D</option>
-                </select>
+                <FormControl fullWidth>
+                  <InputLabel id="company-label">Select Company</InputLabel>
+                  <Select
+                    labelId="company-label"
+                    name="company" // Use name instead of id
+                    value={formData.company}
+                    onChange={handleInputChange}
+                    label="Select Company"
+                  >
+                    {companyOptions.map((company) => (
+                      <MenuItem key={company} value={company}>
+                        {company}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
               </div>
             </div>
 
-
-            {/* Project Field - Dropdown */}
+            {/* Project Field - Multi-Select */}
             <div className="row mb-3">
-              <label
-                htmlFor="floatingProject"
-                className="col-sm-3 col-form-label"
-                style={{ fontSize: "20px", fontWeight: "Bold" ,width:'300px'}}
-              >
+              <label htmlFor="project" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
                 Project
               </label>
               <div className="col-sm-9">
-                <select
-                  className="form-control"
-                  id="floatingProject"
-                  style={{
-                    padding: "10px",
-                    fontSize: "16px",
-                    borderRadius: "5px",
-                    borderColor: "#ccc",
-                    fontWeight: "500",
-                  }}
-                >
-                  <option value="" disabled selected>
-                    Select Project
-                  </option>
-                  <option value="Project A">Project A</option>
-                  <option value="Project B">Project B</option>
-                  <option value="Project C">Project C</option>
-                  <option value="Project D">Project D</option>
-                </select>
+                <Autocomplete
+                  multiple
+                  id="project"
+                  options={projectOptions}
+                  value={formData.project}
+                  onChange={handleProjectChange}
+                  renderTags={(value: string[], getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip key={option} label={option} {...getTagProps({ index })} />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      variant="outlined"
+                      label="Select Projects"
+                      placeholder="Projects"
+                    />
+                  )}
+                />
               </div>
             </div>
 
             {/* Mobile No Field */}
             <div className="row mb-3">
-              <label
-                htmlFor="floatingMobile"
-                className="col-sm-3 col-form-label"
-                style={{ fontSize: "20px", fontWeight: "Bold",width:'300px' }}
-              >
+              <label htmlFor="mobile" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
                 Mobile No
               </label>
               <div className="col-sm-9">
                 <input
-                  type="number"
+                  type="text"
                   className="form-control"
-                  id="floatingMobile"
-                  placeholder="Enter Mobile Number"
-                  style={{
-                    padding: "10px",
-                    fontSize: "16px",
-                    borderRadius: "5px",
-                    borderColor: "#ccc",
-                    fontWeight: "500",
-                  }}
+                  id="mobile"
+                  value={formData.mobile}
+                  onChange={handleInputChange}
+                  placeholder="Enter Mobile No"
                 />
               </div>
             </div>
 
-            {/* Email ID Field */}
+            {/* Email Field */}
             <div className="row mb-3">
-              <label
-                htmlFor="floatingEmail"
-                className="col-sm-3 col-form-label"
-                style={{ fontSize: "20px", fontWeight: "Bold",width:'300px' }}
-              >
-                Email ID
+              <label htmlFor="email" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
+                Email
               </label>
               <div className="col-sm-9">
                 <input
-                  type="email"
+                  type="text"
                   className="form-control"
-                  id="floatingEmail"
+                  id="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
                   placeholder="Enter Email"
-                  style={{
-                    padding: "10px",
-                    fontSize: "16px",
-                    borderRadius: "5px",
-                    borderColor: "#ccc",
-                    fontWeight: "500",
-                  }}
                 />
               </div>
             </div>
 
             {/* WhatsApp No Field */}
             <div className="row mb-3">
-              <label
-                htmlFor="floatingWhatsApp"
-                className="col-sm-3 col-form-label"
-                style={{ fontSize: "20px", fontWeight: "Bold" ,width:'300px'}}
-              >
+              <label htmlFor="whatsapp" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
                 WhatsApp No
               </label>
               <div className="col-sm-9">
                 <input
                   type="text"
                   className="form-control"
-                  id="floatingWhatsApp"
-                  placeholder="Enter WhatsApp Number"
-                  style={{
-                    padding: "10px",
-                    fontSize: "16px",
-                    borderRadius: "5px",
-                    borderColor: "#ccc",
-                    fontWeight: "500",
-                  }}
+                  id="whatsapp"
+                  value={formData.whatsapp}
+                  onChange={handleInputChange}
+                  placeholder="Enter WhatsApp No"
                 />
+              </div>
+            </div>
+
+            {/* Registration Date Field */}
+            <div className="row mb-3">
+              <label htmlFor="registrationDate" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
+                Registration Date
+              </label>
+              <div className="col-sm-9">
+                <input
+                  type="date"
+                  className="form-control"
+                  id="registrationDate"
+                  value={formData.registrationDate}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            {/* Upload Photo Field */}
+            <div className="row mb-3">
+              <label htmlFor="photo" className="col-sm-3 col-form-label" style={{ fontWeight: "bold" }}>
+                Upload Photo
+              </label>
+              <div className="col-sm-9">
+                <input
+                  type="file"
+                  className="form-control"
+                  id="photo"
+                  onChange={handlePhotoUpload}
+                />
+                {formData.photo && (
+                  <Box mt={2}>
+                    <img
+                      src={formData.photo}
+                      alt="Uploaded"
+                      style={{ width: "150px", height: "150px", borderRadius: "50%" }}
+                    />
+                  </Box>
+                )}
               </div>
             </div>
 
             {/* Save and Cancel Buttons */}
             <div className="d-flex justify-content-between mt-4">
-              <button
-                className="btn btn-secondary"
-                style={{
-                  padding: "10px 20px",
-                  fontSize: "16px",
-                  borderRadius: "5px",
-                  border: "none",
-                  backgroundColor: "#f0ad4e",
-                  color: "#fff",
-                  marginLeft: '1600px',
-                }}
-              >
+              <button className="btn btn-secondary" onClick={handleCancel}>
                 Cancel
               </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSave}
-                style={{
-                  padding: "10px 20px",
-                  fontSize: "16px",
-                  borderRadius: "5px",
-                  border: "none",
-                  backgroundColor: "#4a90e2",
-                  color: "#fff",
-                }}
-              >
+              <button className="btn btn-primary" onClick={handleSaveOrUpdate}>
                 {isEdit ? "Update" : "Save"}
               </button>
             </div>

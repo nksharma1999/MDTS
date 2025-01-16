@@ -14,6 +14,8 @@ import {
   Select,
   MenuItem,
   Button,
+  Chip,
+  OutlinedInput,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -23,15 +25,40 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
+const moduleOptions = [
+  "Land Acquisition",
+  "Forest Clearance",
+  "Budget Planning",
+  
+];
+
 export const HolidayCalender = () => {
   const [rows, setRows] = useState([
-    { from: null, to: null, holiday: "", module: "All", impact: "100", editing: false },
+    { from: null, to: null, holiday: "", module: [], impact: {}, editing: true },
   ]);
-  const [selectedRow, setSelectedRow] = useState(null);
 
   const handleInputChange = (index, field, value) => {
     const updatedRows = [...rows];
     updatedRows[index][field] = value;
+
+    if (field === "module") {
+      const moduleCount = value.length;
+      const impact = {};
+      if (moduleCount > 0) {
+        const dividedImpact = (100 / moduleCount).toFixed(2);
+        value.forEach((module) => {
+          impact[module] = dividedImpact; // Default impact percentage
+        });
+      }
+      updatedRows[index].impact = impact;
+    }
+
+    setRows(updatedRows);
+  };
+
+  const handleImpactChange = (index, module, value) => {
+    const updatedRows = [...rows];
+    updatedRows[index].impact[module] = value;
     setRows(updatedRows);
   };
 
@@ -41,30 +68,22 @@ export const HolidayCalender = () => {
     setRows(updatedRows);
   };
 
-  const saveChanges = () => {
-    if (selectedRow !== null) {
-      toggleEdit(selectedRow);
-      setSelectedRow(null); // Deselect row after saving
-    }
+  const saveChanges = (index) => {
+    const updatedRows = [...rows];
+    updatedRows[index].editing = false;
+    setRows(updatedRows);
   };
 
   const addRow = () => {
     setRows([
       ...rows,
-      { from: null, to: null, holiday: "", module: "All", impact: "100", editing: false },
+      { from: null, to: null, holiday: "", module: [], impact: {}, editing: true },
     ]);
   };
 
-  const deleteRow = () => {
-    if (selectedRow !== null) {
-      const updatedRows = rows.filter((_, index) => index !== selectedRow);
-      setRows(updatedRows);
-      setSelectedRow(null); // Deselect row after deletion
-    }
-  };
-
-  const selectRow = (index) => {
-    setSelectedRow(index === selectedRow ? null : index); // Toggle selection
+  const deleteRow = (index) => {
+    const updatedRows = rows.filter((_, i) => i !== index);
+    setRows(updatedRows);
   };
 
   return (
@@ -82,94 +101,44 @@ export const HolidayCalender = () => {
         <Box
           sx={{
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
             mb: 2,
-            gap: 2,
           }}
         >
-            <Typography variant="h5" style={{ flexGrow: 1 }}>
-              Tool Bar
-            </Typography>
-          <Button
-            variant="outlined"
-            color="primary"
-            disabled={selectedRow === null}
-            onClick={() => toggleEdit(selectedRow)}
-          >
-            Edit
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            disabled={selectedRow === null}
-            onClick={deleteRow}
-          >
-            Delete
-          </Button>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+            Holiday Calendar
+          </Typography>
           <Button
             variant="contained"
             color="primary"
-            disabled={selectedRow === null || !rows[selectedRow]?.editing}
-            onClick={saveChanges}
+            startIcon={<AddIcon />}
+            onClick={addRow}
           >
-            Save
+            Add New Row
           </Button>
         </Box>
 
-        <Typography
-          variant="h6"
-          align="center"
-          sx={{
-            backgroundColor: "#4285F4",
-            color: "white",
-            padding: "12px",
-            borderRadius: "4px",
-            marginBottom: "16px",
-            fontWeight: "bold",
-          }}
-        >
-          Holiday Calendar
-        </Typography>
-
         <TableContainer>
-          <Table sx={{ border: "1px solid #ddd" }}>
-            <TableHead>
-            <TableRow>
-  <TableCell sx={{ fontWeight: "bold", textAlign: "center", backgroundColor: "#E0F7FA" }}>
-    From
-  </TableCell>
-  <TableCell sx={{ fontWeight: "bold", textAlign: "center", backgroundColor: "#E0F7FA" }}>
-    To
-  </TableCell>
-  <TableCell sx={{ fontWeight: "bold", textAlign: "center", backgroundColor: "#E0F7FA" }}>
-    Holiday
-  </TableCell>
-  <TableCell sx={{ fontWeight: "bold", textAlign: "center", backgroundColor: "#E0F7FA" }}>
-    Module
-  </TableCell>
-  <TableCell sx={{ fontWeight: "bold", textAlign: "center", backgroundColor: "#E0F7FA" }}>
-    Impact %
-  </TableCell>
-  <TableCell sx={{ fontWeight: "bold", textAlign: "center", backgroundColor: "#E0F7FA" }}>
-    Actions
-  </TableCell>
-</TableRow>
-
+          <Table>
+            <TableHead sx={{ backgroundColor: "#66A5AD" }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>From</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>To</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Holiday</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Modules</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Impact</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Actions</TableCell>
+              </TableRow>
             </TableHead>
             <TableBody>
               {rows.map((row, index) => (
-                <TableRow
-                  key={index}
-                  onClick={() => selectRow(index)}
-                  selected={selectedRow === index}
-                  sx={{ cursor: "pointer", backgroundColor: selectedRow === index ? "#f0f4c3" : "white" }}
-                >
+                <TableRow key={index}>
                   <TableCell sx={{ textAlign: "center" }}>
                     <DatePicker
                       value={row.from}
                       onChange={(newValue) => handleInputChange(index, "from", newValue)}
                       renderInput={(params) => (
-                        <TextField {...params} size="small" sx={{ width: "150px" }} disabled={!row.editing} />
+                        <TextField {...params} size="small" disabled={!row.editing} />
                       )}
                     />
                   </TableCell>
@@ -178,7 +147,7 @@ export const HolidayCalender = () => {
                       value={row.to}
                       onChange={(newValue) => handleInputChange(index, "to", newValue)}
                       renderInput={(params) => (
-                        <TextField {...params} size="small" sx={{ width: "150px" }} disabled={!row.editing} />
+                        <TextField {...params} size="small" disabled={!row.editing} />
                       )}
                     />
                   </TableCell>
@@ -187,43 +156,88 @@ export const HolidayCalender = () => {
                       value={row.holiday}
                       onChange={(e) => handleInputChange(index, "holiday", e.target.value)}
                       size="small"
-                      sx={{ width: "150px" }}
                       disabled={!row.editing}
                     />
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
-                    <Select
-                      value={row.module}
-                      onChange={(e) => handleInputChange(index, "module", e.target.value)}
-                      fullWidth
-                      size="small"
-                      sx={{ width: "200px", backgroundColor: "white" }}
-                      disabled={!row.editing}
-                    >
-                      <MenuItem value="All">All</MenuItem>
-                      <MenuItem value="Land Acquisition">Land Acquisition</MenuItem>
-                      <MenuItem value="Forest Clearance">Forest Clearance</MenuItem>
-                      <MenuItem value="Construction">Construction</MenuItem>
-                    </Select>
+                    {row.editing ? (
+                     <Select
+                     multiple
+                     value={row.module}
+                     onChange={(e) => handleInputChange(index, "module", e.target.value)}
+                     input={<OutlinedInput />}
+                     renderValue={(selected) => (
+                       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                         {selected.map((value) => (
+                           <Chip key={value} label={value} />
+                         ))}
+                       </Box>
+                     )}
+                     size="small"
+                     fullWidth
+                   >
+                     {moduleOptions.map((module) => (
+                       <MenuItem key={module} value={module}>
+                         {module}
+                       </MenuItem>
+                     ))}
+                   </Select>
+                   
+                    ) : (
+                      <Box>
+                        {row.module.map((module) => (
+                          <Typography key={module} variant="body2">
+                            {module}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
                   </TableCell>
                   <TableCell sx={{ textAlign: "center" }}>
-                    <TextField
-                      type="number"
-                      value={row.impact}
-                      onChange={(e) => handleInputChange(index, "impact", e.target.value)}
-                      size="small"
-                      sx={{ width: "150px" }}
-                      disabled={!row.editing}
-                    />
+                    <Box>
+                      {Object.entries(row.impact).map(([module, impact]) => (
+                        <Box key={module} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          {/* <Typography variant="body2">{module}:</Typography> */}
+                          {row.editing ? (
+                            <TextField
+                              value={impact}
+                              onChange={(e) =>
+                                handleImpactChange(index, module, e.target.value)
+                              }
+                              size="small"
+                              sx={{ width: "60px" }}
+                            />
+                          ) : (
+                            <Typography variant="body2">{impact}%</Typography>
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
                   </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      color="primary"
-                      onClick={addRow}
-                      sx={{ borderRadius: "50%", backgroundColor: "#e8f0fe" }}
-                    >
-                      <AddIcon />
-                    </IconButton>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    {row.editing ? (
+                      <>
+                        <IconButton
+                          color="primary"
+                          onClick={() => saveChanges(index)}
+                        >
+                          <SaveIcon />
+                        </IconButton>
+                        <IconButton
+                          color="error"
+                          onClick={() => deleteRow(index)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </>
+                    ) : (
+                      <IconButton
+                        color="primary"
+                        onClick={() => toggleEdit(index)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -234,5 +248,3 @@ export const HolidayCalender = () => {
     </LocalizationProvider>
   );
 };
-
-export default HolidayCalender;

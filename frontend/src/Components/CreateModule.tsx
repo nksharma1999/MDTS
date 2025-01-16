@@ -27,7 +27,7 @@ import { useNavigate } from 'react-router-dom';
 export const CreateModule = () => {
   const [newModelName, setNewModelName] = useState<string>("");
   const location = useLocation();
-  const { moduleName, mineType, moduleLevel } = location.state || {};
+  const { moduleName, mineType, moduleCode } = location.state || {};
   const [searchQuery, setSearchQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [collapsedModules, setCollapsedModules] = useState({});
@@ -47,10 +47,10 @@ export const CreateModule = () => {
 
   const [module, setModule] = useState([
     {
-      parentModuleCode: "", // Initialize as an empty string
+      parentModuleCode: moduleCode ? moduleCode : '', // Initialize from nav bar
       moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
-      mineType:mineType,
-      lavel: moduleLevel ? moduleLevel : 'L1',
+      mineType: mineType,
+      lavel: 'L0',
       plus: 0,
       activitys: [],
     },
@@ -76,13 +76,6 @@ export const CreateModule = () => {
 
   const generateModuleCode = (moduleName: string) => {
     try {
-      //Checking module name duplication
-      if (isDuplicateModuleName(moduleName)) {
-        const errorMessage = `Duplicate module name found: ${moduleName}`;
-        window.alert(errorMessage); // Show an alert to the user
-        throw new Error(errorMessage); // Throw an exception for duplication
-      }
-
       // Generate a two-letter acronym (replace generateTwoLetterAcronym with your actual implementation)
       const acronym = generateTwoLetterAcronym(moduleName, existingAcronyms);
 
@@ -105,14 +98,19 @@ export const CreateModule = () => {
   // Update parentModuleCode when moduleName changes
   useEffect(() => {
     if (moduleName) {
-      const acronym = generateModuleCode(moduleName);
-      console.log("Code, mineType, level : ", acronym, mineType, module);
+      //Checking module name duplication
+      if (isDuplicateModuleName(moduleName)) {
+        const errorMessage = `Duplicate module name found: ${moduleName}`;
+        window.alert(errorMessage); // Show an alert to the user
+        throw new Error(errorMessage); // Throw an exception for duplication
+      }
+      const acronym = moduleCode ? moduleCode : generateModuleCode(moduleName);
+      console.log("Code, mineType, name : ", acronym, mineType, moduleName);
       setModule((prevModule) =>
         prevModule.map((mod) => ({
           ...mod,
           parentModuleCode: acronym, // Update parentModuleCode
-          mineType: mineType,
-          level: moduleLevel ? moduleLevel: "L1",
+          mineType: mineType
         }))
       );
     }
@@ -323,103 +321,61 @@ export const CreateModule = () => {
   };
 
   const handleIncButtonClick = (pCode: string, index: number, values: any) => {
-    // Create a copy of the module array
-    console.log('pCode, index, values', pCode, index, values);
-    console.log('Clicked - handleIncButtonClick()');
+    console.log("pCode, index, values", pCode, index, values);
+    console.log("Clicked - handleIncButtonClick()");
     let tempData = [...module];
-    console.log('tempData = ', tempData);
-
+    console.log("tempData = ", tempData);
+  
     for (let i = 0; i < tempData.length; i++) {
       if (tempData[i].parentModuleCode === pCode) {
         // Get a copy of the activities for the current module
         let act = [...tempData[i].activitys];
-
+  
         if (values.plus === 0) {
-          // Increment the level of the selected activity
-          act[index].level += 1;
-
-          // Ensure all activities within this submodule have the same level
-          const updatedLevel = act[index].level;
-          const submoduleCodePrefix = act[index].code
-            .split("/")
-            .slice(0, 2)
-            .join("/"); // Extract submodule code prefix
-
-          act = act.map((activity) => {
-            if (activity.code.startsWith(submoduleCodePrefix)) {
-              // Update level for all activities within the submodule
-              return {
-                ...activity,
-                level: updatedLevel,
-              };
-            }
-            return activity;
-          });
+          // Increment the level of the selected activity only
+          const currentLevel = parseInt(
+            typeof act[index].level === "string"
+              ? act[index].level.replace("L", "")
+              : act[index].level
+          );
+          act[index] = {
+            ...act[index],
+            level: `L${currentLevel + 1}`, // Increment the level
+          };
         } else {
           // Add a new activity with acronym logic
           const maxLevel = getMaxLevel(act);
-          console.log('maxLevel = ', maxLevel);
-
+          console.log("maxLevel = ", maxLevel);
+  
           // Generate a unique two-letter acronym
-          const acronym = generateTwoLetterAcronym(
-            values.name,
-            existingAcronyms
-          );
-          console.log('acronym = ', acronym);
+          const acronym = generateTwoLetterAcronym(values.name, existingAcronyms);
+          console.log("acronym = ", acronym);
           setExistingAcronyms([...existingAcronyms, acronym]);
-
+  
           // Create a new activity with updated level and code
           const newActivity = {
-            level: maxLevel + 1, // Increment level by 1
+            level: `${maxLevel + 1}`, // Increment level by 1
             name: values.name,
             code: createSubmoduleCode(values.code, acronym), // Generate new code with acronym
             plus: 0,
             duration: "",
-            prerequisites: values.prerequisites,
+            prerequisites: act[index].code, // Prerequisites set to the current activity code
           };
-          console.log('newActivity = ', newActivity);
-
-          //act.push(newActivity);
-
-          // Ensure all activities under this submodule have the same level
-          const submoduleCodePrefix = newActivity.code
-            .split("/")
-            .slice(0, 2)
-            .join("/"); // Extract submodule code prefix
-          const newLevel = newActivity.level;
-
-          act = act.map((activity) => {
-            if (activity.code.startsWith(submoduleCodePrefix)) {
-              // Update level for all activities within the submodule
-              return {
-                ...activity,
-                level: newLevel,
-              };
-            }
-            return activity;
-          });
-          console.log('act = ', act);
-
-          // Remove the activity that was split to create the submodule
-          act.splice(index, 1, newActivity); // Remove the original activity
+          console.log("newActivity = ", newActivity);
+  
+          act.splice(index + 1, 0, newActivity); // Add the new activity after the current one
         }
-
-        // Rearrange the activities sequentially by increments of 10
-        // act = act.map((activity, idx) => ({
-        //   ...activity,
-        //   sequence: (idx + 1) * 10, // Reassign sequence values as 10, 20, 30...
-        // }));
-
+  
         // Update the activities array in the module
         tempData[i].activitys = act;
-        console.log('tempData = ', tempData);
+        console.log("tempData = ", tempData);
         break;
       }
     }
-
+  
     // Update the state with the modified module data
     setModule(tempData);
-
+  
     // Reset input state
     setNewActInput({
       pCode: "",
@@ -428,18 +384,22 @@ export const CreateModule = () => {
       input: "",
     });
   };
-
+  
   // Helper function: Find the maximum level in the current activity list
   const getMaxLevel = (act: any) => {
-    return act.reduce((max: number, curr: any) => Math.max(max, curr.level), 0);
+    return act.reduce((max: number, curr: any) => {
+      const level = typeof curr.level === "string" ? parseInt(curr.level.replace("L", "")) : curr.level;
+      return Math.max(max, level);
+    }, 0);
   };
-
+  
   // Helper function: Create a submodule code based on the previous code and acronym
   const createSubmoduleCode = (prevCode: string, acry: string) => {
     const codeSplit = prevCode.split("/");
     let result = codeSplit.slice(0, -1).join("/");
     return result + "/" + acry;
   };
+  
 
   const handleEditModule = (index) => {
     setIsEditing(true);
@@ -693,28 +653,30 @@ export const CreateModule = () => {
                 <th
                   style={{
                     textAlign: "center",
-                    backgroundColor: "#e0f7fa",
+                    backgroundColor: "#C4DFE6",
                     width: "100px",
+                    color:'black'
                   }}
                 >
                   Code
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#e0f7fa" }}>
-                  Activity Name
+                <th style={{ textAlign: "center", backgroundColor: "#C4DFE6" ,color:'black'}}>
+                  Module Name
                 </th>
                 <th
                   style={{
                     textAlign: "center",
-                    backgroundColor: "#e0f7fa",
+                    backgroundColor: "#C4DFE6",
                     width: "100px",
+                    color:'black'
                   }}
                 >
                   Duration<small> (in days)</small>
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#e0f7fa", width: "100px", }}>
+                <th style={{ textAlign: "center", backgroundColor: "#C4DFE6", width: "100px",color:'black' }}>
                   Prerequisites
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#e0f7fa" }}>
+                <th style={{ textAlign: "center", backgroundColor: "#C4DFE6",color:'black' }}>
                   Level
                 </th>
                 {/* <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th> */}
@@ -729,22 +691,30 @@ export const CreateModule = () => {
                   <tr
                     key={`module-${moduleIndex}`}
                     style={{
-                      backgroundColor: moduleIndex === selectedRow.moduleIndex ? "grey" : "gray",
-                      color: "white",
+                      backgroundColor: moduleIndex === selectedRow.moduleIndex ? "#66A5AD" : "gray",
+                      color: "black",
                       textAlign: "center",
                     }}
                     onClick={() => setSelectedRow({ moduleIndex, activityIndex: null })}
                   >
-                    <td>{module[0]?.parentModuleCode || "N/A"}</td>
+                    <td
+                      contentEditable="true"
+                      suppressContentEditableWarning={true}
+                      onBlur={(e) => handleCodeBlur(e, moduleIndex)}
+                      style={{
+                        outline: "none",
+                        backgroundColor: "inherit",
+                        color: "black",
+                      }}
+                    >
+                      {val.parentModuleCode || "N/A"}
+                    </td>
                     <td>
                       {moduleName}
                     </td>
                     <td>{val.duration}</td>
                     <td>{val.prerequisites}</td>
                     <td>
-                      {/* Old code where level L was added on parent module */}
-                      {/* {`L${val.lavel}`} Level remains non-editable */}
-                      {/* new code either auto generated or use provided */}
                       {`${val.lavel}`}
                     </td>
                   </tr>
