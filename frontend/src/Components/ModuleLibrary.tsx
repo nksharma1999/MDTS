@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, TablePagination } from '@mui/material';
+import { 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, 
+  TablePagination, Box 
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 export const ModuleLibrary = () => {
   const [moduleData, setModuleData] = useState([]);
-  const [page, setPage] = useState(0);  // State to handle pagination
-  const rowsPerPage = 10;  // Fixed number of rows per page
+  const [page, setPage] = useState(0);
+  const rowsPerPage = 10;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,47 +16,53 @@ export const ModuleLibrary = () => {
       const storedModules = localStorage.getItem('modules');
       if (storedModules) {
         const parsedModules = JSON.parse(storedModules);
-
-        const flattenedModules = parsedModules.flat().filter((module: any) => 
+        const flattenedModules = parsedModules.flat().filter((module:any) => 
           module?.parentModuleCode && module?.moduleName
         );
-
         setModuleData(flattenedModules);
       }
     } catch (error) {
       console.error('Error parsing local storage data:', error);
-      setModuleData([]); // Fallback to an empty array on error
+      setModuleData([]);
     }
   }, []);
 
-  const handleRowClick = (module: any) => {
+  const handleRowClick = (module:any) => {
     navigate(`/module/${module.moduleName.toLowerCase().replace(' ', '-')}`, {
-      state: module, // Pass the module data
+      state: module,
     });
   };
 
-  const handleChangePage = (event: any, newPage: number) => {
+  const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
 
   if (moduleData.length === 0) {
-    return <Typography variant="h6" align="center">No data available</Typography>;
+    return (
+      <Box 
+        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}
+      >
+        <Typography variant="h6" color="textSecondary">
+          No data available
+        </Typography>
+      </Box>
+    );
   }
 
   return (
-    <div style={styles.container}>
-      <Typography variant="h5" gutterBottom style={styles.title}>
+    <Box sx={{ padding: '20px', maxWidth: '90%', margin: '0 auto', marginRight:'150px',height:'100%'}}>
+      <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', marginBottom: '20px',marginRight:'1350px' }}>
         Module Library
       </Typography>
-      <TableContainer component={Paper} style={styles.tableContainer}>
-        <Table style={styles.table}>
+      <TableContainer component={Paper} sx={{ boxShadow: 3, borderRadius: 2 }}>
+        <Table>
           <TableHead>
-            <TableRow>
-              <TableCell style={styles.headerCell}>Serial No.</TableCell>
-              <TableCell style={styles.headerCell}>Module Code</TableCell>
-              <TableCell style={styles.headerCell}>Module Name</TableCell>
-              <TableCell style={styles.headerCell}>Mine Type</TableCell>
-              <TableCell style={styles.headerCell}>Module Level</TableCell>
+            <TableRow sx={{ backgroundColor: 'primary.main' }}>
+              <TableCell sx={headerCellStyles}>Serial No.</TableCell>
+              <TableCell sx={headerCellStyles}>Module Code</TableCell>
+              <TableCell sx={headerCellStyles}>Module Name</TableCell>
+              <TableCell sx={headerCellStyles}>Mine Type</TableCell>
+              <TableCell sx={headerCellStyles}>Module Level</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -62,66 +71,41 @@ export const ModuleLibrary = () => {
                 key={index}
                 hover
                 onClick={() => handleRowClick(module)}
-                style={styles.tableRow}
+                sx={{
+                  cursor: 'pointer',
+                  '&:hover': { backgroundColor: 'action.hover' },
+                  transition: 'background-color 0.3s ease',
+                }}
               >
-                <TableCell style={styles.tableCell}>{page * rowsPerPage + index + 1}</TableCell> {/* Serial No. */}
-                <TableCell style={styles.tableCell}>{module.parentModuleCode}</TableCell>
-                <TableCell style={styles.tableCell}>{module.moduleName}</TableCell>
-                <TableCell style={styles.tableCell}>{module.mineType}</TableCell>
-                <TableCell style={styles.tableCell}>{module.level}</TableCell>
+                <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+                <TableCell>{module.parentModuleCode}</TableCell>
+                <TableCell>{module.moduleName}</TableCell>
+                <TableCell>{module.mineType}</TableCell>
+                <TableCell>{module.level}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-
-      {/* Pagination component without rows per page */}
       <TablePagination
         component="div"
         count={moduleData.length}
         page={page}
         onPageChange={handleChangePage}
         rowsPerPage={rowsPerPage}
-        rowsPerPageOptions={[]} // This is crucial to remove the rows per page selection
+        rowsPerPageOptions={[]} // Hide rows per page selection
+        sx={{ marginTop: '10px' }}
       />
-    </div>
+    </Box>
   );
 };
 
-const styles = {
-  container: {
-    padding: '20px',
-    maxWidth: '80%',
-    margin: '0 auto',
-  },
-  title: {
-    fontWeight: 600,
-    textAlign: 'center',
-    marginBottom: '20px',
-  },
-  tableContainer: {
-    maxHeight: '500px',
-    overflowY: 'auto',
-  },
-  table: {
-    minWidth: 650,
-  },
-  tableRow: {
-    cursor: 'pointer',
-    transition: 'background-color 0.3s ease',
-  },
-  headerCell: {
-    backgroundColor: 'grey',  // Color for header
-    color: 'white',
-    fontWeight: 'bold',
-    padding: '12px 15px',
-    fontSize: '14px',
-  },
-  tableCell: {
-    padding: '12px 15px',
-    fontSize: '14px',
-    textAlign: 'left',
-  },
+const headerCellStyles = {
+  color: 'white',
+  fontWeight: 'bold',
+  textAlign: 'left',
+  fontSize: '14px',
+  padding: '12px 15px',
 };
 
 export default ModuleLibrary;
