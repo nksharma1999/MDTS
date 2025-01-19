@@ -6,10 +6,10 @@ import {
   Typography,
   Grid,
   Box,
-  Button,
   Divider,
   IconButton,
   Tooltip,
+  Avatar,
 } from "@mui/material";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import NotificationsIcon from "@mui/icons-material/Notifications";
@@ -19,7 +19,6 @@ const ViewUser = () => {
   const location = useLocation();
   const { user } = location.state || {};
 
-  // State for notification status for mobile, email, and whatsapp
   const [notifications, setNotifications] = useState({
     mobile: true,
     email: false,
@@ -45,7 +44,6 @@ const ViewUser = () => {
     );
   }
 
-  // Get the appropriate icon based on notification status
   const getNotificationIcon = (status) => {
     return status ? (
       <NotificationsIcon sx={{ color: "#4caf50" }} />
@@ -68,7 +66,7 @@ const ViewUser = () => {
       <Card
         sx={{
           width: "100%",
-          maxWidth: 600,
+          maxWidth: 800,
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
           borderRadius: "16px",
           backgroundColor: "#ffffff",
@@ -91,19 +89,39 @@ const ViewUser = () => {
             </IconButton>
           </Box>
 
-          {/* User Details Header */}
-          <Typography
-            variant="h4"
-            gutterBottom
-            align="center"
-            sx={{
-              fontWeight: "bold",
-              color: "#1976d2",
-              marginBottom: "16px",
-            }}
+          {/* User Profile Picture */}
+          <Box
+            display="flex"
+            flexDirection="row"
+            alignItems="center"
+            sx={{ mb: 3 }}
           >
-            User Details
-          </Typography>
+            <Avatar
+              src={user.profilePhoto || ""}
+              alt={user.name || "User"}
+              sx={{
+                width: 100,
+                height: 100,
+                marginRight: "16px",
+                backgroundColor: "#e0e0e0",
+              }}
+            >
+              {user.name ? user.name.charAt(0).toUpperCase() : "?"}
+            </Avatar>
+            <Box>
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: "bold",
+                  color: "#1976d2",
+                  marginBottom: "8px",
+                }}
+              >
+                {user.name || "User Name"}
+              </Typography>
+            </Box>
+          </Box>
+
           <Divider sx={{ marginBottom: "20px" }} />
 
           {/* User Info */}
@@ -115,22 +133,24 @@ const ViewUser = () => {
               { label: "Mobile", value: user.mobile, notificationKey: "mobile" },
               { label: "Email", value: user.email, notificationKey: "email" },
               { label: "WhatsApp", value: user.whatsapp, notificationKey: "whatsapp" },
+              { label: "Registration Date", value: user.registrationDate }, // Added registration date
             ].map((item, index) => (
               <React.Fragment key={index}>
-                <Grid item xs={6}>
+                <Grid item xs={4}>
                   <Typography
                     variant="subtitle1"
                     color="textSecondary"
-                    sx={{ fontWeight: "bold" }}
+                    sx={{ fontWeight: "bold", fontSize: "1.1rem" }}
                   >
                     {item.label}:
                   </Typography>
                 </Grid>
-                <Grid item xs={6} sx={{ display: "flex", alignItems: "center" }}>
+                <Grid item xs={8} sx={{ display: "flex", alignItems: "center" }}>
                   <Typography
                     variant="body1"
                     sx={{
                       wordBreak: "break-word",
+                      fontSize: "1.1rem",
                       color: item.label === "Email" ? "#1565c0" : "inherit",
                     }}
                   >

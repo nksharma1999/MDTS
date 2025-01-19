@@ -16,31 +16,30 @@ import {
   DialogTitle,
   FormControlLabel,
   Switch,
-  RadioGroup,
-  FormControl,
-  FormLabel,
-  Radio,
+  AppBar,
+  Toolbar,
+  Typography,
 } from "@mui/material";
 import { Visibility, Edit, Delete } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import {
-  getModules
-} from '../Utils/moduleStorage';
+import { getModules } from '../Utils/moduleStorage';
+import { Archive } from "@mui/icons-material";
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+
+
 
 const ManageUser = () => {
   const navigate = useNavigate();
-  const [openRACIModal, setOpenRACIModal] = useState(false);  // Separate state for RACI modal
-  const [openAlertModal, setOpenAlertModal] = useState(false);  // Separate state for Alert modal
+  const [openRACIModal, setOpenRACIModal] = useState(false);
+  const [openAlertModal, setOpenAlertModal] = useState(false);
   const [isRACIValid, setIsRACIValid] = useState(false);
-  const alertButtonRef = useRef(null);
-  const [dialogPosition, setDialogPosition] = useState({ top: 0, left: 0 });
   const [notificationSettings, setNotificationSettings] = useState({
     email: true,
     whatsapp: true,
-    mobile: true,
+    text: true,
   });
-
-  const [selectedUser, setSelectedUser] = React.useState({
+  const [selectedUserFor, setSelectedUserFor] = React.useState({
     raci: {
       CF: { responsible: false, accountable: false, consulted: false, informed: false },
       BP: { responsible: false, accountable: false, consulted: false, informed: false },
@@ -52,15 +51,7 @@ const ManageUser = () => {
     },
   });
   const [modules, setModules] = useState([{}]);
-
-  useEffect(() => {
-    // Retrieve the mine types from localStorage using the updated function
-    const savedModules = getModules(); // No need for JSON.parse() here, it's already handled
-    setModules(savedModules);
-    console.log("Module : ", savedModules);
-  }, []);
-
-  //Hard coded to be removed
+  const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([
     {
       id: 1,
@@ -70,6 +61,7 @@ const ManageUser = () => {
       mobile: "1234567890",
       email: "john@example.com",
       whatsapp: "1234567890",
+      profilePhoto: "https://via.placeholder.com/120"
     },
     {
       id: 2,
@@ -79,42 +71,23 @@ const ManageUser = () => {
       mobile: "0987654321",
       email: "jane@example.com",
       whatsapp: "0987654321",
+      profilePhoto: "https://via.placeholder.com/120"
     },
   ]);
 
-  // const handleRACIChange = (event:any) => {
-  //   // Update the RACI value for the selected user
-  //   setUsers((prevUsers) =>
-  //     prevUsers.map((user) =>
-  //       user.id === selectedUser.id
-  //         ? { ...user, raci: event.target.value }
-  //         : usergetOrderedModuleNames
-  //     )
-  //   );
-  // };
+  useEffect(() => {
+    const savedModules = getModules();
+    setModules(savedModules);
+  }, []);
 
-
-  const handleOpenRACIModal = (user: any) => {
-    setSelectedUser(user);
-    setOpenRACIModal(true); // Open the RACI modal when the button is clicked
+  const handleViewUser = (user: any) => {
+    // Navigate to the 'View User' page with the user details passed as state
+    navigate(`/view-user`, { state: { user: selectedUser } });
   };
-
-  const handleOpenAlertModal = () => {
-    if (alertButtonRef.current) {
-      const rect = alertButtonRef.current.getBoundingClientRect(); // Get button's position
-      setDialogPosition({
-        top: rect.bottom + window.scrollY + 10, // Below the button
-        left: rect.left + rect.width / 2 - 150, // Centered horizontally (adjust based on dialog width)
-      });
-    }
-    setOpenAlertModal(true);
-  };
-
   const handleCloseModal = () => {
     setOpenRACIModal(false);
     setOpenAlertModal(false); // Close both modals
   };
-
   const handleToggle = (event: any) => {
     setNotificationSettings({
       ...notificationSettings,
@@ -122,64 +95,84 @@ const ManageUser = () => {
     });
   };
 
-  const handleViewUser = (user: any) => {
-    // Navigate to the 'View User' page with the user details passed as state
-    navigate(`/view-user`, { state: { user } });
+  const handleOpenRACIModal = (user: any) => {
+    setSelectedUser(user);
+    setOpenRACIModal(true); // Open the RACI modal when the button is clicked
   };
 
-  const handleEditUser = (user) => {
-    navigate("/EmployeeRegistration", { state: { user, isEdit: true } });
-  };
 
-  const handleDeleteUser = (userId: any) => {
-    // Confirm deletion
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-      console.log("Deleted user with ID:", userId);
+
+  const handleEditUser = () => {
+    if (selectedUser) {
+      navigate("/EmployeeRegistration", { state: { user: selectedUser, isEdit: true } });
     }
   };
 
-  // Function to handle RACI changes
-  const handleRACIChange = (event, code, type) => {
-    setSelectedUser((prevState) => {
-      // Ensure `prevState.raci` exists before attempting to update it
-      const updatedRaci = {
-        ...prevState.raci,
-        [code]: {
-
-          ...prevState.raci?.[code], // Safely access the specific code object
-          [type]: event.target.checked, // Update the specific RACI type
-        },
-      };
-
-      return {
-        ...prevState,
-        raci: updatedRaci, // Update the RACI property in the state
-      };
-    });
+  // const handleDeleteUser = () => {
+  //   if (selectedUser && window.confirm("Are you sure you want to delete this user?")) {
+  //     setUsers((prevUsers) => prevUsers.filter((user) => user.id !== selectedUser.id));
+  //     setSelectedUser(null); // Reset selected user
+  //   }
+  // };
+  const handleArchiveUser = () => {
+    if (selectedUser && window.confirm("Are you sure you want to archive this user?")) {
+      // Logic to archive the user
+      setUsers((prevUsers) =>
+        prevUsers.map((user) =>
+          user.id === selectedUser.id ? { ...user, archived: true } : user
+        )
+      );
+      setSelectedUser(null); // Reset selected user
+    }
   };
-
+  const handleRowClick = (user) => {
+    // console.log("Selected User:", selectedUser);
+    setSelectedUser(user);
+  };
 
   return (
     <div style={styles.pageContainer}>
-      <h1 style={styles.header}>Manage User</h1>
-      <div style={styles.buttonContainer}>
-        <Button
-          variant="contained"
+      <AppBar position="static">
+        <Toolbar style={{ backgroundColor: "#607d8b" }}>
+          <Typography variant="h5" style={{ flexGrow: 1 ,color:'black'}}>
+            Tool Bar
+          </Typography>
+          <Tooltip title="View">
+          <IconButton style={{ color: "white" }} onClick={handleViewUser} disabled={!selectedUser}>
+              <Visibility />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit">
+          <IconButton style={{ color: "white" }} onClick={handleEditUser} disabled={!selectedUser}>
+              <Edit />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Archive">
+    <IconButton
+      style={{ color: "white" }}
+      onClick={handleArchiveUser}
+      disabled={!selectedUser}
+    >
+      <Archive /> {/* Use the Archive icon */}
+    </IconButton>
+  </Tooltip>
+  <IconButton
+          // variant="contained"
           onClick={handleOpenRACIModal}
           style={styles.actionButton}
         >
-          Assign RACI
-        </Button>
-        <Button
-          id="alertNotificationButton" 
-          variant="contained"
-          onClick={handleOpenAlertModal}
-          style={styles.actionButton}
-        >
-          Alert & Notification
-        </Button>
-      </div>
+          <AssignmentIcon />
+        </IconButton>
+          <IconButton
+            // variant="contained"
+            onClick={() => setOpenAlertModal(true)}
+            style={styles.actionButton}
+          >
+             <NotificationsIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+
       <TableContainer component={Paper} style={styles.tableContainer}>
         <Table>
           <TableHead>
@@ -191,42 +184,34 @@ const ManageUser = () => {
               <TableCell style={styles.headerCell}>Mobile</TableCell>
               <TableCell style={styles.headerCell}>Email</TableCell>
               <TableCell style={styles.headerCell}>WhatsApp</TableCell>
-              <TableCell style={styles.headerCell}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {users.map((user, index) => (
-              <TableRow key={user.id} style={styles.tableRow}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.company}</TableCell>
-                <TableCell>{user.project}</TableCell>
-                <TableCell>{user.mobile}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.whatsapp}</TableCell>
-                <TableCell>
-                  <Tooltip title="View">
-                    <IconButton color="primary" onClick={() => handleViewUser(user)}>
-                      <Visibility />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Edit">
-                    <IconButton style={{ color: "#4CAF50" }} onClick={() => handleEditUser(user)}>
-                      <Edit />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton color="error" onClick={() => handleDeleteUser(user.id)}>
-                      <Delete />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
+              <TableRow
+                key={user.id}
+                style={{
+                  backgroundColor: selectedUser?.id === user.id ? "#f0f0f0" : "inherit",
+                  cursor: "pointer",
+                }}
+                onClick={() => handleRowClick(user)}
+              >
+                
+                <TableCell style={styles.tableCell}>{index + 1}</TableCell>
+                <TableCell style={styles.tableCell}>{user.name}</TableCell>
+                <TableCell style={styles.tableCell}>{user.company}</TableCell>
+                <TableCell style={styles.tableCell}>{user.project}</TableCell>
+                <TableCell style={styles.tableCell}>{user.mobile}</TableCell>
+                <TableCell style={styles.tableCell}>{user.email}</TableCell>
+                <TableCell style={styles.tableCell}>{user.whatsapp}</TableCell>
               </TableRow>
             ))}
           </TableBody>
+
         </Table>
       </TableContainer>
 
+      {/* Add your Dialogs here as you did before */} {/* Dialog Content */}
       <Dialog
         open={openAlertModal}
         onClose={handleCloseModal}
@@ -291,12 +276,12 @@ const ManageUser = () => {
             <FormControlLabel
               control={
                 <Switch
-                  checked={notificationSettings.mobile}
+                  checked={notificationSettings.text}
                   onChange={handleToggle}
-                  name="mobile"
+                  name="text"
                 />
               }
-              label="Mobile"
+              label="Text"
             />
           </div>
         </DialogContent>
@@ -327,7 +312,7 @@ const ManageUser = () => {
             <div>
               <h4 style={styles.sectionHeader}>Module Assignments</h4>
               <div style={styles.tableContainer}>
-                <table style={{ width: "100%", borderCollapse: "collapse"}}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={styles.tableHeader}>
                     <tr>
                       <th style={{ ...styles.headerCell, padding: "12px" }}>Code</th>
@@ -348,7 +333,7 @@ const ManageUser = () => {
                             control={
                               <Switch
                                 checked={
-                                  selectedUser?.raci?.[module.parentModuleCode]?.responsible || false
+                                  selectedUserFor?.raci?.[module.parentModuleCode]?.responsible || false
                                 }
                                 onChange={(e) =>
                                   handleRACIChange(e, module.parentModuleCode, "responsible")
@@ -363,7 +348,7 @@ const ManageUser = () => {
                             control={
                               <Switch
                                 checked={
-                                  selectedUser?.raci?.[module.parentModuleCode]?.accountable || false
+                                  selectedUserFor?.raci?.[module.parentModuleCode]?.accountable || false
                                 }
                                 onChange={(e) =>
                                   handleRACIChange(e, module.parentModuleCode, "accountable")
@@ -420,7 +405,7 @@ const ManageUser = () => {
             onClick={handleCloseModal}
             color="primary"
             variant="contained"
-            disabled={!isRACIValid} 
+            disabled={!isRACIValid}
           >
             Save
           </Button>
@@ -431,61 +416,42 @@ const ManageUser = () => {
   );
 };
 
-export default ManageUser;
-
 const styles = {
+  pageContainer: {
+    width: "100%", // Decreased width to 90% of the screen width
+    maxWidth: "1200px", // Max width set to 1200px
+    margin: "0 auto", // Centers the page content
+    padding: "20px", // Optional padding to ensure content doesn't touch edges
+  },
+  tableContainer: {
+    width: "100%",
+    marginTop: "20px",
+  },
+  tableHeader: {
+    backgroundColor: "#f4f4f4",
+    textAlign: "center",
+  },
+  headerCell: {
+    fontWeight: "bold",
+    padding: "10px",
+    textAlign: "center",
+  },
+  tableCell: {
+    padding: "20px",
+    textAlign: "center",
+  },
+  actionButton: {
+    margin: "0 10px",
+    // backgroundColor: "#1976d2",
+    color: "white",
+  },
   sectionHeader: {
     fontSize: "20px",
     fontWeight: "bold",
-    marginBottom: "16px",
-    color: "#333",
-  },
-  tableContainer: {
-    borderRadius: "8px",
-    boxShadow: "0px 4px 10px rgba(0, 0, 0, 0.1)",
-    maxHeight: "800px", // Set a max height for the scrollable table
-        overflow: "auto",
-  },
-  tableHeader: {
-    backgroundColor: "#1976d2",
-    position: "sticky",
-    top: 0, 
-    zIndex: 1000, 
-  },  
-  headerCell: {
-    color: "#fff",
-    fontWeight: "bold",
-    textAlign: "left",
-    borderBottom: "1px solid #e0e0e0",
-  },
-  tableCell: {
-    padding: "12px",
-    borderBottom: "1px solid #e0e0e0",
-    color: "#333",
-    textAlign: "center",
-  },
-  pageContainer: {
-    padding: "22px",
-    backgroundColor: "#f9f9f9",
-    minHeight: "100vh",
-    overflowX: "auto",
-  },
-  header: {
-    fontSize: "30px",
-    textAlign: "left",
-    color: "#333",
-    marginBottom: "0px",
-    fontWeight: "bold",
-  },
-  buttonContainer: {
     marginBottom: "15px",
-    display: "flex",
-    gap: "10px",
   },
-  actionButton: {
-    marginBottom: "0px",
-    display: "flex",
-    gap: "10px",
-    left: '1480px',
-  }
 };
+
+
+
+export default ManageUser;

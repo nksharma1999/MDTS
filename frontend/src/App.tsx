@@ -19,6 +19,9 @@ import ManageUser from "./Components/ManageUser";
 import ViewUser from "./Components/ViewUser";
 import { TimelineBuilder } from "./Components/TimelineBuilder";
 import DocumentPage from "./Components/Document";
+import CreateDocument from "./Components/CreateDocument";
+import DocumentLibrary from "./Components/DocumentLibrary";
+import ViewDocumentPage from "./Components/ViewDocumentPage";
 
 function App() {
 
@@ -58,6 +61,9 @@ function App() {
         <Route path="/manageuser" element={<ManageUser />} />
         <Route path="/view-user" element={<ViewUser />} />
         <Route path="/documentpage" element={<DocumentPage />} />
+        <Route path="/createdocument" element={<CreateDocument />} />
+        <Route path="/documentlibrary" element={<DocumentLibrary />} />
+        <Route path="/view-document" element={<ViewDocumentPage />} />
 
         <Route path="/timeline-builder" element={<TimelineBuilder />} />
       </Routes>

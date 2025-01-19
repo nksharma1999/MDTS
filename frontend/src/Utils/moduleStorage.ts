@@ -3,6 +3,7 @@
 const MODULE_KEY = "modules";
 const FORM_DATA = "formDatas";
 const MINE_TYPE_KEY = "mineTypes";
+const DOCUMENTS_KEY = " documents";
 
 // Get all modules from local storage
 // Flatten nested arrays from local storage
@@ -238,6 +239,76 @@ export const updateMineType = (mineTypes: any) => {
 
 
 
+//    Documents ........
+
+
+export const getAllDocuments = () => {
+  const savedDocuments = localStorage.getItem(DOCUMENTS_KEY);
+  if (savedDocuments === null || savedDocuments === "undefined") {
+    console.warn("Documents are not available or are 'undefined' in localStorage.");
+    return []; // Return an empty array if no valid data exists
+  }
+  return savedDocuments ? JSON.parse(savedDocuments) : [];
+};
+
+export const saveDocument = (document: any) => {
+  if (!document || typeof document !== "object") {
+    console.error("Invalid document object provided.");
+    return false; 
+  }
+
+  const existingDocuments = getAllDocuments();
+  existingDocuments.push(document);
+
+  try {
+    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
+    return true; 
+  } catch (error) {
+    console.error("Error saving documents to localStorage:", error);
+    return false; 
+  }
+};
+
+export const updateDocument = (id: Number, document: any) => {
+  if (!document || typeof document !== "object") {
+    console.error("Invalid document object provided.");
+    return false; 
+  }
+
+  const existingDocuments = getAllDocuments();
+  existingDocuments.push(document);
+
+  try {
+    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
+    return true; 
+  } catch (error) {
+    console.error("Error saving documents to localStorage:", error);
+    return false; 
+  }
+};
+
+
+// Delete a document from localStorage based on its index
+export const deleteDocument = (index: number) => {
+  const existingDocuments = getAllDocuments();
+  
+  if (index < 0 || index >= existingDocuments.length) {
+    console.error("Invalid document index.");
+    return false; // Return false if the index is out of bounds
+  }
+
+  // Remove the document from the array
+  existingDocuments.splice(index, 1);
+
+  try {
+    // Save the updated documents list back to localStorage
+    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
+    return true;
+  } catch (error) {
+    console.error("Error deleting document from localStorage:", error);
+    return false; 
+  }
+};
 
 
 

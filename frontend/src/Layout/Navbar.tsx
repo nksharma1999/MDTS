@@ -175,7 +175,7 @@ export const Navbar = () => {
                 </ul>
               </li>
               <li className="nav-item">
-                <a className="nav-link" href="#">
+                <a className="nav-link" href="/documentlibrary">
                   Documents
                 </a>
               </li>
@@ -278,7 +278,7 @@ export const Navbar = () => {
                     </a>
                   </li>
                   <li>
-                    <a className="dropdown-item" href="/documentpage">
+                    <a className="dropdown-item" href="/createdocument">
                       Document
                     </a>
                   </li>

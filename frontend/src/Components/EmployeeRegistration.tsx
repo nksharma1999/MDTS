@@ -18,6 +18,7 @@ interface Props { }
 export const EmployeeRegistration: React.FC<Props> = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [selectedProjects, setSelectedProjects] = useState([]);
   const { user, isEdit } = location.state || {};
 
   const [formData, setFormData] = useState({
@@ -145,26 +146,20 @@ export const EmployeeRegistration: React.FC<Props> = () => {
                 Project
               </label>
               <div className="col-sm-9">
-                <Autocomplete
-                  multiple
-                  id="project"
-                  options={projectOptions}
-                  value={formData.project}
-                  onChange={handleProjectChange}
-                  renderTags={(value: string[], getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip key={option} label={option} {...getTagProps({ index })} />
-                    ))
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      variant="outlined"
-                      label="Select Projects"
-                      placeholder="Projects"
-                    />
-                  )}
-                />
+              <Autocomplete
+      multiple
+      options={projectOptions}
+      value={selectedProjects}
+      onChange={(event, newValue) => setSelectedProjects(newValue)}
+      renderInput={(params) => (
+        <TextField {...params} label="Select Projects" variant="outlined" />
+      )}
+      renderTags={(tagValue, getTagProps) =>
+        tagValue.map((option, index) => (
+          <Chip label={option} {...getTagProps({ index })} />
+        ))
+      }
+    />
               </div>
             </div>
 
