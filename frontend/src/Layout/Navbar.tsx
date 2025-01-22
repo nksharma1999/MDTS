@@ -243,8 +243,8 @@ export const Navbar = () => {
                     </a>
                   </li>
                   <li>
-                    <a className="dropdown-item" href="#">
-                      WhatsApp Notification
+                    <a className="dropdown-item" href="/createnotification">
+                       Notification
                     </a>
                   </li>
                   <li>

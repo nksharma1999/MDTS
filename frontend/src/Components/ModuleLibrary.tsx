@@ -50,7 +50,7 @@ export const ModuleLibrary = () => {
   }
 
   return (
-    <Box sx={{ padding: '20px', maxWidth: '90%', margin: '0 auto', marginRight:'150px',height:'100%'}}>
+    <Box sx={{ padding: '20px', maxWidth: '90%', margin: '0 auto', marginRight:'150px',height:'100%',width:'90%'}}>
       <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', marginBottom: '20px',marginRight:'1350px' }}>
         Module Library
       </Typography>
@@ -75,13 +75,15 @@ export const ModuleLibrary = () => {
                   cursor: 'pointer',
                   '&:hover': { backgroundColor: 'action.hover' },
                   transition: 'background-color 0.3s ease',
+                  borderBottom: 'none',
                 }}
+                
               >
-                <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                <TableCell>{module.parentModuleCode}</TableCell>
-                <TableCell>{module.moduleName}</TableCell>
-                <TableCell>{module.mineType}</TableCell>
-                <TableCell>{module.level}</TableCell>
+                <TableCell sx={{ borderBottom: 'none' }}>{page * rowsPerPage + index + 1}</TableCell>
+                <TableCell sx={{ borderBottom: 'none' }}>{module.parentModuleCode}</TableCell>
+                <TableCell sx={{ borderBottom: 'none' }}>{module.moduleName}</TableCell>
+                <TableCell sx={{ borderBottom: 'none' }}>{module.mineType}</TableCell>
+                <TableCell sx={{ borderBottom: 'none' }}>{module.level}</TableCell>
               </TableRow>
             ))}
           </TableBody>

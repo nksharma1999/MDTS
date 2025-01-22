@@ -265,7 +265,7 @@ export const TimelineBuilder = () => {
   return (
     <>
       <div style={{ padding: 20 }}>
-        <div style={{ display: "flex", justifyContent: "right" }}>
+        <div style={{ display: "flex", justifyContent: "right" ,marginBottom:'10px'}}>
           <div>
             <select
               style={selectStyle}
@@ -281,9 +281,19 @@ export const TimelineBuilder = () => {
           </div>
         </div>
         <div className="card mb-3">
-          <div className="card-header">
-            <h5>Modules</h5>
-          </div>
+        <div
+  className="card-header"
+  style={{
+    backgroundColor: '#f5f5f5',
+    borderBottom: '1px solid #ddd',
+    padding: '16px',
+    textAlign: 'center',
+    fontFamily: 'Arial, sans-serif',
+  }}
+>
+  <h5 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color:'blue'}}>Modules</h5>
+</div>
+
           <div className="card-body">
             <table className="table table-bordered">
               <thead>
