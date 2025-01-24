@@ -71,13 +71,16 @@ export const EmployeeRegistration: React.FC<Props> = () => {
   };
 
   return (
-    <div style={{ padding: "30px", fontFamily: "Arial, sans-serif" }}>
+    <div style={{ padding: "10px", fontFamily: "Arial, sans-serif" }}>
       <div
         className="card mb-3"
         style={{
           borderRadius: "8px",
           boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
           border: "none",
+          width:'70%',
+          margin:"0",
+          background: "#fff",
         }}
       >
         <div
@@ -86,8 +89,8 @@ export const EmployeeRegistration: React.FC<Props> = () => {
             textAlign: "center",
             fontSize: "24px",
             fontWeight: "bold",
-            color: "white",
-            backgroundColor: "blue",
+            color: "black",
+            background: "#4F7942",
             borderTopLeftRadius: "8px",
             borderTopRightRadius: "8px",
             padding: "15px",
@@ -256,10 +259,10 @@ export const EmployeeRegistration: React.FC<Props> = () => {
 
             {/* Save and Cancel Buttons */}
             <div className="d-flex justify-content-between mt-4">
-              <button className="btn btn-secondary" onClick={handleCancel}>
+              <button className="btn btn-secondary" style={{ backgroundColor:'#4A90E2' ,color:'black',}}onClick={handleCancel}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleSaveOrUpdate}>
+              <button className="btn btn-primary" style={{ backgroundColor:'#4A90E2' ,color:'black',}}onClick={handleSaveOrUpdate}>
                 {isEdit ? "Update" : "Save"}
               </button>
             </div>

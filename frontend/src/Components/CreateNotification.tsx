@@ -196,6 +196,7 @@ const styles = {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #f8f9fa, #e9ecef)",
     padding: "20px",
+    background: "#fff",
   },
   card: {
     background: "#fff",
@@ -275,8 +276,8 @@ const styles = {
     marginTop: "30px",
   },
   cancelButton: {
-    background: "transparent",
-    color: "#6c757d",
+    background: "#4A90E2",
+    color: "black",
     border: "1px solid #6c757d",
     padding: "10px 24px",
     fontSize: "16px",
@@ -285,14 +286,15 @@ const styles = {
     transition: "all 0.3s ease",
   },
   saveButton: {
-    background: "#007bff",
-    color: "#fff",
+    background: "#4A90E2",
+    color: "black",
     border: "none",
     padding: "10px 24px",
     fontSize: "16px",
     borderRadius: "12px",
     cursor: "pointer",
     transition: "all 0.3s ease",
+    
   },
 };
 

@@ -504,7 +504,7 @@ export const CreateModule = () => {
               alignItems: "center",
             }}
           >
-            <Typography variant="h5" style={{ flexGrow: 1 }}>
+            <Typography variant="h5" style={{ flexGrow: 1 , color:"green"}}>
               Tool Bar
             </Typography>
             <div style={{ display: "flex", gap: "20px" }}>
@@ -545,7 +545,7 @@ export const CreateModule = () => {
                   padding: 0,
                   margin: 0,
                   fontSize: "22px",
-                  color: "blueviolet",
+                  color: "orange",
                 }}
               >
                 <i className="fas fa-arrow-left-long"></i>
@@ -586,7 +586,7 @@ export const CreateModule = () => {
                   padding: 0,
                   margin: 0,
                   fontSize: "22px",
-                  color: "blueviolet",
+                  color: "orange",
                 }}
               >
                 <i className="fa-solid fa-arrow-right-long"></i>
@@ -596,7 +596,7 @@ export const CreateModule = () => {
                 className="btn"
                 title="Delete"
                 onClick={handleDelete}
-                style={{ marginLeft: 0, color: "blue" }}
+                style={{ marginLeft: 0, color: "red" }}
               >
                 <i className="fa-solid fa-trash-can"></i>
               </button>
@@ -612,7 +612,7 @@ export const CreateModule = () => {
                   cursor: "pointer",
                 }}
               >
-                <FilterListIcon style={{ fontSize: "24px", color: "#333" }} />
+                <FilterListIcon style={{ fontSize: "24px", color: "blue" }} />
               </button>
 
               <TextField
@@ -628,12 +628,13 @@ export const CreateModule = () => {
                     </InputAdornment>
                   ),
                 }}
-                style={{ width: "300px" }}
+                style={{ width: "300px", }}
               />
 
               <button
                 className="btn btn-info"
                 onClick={handleAddActivityToFirstRow}
+                style={{ backgroundColor:'#4A90E2' }}
               >
                 Add Activity
               </button>
@@ -653,30 +654,30 @@ export const CreateModule = () => {
                 <th
                   style={{
                     textAlign: "center",
-                    backgroundColor: "#C4DFE6",
+                    backgroundColor: "#4F7942",
                     width: "100px",
                     color:'black'
                   }}
                 >
                   Code
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#C4DFE6" ,color:'black'}}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942" ,color:'black'}}>
                   Module Name
                 </th>
                 <th
                   style={{
                     textAlign: "center",
-                    backgroundColor: "#C4DFE6",
+                    backgroundColor: "#4F7942",
                     width: "100px",
                     color:'black'
                   }}
                 >
                   Duration<small> (in days)</small>
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#C4DFE6", width: "100px",color:'black' }}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942", width: "100px",color:'black' }}>
                   Prerequisites
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#C4DFE6",color:'black' }}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942",color:'black' }}>
                   Level
                 </th>
                 {/* <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th> */}
@@ -691,7 +692,7 @@ export const CreateModule = () => {
                   <tr
                     key={`module-${moduleIndex}`}
                     style={{
-                      backgroundColor: moduleIndex === selectedRow.moduleIndex ? "#66A5AD" : "gray",
+                      backgroundColor: moduleIndex === selectedRow.moduleIndex ? "#F5F7FA" : "gray",
                       color: "black",
                       textAlign: "center",
                     }}
@@ -794,8 +795,8 @@ export const CreateModule = () => {
               right: "20px",
               zIndex: 1000,
               fontSize: '18px',
-              backgroundColor: "blue", // Blue background
-              color: "white", // White text for better contrast
+              backgroundColor: "#4A90E2", // Blue background
+              color: "black", // White text for better contrast
               opacity: isSaveEnabled ? 1 : 0.6, // Dim button if disabled
             }}
           >

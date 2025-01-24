@@ -1,6 +1,6 @@
 export const Header = () => {
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark" style={{backgroundColor:'#9497d4'}}>
+    <nav className="navbar navbar-expand-lg navbar-dark" style={{ backgroundColor: '#4F7942', padding: "30px" }}>
       <div className="container-fluid">
         <a className="navbar-brand" href="#">
           {/* <img src="https://simproglobal.com/wp-content/uploads/2015/10/slider_logo1.png" alt="" height="80px"/> */}
@@ -17,9 +17,15 @@ export const Header = () => {
           <span className="navbar-toggler-icon"></span>
         </button>
         <div className="collapse navbar-collapse" id="navbarSupportedContent">
-          <div className="d-flex justify-content-center align-items-center flex-grow-1">
-            <h5 className="mb-0" style={{color:'white'}}>Mine Development Tracking System (MDTS)</h5>
+          <div
+            className="d-flex justify-content-center align-items-center flex-grow-1"
+            style={{ marginTop: '0px', paddingTop: '0px' }}
+          >
+            <h5 className="mb-0" style={{ color: '#FFF', fontSize: '25px',marginTop: '0px', paddingTop: '0px' }}>
+              Mine Development Tracking System (MDTS)
+            </h5>
           </div>
+
 
           <div className="d-flex">
             {/* <div style={{ textAlign: "center" }}>

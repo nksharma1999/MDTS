@@ -286,7 +286,7 @@ const ManageUser = () => {
           </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal} color="primary">
+          <Button onClick={handleCloseModal} style={{ backgroundColor:'#4A90E2' ,color:'black',}}>
             Close
           </Button>
         </DialogActions>
@@ -398,12 +398,12 @@ const ManageUser = () => {
           )}
         </DialogContent>
         <DialogActions style={{ padding: "16px", backgroundColor: "#f9f9f9" }}>
-          <Button onClick={handleCloseModal} color="primary" variant="outlined">
+          <Button onClick={handleCloseModal} style={{ backgroundColor:'#4A90E2' ,color:'black',}} variant="outlined">
             Close
           </Button>
           <Button
             onClick={handleCloseModal}
-            color="primary"
+            style={{ backgroundColor:'#4A90E2' ,color:'black',}}
             variant="contained"
             disabled={!isRACIValid}
           >
@@ -420,7 +420,7 @@ const styles = {
   pageContainer: {
     width: "100%", // Decreased width to 90% of the screen width
     maxWidth: "1200px", // Max width set to 1200px
-    margin: "0 auto", // Centers the page content
+    margin: "0", // Centers the page content
     padding: "20px", // Optional padding to ensure content doesn't touch edges
   },
   tableContainer: {
@@ -428,7 +428,7 @@ const styles = {
     marginTop: "20px",
   },
   tableHeader: {
-    backgroundColor: "#f4f4f4",
+    backgroundColor: "#4F7942",
     textAlign: "center",
   },
   headerCell: {

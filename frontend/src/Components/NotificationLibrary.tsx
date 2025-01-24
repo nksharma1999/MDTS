@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -13,57 +13,60 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useNavigate } from "react-router-dom";
 
 const data = [
   {
     module: "Contract Formulation",
     activities: [
-      { name: "Declaration as H1 Bidder", notification: "TRUE", status: "Completed", message: "This is my message" },
-      { name: "Signing of CBDPA", notification: "FALSE", status: "", message: "" },
-      { name: "Payment to MoC (Fixed Charges, Upfront payment & PBG)", notification: "TRUE", status: "", message: "" },
-      { name: "Issuance of Vesting Order", notification: "", status: "InProgress", message: "" },
+      { name: "Declaration as H1 Bidder", notification: "TRUE", status: "Completed", message: "This is my message" , default: "This is my new message"},
+      { name: "Signing of CBDPA", notification: "FALSE", status: "", message: "" ,default: ""},
     ],
   },
   {
     module: "Budgetary Planning",
     activities: [
-      { name: "Approval of Interim Budget", notification: "TRUE", status: "", message: "" },
-      { name: "Preparation of DPR", notification: "", status: "", message: "" },
-      { name: "Approval of DPR", notification: "TRUE", status: "Delayed", message: "", defaultmessage: "This is new message" },
+      { name: "Approval of Interim Budget", notification: "TRUE", status: "delayed", message: "",default: "" },
+      { name: "Preparation of DPR", notification: "", status: "", message: "",default: "" },
     ],
   },
   {
     module: "Boundary Coordinate Certification by CMPDI",
     activities: [
-      { name: "Survey by CMPDI to ascertain boundary coordinates", notification: "TRUE", status: "Completed", message: "" },
-      { name: "Receipt of Certified Boundary Coordinates by CMPDI", notification: "FALSE", status: "", message: "" },
+      { name: "Survey by CMPDI to ascertain boundary coordinates", notification: "TRUE", status: "Completed", message: "",default: "" },
+      { name: "Receipt of Certified Boundary Coordinates by CMPDI", notification: "FALSE", status: "", message: "" ,default: ""},
     ],
   },
 ];
 
 const NotificationLibrary = () => {
-  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(null);
 
-  const handleEditHeader = () => {
-    navigate("/createnotification");
-  };
-
-  const handleDeleteHeader = () => {
-    alert("Delete button clicked on header");
+  const handleAccordionChange = (panel:any) => {
+    setExpanded(expanded === panel ? null : panel);
   };
 
   return (
-    <TableContainer component={Paper} style={{ margin: "20px auto", maxWidth: "90%" }}>
-      <Typography variant="h5" style={{ margin: "16px", fontWeight: "bold", color: "#4A148C" }}>
+    <TableContainer component={Paper} style={{ margin: "20px auto", maxWidth: "80%" }}>
+      <Typography variant="h5" style={{ margin: "10px", fontWeight: "bold", color: "#4A148C" }}>
         Notification Library
       </Typography>
-      {data.map((section) => (
-        <Accordion key={section.module} style={{ marginBottom: "10px" }}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />} style={{ backgroundColor: "#E1BEE7" }}>
+      {data.map((section, index) => (
+        <Accordion
+          key={index}
+          expanded={expanded === index}
+          onChange={() => handleAccordionChange(index)}
+          style={{ marginBottom: "0px" }}
+        >
+          <AccordionSummary
+            expandIcon={
+              <Typography style={{ fontWeight: "bold", fontSize: "30px" ,color:"white"}}>
+                {expanded === index ? "-" : "+"}
+              </Typography>
+            }
+            style={{ backgroundColor: "#4F7942" }}
+          >
             <Typography variant="h6" style={{ fontWeight: "bold" }}>
               {section.module}
             </Typography>
@@ -71,31 +74,30 @@ const NotificationLibrary = () => {
           <AccordionDetails>
             <Table>
               <TableHead>
-                <TableRow style={{ backgroundColor: "#F3E5F5" }}>
+                <TableRow style={{ backgroundColor: "#FF8C00" }}>
                   <TableCell style={{ fontWeight: "bold" }}>Activity</TableCell>
                   <TableCell style={{ fontWeight: "bold" }}>Notification Set-up</TableCell>
                   <TableCell style={{ fontWeight: "bold" }}>Status</TableCell>
                   <TableCell style={{ fontWeight: "bold" }}>Notification Message</TableCell>
                   <TableCell style={{ fontWeight: "bold" }}>Default Message</TableCell>
-                  <TableCell style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <IconButton onClick={handleEditHeader} color="primary">
+                  <TableCell>
+                    <IconButton color="primary">
                       <EditIcon />
                     </IconButton>
-                    <IconButton onClick={handleDeleteHeader} color="error">
+                    <IconButton color="error">
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {section.activities.map((activity, index) => (
-                  <TableRow key={index}>
+                {section.activities.map((activity, idx) => (
+                  <TableRow key={idx} sx={{ "&:not(:last-child) td, &:not(:last-child) th": { border: 0 } }}>
                     <TableCell>{activity.name}</TableCell>
                     <TableCell>{activity.notification}</TableCell>
                     <TableCell>{activity.status}</TableCell>
                     <TableCell>{activity.message}</TableCell>
-                    <TableCell>{activity.defaultmessage}</TableCell>
-                    <TableCell></TableCell>
+                    <TableCell>{activity.default}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -91,10 +91,10 @@ export const HolidayCalender = () => {
       <Paper
         elevation={3}
         sx={{
-          margin: "20px auto",
-          maxWidth: "90%",
+          margin: "10px",
+          maxWidth: "80%",
           padding: "20px",
-          backgroundColor: "#F1F8E9",
+          // backgroundColor: "#F1F8E9",
           borderRadius: "8px",
         }}
       >
@@ -110,7 +110,7 @@ export const HolidayCalender = () => {
           </Typography>
           <Button
             variant="contained"
-            color="primary"
+            style={{ backgroundColor:'#4A90E2' ,color:'black'}}
             startIcon={<AddIcon />}
             onClick={addRow}
           >
@@ -120,7 +120,7 @@ export const HolidayCalender = () => {
 
         <TableContainer>
           <Table>
-            <TableHead sx={{ backgroundColor: "#66A5AD" }}>
+            <TableHead sx={{ backgroundColor: "#4F7942" }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>From</TableCell>
                 <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>To</TableCell>
@@ -219,12 +219,14 @@ export const HolidayCalender = () => {
                       <>
                         <IconButton
                           color="primary"
+                          title="save"
                           onClick={() => saveChanges(index)}
                         >
                           <SaveIcon />
                         </IconButton>
                         <IconButton
                           color="error"
+                          title="delete"
                           onClick={() => deleteRow(index)}
                         >
                           <DeleteIcon />
@@ -233,6 +235,7 @@ export const HolidayCalender = () => {
                     ) : (
                       <IconButton
                         color="primary"
+                        title="edit"
                         onClick={() => toggleEdit(index)}
                       >
                         <EditIcon />

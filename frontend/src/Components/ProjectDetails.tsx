@@ -745,12 +745,12 @@ export const ProjectDetails: React.FC = () => {
                 ? { ...styles.button, ...styles.disabledButton }
                 : styles.button
             }
+            style={{ backgroundColor:'#4A90E2' ,color:'black',fontWeight:'bold',borderRadius:'5px'}}
           >
             Previous
           </button>
 
-          {/* Edit Button */}
-          {/* Edit Button */}
+          
 <button
   type="button"
   onClick={() => {
@@ -760,19 +760,19 @@ export const ProjectDetails: React.FC = () => {
   style={{
     fontSize: "16px",
     fontWeight: "bold",
-    color: "white",
+    color: "black",
     marginLeft: "auto",
     padding: "10px 20px", // Adjust padding for a balanced look
     gap: "20px",
-    backgroundColor: "green",
+    backgroundColor: "#4A90E2",
     border: "none",
     borderRadius: "5px", // Smooth corners
     cursor: "pointer",
-    transition: "background-color 0.3s ease, transform 0.2s ease", // Add hover/active effects
+    // transition: "background-color 0.3s ease, transform 0.2s ease", // Add hover/active effects
   }}
-  onMouseOver={(e) => (e.target.style.backgroundColor = "darkgreen")} // Hover effect
-  onMouseOut={(e) => (e.target.style.backgroundColor = "green")} // Reset background
-  onMouseDown={(e) => (e.target.style.transform = "scale(0.95)")} // Press effect
+  // onMouseOver={(e) => (e.target.style.backgroundColor = "darkgreen")} // Hover effect
+  // onMouseOut={(e) => (e.target.style.backgroundColor = "green")} // Reset background
+  // onMouseDown={(e) => (e.target.style.transform = "scale(0.95)")} // Press effect
   onMouseUp={(e) => (e.target.style.transform = "scale(1)")} // Release effect
 >
   Edit
@@ -873,25 +873,30 @@ export const ProjectDetails: React.FC = () => {
 };
 
 const containerStyle = {
-  padding: "20px",
+  padding: "5px",
   background: "#f9f9f9",
-  borderRadius: "8px",
+  borderRadius: "0px",
+  margin:"0"
 };
 
 const tableStyle = {
-  width: "100%",
+  width: "90%",
   borderCollapse: "collapse",
 };
 
 const thStyle = {
   textAlign: "left",
   padding: "8px",
-  background: "#e6e6e6",
+  background: "#9497d4",
+  color:"white",
+  borderRadius: "0px",
+  fontSize: "16px",
+  fontWeight:'bold'
   // border: "1px solid #ccc",
 };
 
 const tdStyle = {
-  padding: "8px",
+  padding: "0px",
   // border: "1px solid #ccc",
 };
 
@@ -990,8 +995,8 @@ const activeTabStyle = {
 
 const styles = {
   registrationContainer: {
-    width: "80%",
-    margin: "auto",
+    width: "70%",
+    margin: "0",
     padding: "30px",
     background: "#ffffff", // Cleaner white background for better contrast
     borderRadius: "12px",
@@ -1002,7 +1007,7 @@ const styles = {
     display: "flex",
     justifyContent: "space-evenly", // Evenly distribute tabs
     alignItems: "center",
-    marginBottom: "30px", // Extra spacing below tabs
+    marginBottom: "5px", // Extra spacing below tabs
     padding: "0", // Removed extra padding for a cleaner look
     listStyle: "none",
   },
@@ -1010,7 +1015,8 @@ const styles = {
     cursor: "pointer",
     padding: "12px 25px", // Slightly larger padding for better clickability
     // borderRadius: "8px",
-    background: "#e6e6e6", // Lighter gray for a more modern feel
+    background: "#9497d4", 
+    color:"white",// Lighter gray for a more modern feel
     flex: "1",
     textAlign: "left",
     // margin: "0 8px", // Reduced margin for tighter spacing
@@ -1021,7 +1027,7 @@ const styles = {
   },
   activeTab: {
     borderBottom: "2px solid #4caf50",
-    color: "#4caf50", // Green text for the active tab
+    color: "white", // Green text for the active tab
     boxShadow: "0px 2px 10px rgba(0, 0, 0, 0.2)", // Optional highlighted effect
   },
   formContainer: {
@@ -1050,14 +1056,14 @@ const styles = {
   formNavigation: {
     display: "flex",
     justifyContent: "space-between",
-    marginTop: "30px", // Extra spacing above navigation
+    marginTop: "20px", // Extra spacing above navigation
   },
   button: {
     padding: "20px 30px", // Larger button size for better usability
     border: "none",
     borderRadius: "8px",
-    background: "#4caf50",
-    color: "white",
+    background: "#4A90E2",
+    color: "black",
     fontWeight: "bold",
     fontSize: "16px",
     cursor: "pointer",
@@ -1095,10 +1101,10 @@ const styles = {
     marginBottom: "20px",
   },
   th: {
-    background: "#e6e6e6",
-    // color: "white",
+    background: "#9497d4",
+    color: "white",
     padding: "12px",
-    fontSize: "14px",
+    fontSize: "16px",
     border: "1px solid #ccc",
   },
   td: {
@@ -1110,7 +1116,7 @@ const styles = {
     width: "100%",
     padding: "10px",
     border: "1px solid #ccc",
-    borderRadius: "4px",
+    // borderRadius: "4px",
     background: "white",
     fontSize: "14px",
   },

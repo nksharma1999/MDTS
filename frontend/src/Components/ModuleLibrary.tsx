@@ -50,14 +50,14 @@ export const ModuleLibrary = () => {
   }
 
   return (
-    <Box sx={{ padding: '20px', maxWidth: '90%', margin: '0 auto', marginRight:'150px',height:'100%',width:'90%'}}>
+    <Box sx={{ padding: '20px', maxWidth: '90%', margin: '0', marginRight:'150px',height:'100%',width:'90%', background: "#fff",}}>
       <Typography variant="h4" sx={{ fontWeight: 'bold', textAlign: 'center', marginBottom: '20px',marginRight:'1350px' }}>
         Module Library
       </Typography>
       <TableContainer component={Paper} sx={{ boxShadow: 3, borderRadius: 2 }}>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: 'primary.main' }}>
+            <TableRow sx={{ backgroundColor: '#4F7942' ,color:'black'}}>
               <TableCell sx={headerCellStyles}>Serial No.</TableCell>
               <TableCell sx={headerCellStyles}>Module Code</TableCell>
               <TableCell sx={headerCellStyles}>Module Name</TableCell>
@@ -103,7 +103,7 @@ export const ModuleLibrary = () => {
 };
 
 const headerCellStyles = {
-  color: 'white',
+  color: 'black',
   fontWeight: 'bold',
   textAlign: 'left',
   fontSize: '14px',

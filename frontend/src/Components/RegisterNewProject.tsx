@@ -1,4 +1,4 @@
-import { Height, WidthFull } from "@mui/icons-material";
+import { Height, Margin, WidthFull } from "@mui/icons-material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import React, { useState, useEffect } from "react";
@@ -9,6 +9,7 @@ import {
   getOrderedModuleNames,
   getAllMineType
 } from '../Utils/moduleStorage';
+import { colors } from "@mui/material";
 
 export const RegisterNewProject: React.FC = () => {
 
@@ -233,9 +234,6 @@ export const RegisterNewProject: React.FC = () => {
           <div style={containerStyle}>
             <table style={tableStyle}>
               <tbody>
-                {/* Project Name */}
-                {/* Company Name */}
-                {/* Company Name */}
                 <tr>
                   <th style={thStyle}>Company Name</th>
                   <td style={tdStyle}>
@@ -244,7 +242,7 @@ export const RegisterNewProject: React.FC = () => {
                         className="form-select"
                         value={formData.companyName}
                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                        style={{ width: "70%", height: "40px", fontSize: "14px" }}
+                        style={{ width: "100%", height: "40px", fontSize: "14px" }}
                       >
                         <option value="">--Select Company--</option>
                         {companyOptions.map((company, index) => (
@@ -703,7 +701,7 @@ export const RegisterNewProject: React.FC = () => {
 
   return (
     <div style={styles.registrationContainer}>
-      <h1>Register New Project</h1>
+      <h1 style={{fontSize: "28px",padding:"20px"}}>Register New Project</h1>
       <p></p>
       <ul style={styles.tabNavigation}>
 
@@ -843,25 +841,36 @@ export const RegisterNewProject: React.FC = () => {
 };
 
 const containerStyle = {
-  padding: "20px",
-  background: "#f9f9f9",
-  borderRadius: "8px",
+  padding: "30px",
+  // background: "#f9f9f9",
+  borderRadius: "0px",
+  width: "100%",
+  margin:"0"
 };
 
 const tableStyle = {
-  width: "100%",
+  width: "80%",
   borderCollapse: "collapse",
+  borderRadius: "0px",
 };
 
 const thStyle = {
   textAlign: "left",
   padding: "8px",
-  background: "#e6e6e6",
+  background: "#fff",
+  color:'black',
+  borderRadius: "2px",
+  fontSize: "16px",
+  fontWeight:'bold',
+  width: "50%",
+  
   // border: "1px solid #ccc",
 };
 
 const tdStyle = {
-  padding: "8px",
+  padding: "0px",
+  width:"70%",
+  borderRadius: "2px",
   // border: "1px solid #ccc",
 };
 
@@ -960,18 +969,18 @@ const activeTabStyle = {
 
 const styles = {
   registrationContainer: {
-    width: "80%",
-    margin: "0 auto",
-    padding: "30px",
-    background: "#ffffff", // Cleaner white background for better contrast
-    borderRadius: "12px",
-    boxShadow: "0px 6px 20px rgba(0, 0, 0, 0.15)", // Softer shadow for a polished look
+    width: "62%",
+    margin: "0",
+    // padding: "30px",
+    // background: "#ffffff", // Cleaner white background for better contrast
+    // borderRadius: "12px",
+    // boxShadow: "0px 6px 20px rgba(0, 0, 0, 0.15)", // Softer shadow for a polished look
   },
   tabNavigation: {
     display: "flex",
     justifyContent: "space-evenly", // Evenly distribute tabs
     alignItems: "center",
-    marginBottom: "30px", // Extra spacing below tabs
+    marginBottom: "5px", // Extra spacing below tabs
     padding: "0", // Removed extra padding for a cleaner look
     listStyle: "none",
   },
@@ -979,7 +988,8 @@ const styles = {
     cursor: "pointer",
     padding: "12px 25px", // Slightly larger padding for better clickability
     // borderRadius: "8px",
-    background: "#e6e6e6", // Lighter gray for a more modern feel
+    background: "#4F7942", // Lighter gray for a more modern feel
+    color:'black',
     flex: "1",
     textAlign: "left",
     // margin: "0 8px", // Reduced margin for tighter spacing
@@ -987,16 +997,17 @@ const styles = {
     fontSize: "16px",
     transition: "background 0.3s ease, color 0.3s ease", // Smooth hover/active effects
     borderRight: "1px solid #ccc",
+    width:"50%"
   },
   activeTab: {
-    borderBottom: "2px solid #4caf50",
-    color: "#4caf50", // Green text for the active tab
+    borderBottom: "2px solid rgb(219, 156, 20)",
+    color: "white", // Green text for the active tab
     boxShadow: "0px 2px 10px rgba(0, 0, 0, 0.2)", // Optional highlighted effect
   },
   formContainer: {
     display: "flex",
     flexWrap: "wrap",
-    gap: "25px", // Increased gap for better spacing between fields
+    gap: "20px", // Increased gap for better spacing between fields
     marginBottom: "20px", // Added spacing at the bottom of the form
   },
   formGroup: {
@@ -1011,7 +1022,7 @@ const styles = {
     color: "#333", // Darker color for better readability
   },
   formInput: {
-    padding: "12px",
+    padding: "16px",
     border: "1px solid #ccc",
     borderRadius: "6px",
     fontSize: "14px",
@@ -1019,26 +1030,28 @@ const styles = {
   formNavigation: {
     display: "flex",
     justifyContent: "space-between",
-    marginTop: "30px", // Extra spacing above navigation
+    marginTop: "20px", // Extra spacing above navigation
   },
   button: {
-    padding: "20px 30px", // Larger button size for better usability
+    padding: "20px 20px", // Larger button size for better usability
     border: "none",
     borderRadius: "8px",
-    background: "#4caf50",
-    color: "white",
+    background: "#FF8C00",
+    color: "black",
     fontWeight: "bold",
     fontSize: "16px",
     cursor: "pointer",
     transition: "background 0.3s ease", // Smooth hover effect
+    // marginright:"50px"
   },
   buttonHover: {
     background: "#45a049", // Slightly darker shade for hover effect
   },
   disabledButton: {
-    background: "#ddd",
-    color: "#888",
+    background: "#FF8C00",
+    color: "black",
     cursor: "not-allowed",
+    marginleft:"10px"
   },
   container: {
     width: "70%",
@@ -1064,14 +1077,14 @@ const styles = {
     marginBottom: "20px",
   },
   th: {
-    background: "#e6e6e6",
-    // color: "white",
-    padding: "12px",
-    fontSize: "14px",
+    background: "#fff",
+    color: "black",
+    padding: "10px",
+    fontSize: "16px",
     border: "1px solid #ccc",
   },
   td: {
-    padding: "10px",
+    padding: "5px",
     border: "1px solid #ccc",
     fontSize: "14px",
   },
@@ -1079,7 +1092,7 @@ const styles = {
     width: "100%",
     padding: "10px",
     border: "1px solid #ccc",
-    borderRadius: "4px",
+    // borderRadius: "4px",
     background: "white",
     fontSize: "14px",
   },

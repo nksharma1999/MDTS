@@ -116,7 +116,7 @@ const CreateDocument = () => {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#f5f5f5",
+        background: "#fff",
         padding: 3,
       }}
     >
@@ -234,7 +234,7 @@ const CreateDocument = () => {
               variant="outlined"
               color="secondary"
               onClick={handleCancel}
-              sx={{ width: "45%" }}
+              sx={{  backgroundColor:'#4A90E2' ,color:'black',width: "45%" }}
             >
               Cancel
             </Button>
@@ -242,7 +242,7 @@ const CreateDocument = () => {
               variant="contained"
               color="primary"
               onClick={handleSave}
-              sx={{ width: "45%" }}
+              style={{ backgroundColor:'#4A90E2' ,color:'black',width: "45%"}}
             >
               Save
             </Button>

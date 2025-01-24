@@ -61,10 +61,10 @@ const DocumentLibrary = () => {
   }, {});
 
   return (
-    <Box sx={{ padding: 3, backgroundColor: "#f4f5f7", marginLeft: 3, marginRight: 9 ,width:'80%'}}>
+    <Box sx={{ padding: 3,  marginLeft: 3, marginRight: 9 ,width:'80%'}}>
       {/* Page Header */}
-      <Box sx={{ marginBottom: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: "bold", textAlign: "center", color: "blue",marginRight:'1000px' }}>
+      <Box sx={{ marginBottom: 1}}>
+        <Typography variant="h4" sx={{ fontWeight: "bold", textAlign: "center", color: "black",marginRight:'auto' }}>
           Document Library
         </Typography>
         <Divider sx={{ marginTop: 2, backgroundColor: "#ddd" }} />
@@ -89,7 +89,7 @@ const DocumentLibrary = () => {
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
                 sx={{
-                  backgroundColor: "#e3f2fd",
+                  backgroundColor: "#4F7942",
                   borderBottom: "1px solid #ddd",
                 }}
               >
@@ -161,6 +161,7 @@ const DocumentLibrary = () => {
                           variant="contained"
                           size="small"
                           onClick={() => navigate("/view-document", { state: { document } })}
+                          style={{ backgroundColor:'#4A90E2' ,color:'black',}}
                           startIcon={<VisibilityIcon />}
                         >
                           View
@@ -169,6 +170,7 @@ const DocumentLibrary = () => {
                           variant="outlined"
                           size="small"
                           onClick={() => handleEdit(milestone, docIndex)}
+                          style={{ backgroundColor:'#4A90E2' ,color:'black',}}
                           startIcon={<EditIcon />}
                         >
                           Edit
