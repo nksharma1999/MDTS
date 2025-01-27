@@ -122,12 +122,12 @@ export const HolidayCalender = () => {
           <Table>
             <TableHead sx={{ backgroundColor: "#4F7942" }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>From</TableCell>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>To</TableCell>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Holiday</TableCell>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Modules</TableCell>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Impact</TableCell>
-                <TableCell sx={{ fontWeight: "bold", textAlign: "center" }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" ,color:"white"}}>From</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" ,color:"white"}}>To</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center",color:"white" }}>Holiday</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" ,color:"white"}}>Modules</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" ,color:"white"}}>Impact</TableCell>
+                <TableCell sx={{ fontWeight: "bold", textAlign: "center" ,color:"white"}}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

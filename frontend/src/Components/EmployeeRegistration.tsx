@@ -71,16 +71,20 @@ export const EmployeeRegistration: React.FC<Props> = () => {
   };
 
   return (
-    <div style={{ padding: "10px", fontFamily: "Arial, sans-serif" }}>
+    <div style={{ padding: "100px", fontFamily: "Arial, sans-serif" ,backgroundImage: `url('/Mining 5.jpg')`,}}>
       <div
         className="card mb-3"
         style={{
           borderRadius: "8px",
           boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
           border: "none",
-          width:'70%',
-          margin:"0",
+          width:'60%',
+          // margin:"40px",
           background: "#fff",
+          marginTop:"-70px",
+          marginRight:"50px",
+          marginLeft:"200px",
+          marginBottom:"70px"
         }}
       >
         <div
@@ -89,8 +93,8 @@ export const EmployeeRegistration: React.FC<Props> = () => {
             textAlign: "center",
             fontSize: "24px",
             fontWeight: "bold",
-            color: "black",
-            background: "#4F7942",
+            color: "white",
+            background: "#7FAF6A",
             borderTopLeftRadius: "8px",
             borderTopRightRadius: "8px",
             padding: "15px",
@@ -98,6 +102,7 @@ export const EmployeeRegistration: React.FC<Props> = () => {
         >
           {isEdit ? "Edit Employee Details" : "Employee Registration"}
         </div>
+        
         <div className="card-body" style={{ padding: "30px" }}>
           <form>
             {/* Name Field */}

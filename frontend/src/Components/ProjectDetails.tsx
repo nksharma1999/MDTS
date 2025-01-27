@@ -874,29 +874,34 @@ export const ProjectDetails: React.FC = () => {
 
 const containerStyle = {
   padding: "5px",
-  background: "#f9f9f9",
+  // background: "#f9f9f9",
   borderRadius: "0px",
-  margin:"0"
+  margin:"0",
+  width: "100%",
 };
 
 const tableStyle = {
-  width: "90%",
+  width: "80%",
   borderCollapse: "collapse",
+  borderRadius: "0px",
 };
 
 const thStyle = {
   textAlign: "left",
   padding: "8px",
-  background: "#9497d4",
-  color:"white",
-  borderRadius: "0px",
+  background: "#fff",
+  color:"black",
+  borderRadius: "2px",
   fontSize: "16px",
-  fontWeight:'bold'
+  fontWeight:'bold',
+  width: "50%",
   // border: "1px solid #ccc",
 };
 
 const tdStyle = {
   padding: "0px",
+  width:"70%",
+  borderRadius: "2px",
   // border: "1px solid #ccc",
 };
 
@@ -997,11 +1002,11 @@ const styles = {
   registrationContainer: {
     width: "70%",
     margin: "0",
-    padding: "30px",
-    background: "#ffffff", // Cleaner white background for better contrast
-    borderRadius: "12px",
-    boxShadow: "0px 6px 20px rgba(0, 0, 0, 0.15)",
-    // Softer shadow for a polished look
+    // padding: "30px",
+    // background: "#ffffff", // Cleaner white background for better contrast
+    // borderRadius: "12px",
+    // boxShadow: "0px 6px 20px rgba(0, 0, 0, 0.15)",
+    // // Softer shadow for a polished look
   },
   tabNavigation: {
     display: "flex",
@@ -1015,8 +1020,8 @@ const styles = {
     cursor: "pointer",
     padding: "12px 25px", // Slightly larger padding for better clickability
     // borderRadius: "8px",
-    background: "#9497d4", 
-    color:"white",// Lighter gray for a more modern feel
+    background: "#4F7942", 
+    color:"black",// Lighter gray for a more modern feel
     flex: "1",
     textAlign: "left",
     // margin: "0 8px", // Reduced margin for tighter spacing
@@ -1026,7 +1031,7 @@ const styles = {
     borderRight: "1px solid #ccc",
   },
   activeTab: {
-    borderBottom: "2px solid #4caf50",
+    borderBottom: "2px solid rgb(219, 156, 20)",
     color: "white", // Green text for the active tab
     boxShadow: "0px 2px 10px rgba(0, 0, 0, 0.2)", // Optional highlighted effect
   },
@@ -1073,9 +1078,10 @@ const styles = {
     background: "#45a049", // Slightly darker shade for hover effect
   },
   disabledButton: {
-    background: "#ddd",
-    color: "#888",
+    background: "#4A90E2",
+    color: "black",
     cursor: "not-allowed",
+     margin:"0px"
   },
   container: {
     width: "70%",
@@ -1101,9 +1107,9 @@ const styles = {
     marginBottom: "20px",
   },
   th: {
-    background: "#9497d4",
-    color: "white",
-    padding: "12px",
+    background: "#fff",
+    color: "black",
+    padding: "10px",
     fontSize: "16px",
     border: "1px solid #ccc",
   },

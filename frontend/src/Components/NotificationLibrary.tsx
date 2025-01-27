@@ -49,7 +49,7 @@ const NotificationLibrary = () => {
 
   return (
     <TableContainer component={Paper} style={{ margin: "20px auto", maxWidth: "80%" }}>
-      <Typography variant="h5" style={{ margin: "10px", fontWeight: "bold", color: "#4A148C" }}>
+      <Typography variant="h5" style={{ margin: "10px", fontWeight: "bold", color: "#4F7942" }}>
         Notification Library
       </Typography>
       {data.map((section, index) => (
@@ -61,11 +61,11 @@ const NotificationLibrary = () => {
         >
           <AccordionSummary
             expandIcon={
-              <Typography style={{ fontWeight: "bold", fontSize: "30px" ,color:"white"}}>
+              <Typography style={{ fontWeight: "bold", fontSize: "30px" ,color:"black"}}>
                 {expanded === index ? "-" : "+"}
               </Typography>
             }
-            style={{ backgroundColor: "#4F7942" }}
+            style={{ backgroundColor: "#4F7942",color:"white" }}
           >
             <Typography variant="h6" style={{ fontWeight: "bold" }}>
               {section.module}

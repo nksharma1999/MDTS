@@ -701,7 +701,7 @@ export const RegisterNewProject: React.FC = () => {
 
   return (
     <div style={styles.registrationContainer}>
-      <h1 style={{fontSize: "28px",padding:"20px"}}>Register New Project</h1>
+      <h1 style={{fontSize: "28px",padding:"20px",}}>Register New Project</h1>
       <p></p>
       <ul style={styles.tabNavigation}>
 
@@ -845,7 +845,8 @@ const containerStyle = {
   // background: "#f9f9f9",
   borderRadius: "0px",
   width: "100%",
-  margin:"0"
+  margin:"0",
+ 
 };
 
 const tableStyle = {
@@ -969,6 +970,8 @@ const activeTabStyle = {
 
 const styles = {
   registrationContainer: {
+    // backgroundImage: `url('/Mining 5.jpg')`,
+    // marginRight:"100px",
     width: "62%",
     margin: "0",
     // padding: "30px",
@@ -989,7 +992,7 @@ const styles = {
     padding: "12px 25px", // Slightly larger padding for better clickability
     // borderRadius: "8px",
     background: "#4F7942", // Lighter gray for a more modern feel
-    color:'black',
+    color:'white',
     flex: "1",
     textAlign: "left",
     // margin: "0 8px", // Reduced margin for tighter spacing
@@ -1036,22 +1039,23 @@ const styles = {
     padding: "20px 20px", // Larger button size for better usability
     border: "none",
     borderRadius: "8px",
-    background: "#FF8C00",
+    background: "#4A90E2",
     color: "black",
     fontWeight: "bold",
     fontSize: "16px",
     cursor: "pointer",
     transition: "background 0.3s ease", // Smooth hover effect
     // marginright:"50px"
+    margin:"0px"
   },
   buttonHover: {
     background: "#45a049", // Slightly darker shade for hover effect
   },
   disabledButton: {
-    background: "#FF8C00",
+    background: "#4A90E2",
     color: "black",
     cursor: "not-allowed",
-    marginleft:"10px"
+    margin:"0px"
   },
   container: {
     width: "70%",

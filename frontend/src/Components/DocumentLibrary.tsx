@@ -64,7 +64,7 @@ const DocumentLibrary = () => {
     <Box sx={{ padding: 3,  marginLeft: 3, marginRight: 9 ,width:'80%'}}>
       {/* Page Header */}
       <Box sx={{ marginBottom: 1}}>
-        <Typography variant="h4" sx={{ fontWeight: "bold", textAlign: "center", color: "black",marginRight:'auto' }}>
+        <Typography variant="h4" sx={{ fontWeight: "bold", textAlign: "center", color: "#4F7942",marginRight:'auto' }}>
           Document Library
         </Typography>
         <Divider sx={{ marginTop: 2, backgroundColor: "#ddd" }} />
@@ -90,6 +90,7 @@ const DocumentLibrary = () => {
                 expandIcon={<ExpandMoreIcon />}
                 sx={{
                   backgroundColor: "#4F7942",
+                  color: "white",
                   borderBottom: "1px solid #ddd",
                 }}
               >

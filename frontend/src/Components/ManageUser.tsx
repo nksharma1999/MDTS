@@ -430,11 +430,13 @@ const styles = {
   tableHeader: {
     backgroundColor: "#4F7942",
     textAlign: "center",
+    color: "white",
   },
   headerCell: {
     fontWeight: "bold",
     padding: "10px",
     textAlign: "center",
+    color: "white",
   },
   tableCell: {
     padding: "20px",

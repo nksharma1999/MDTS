@@ -103,7 +103,7 @@ export const ModuleLibrary = () => {
 };
 
 const headerCellStyles = {
-  color: 'black',
+  color: 'white',
   fontWeight: 'bold',
   textAlign: 'left',
   fontSize: '14px',

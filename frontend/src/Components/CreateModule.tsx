@@ -656,12 +656,12 @@ export const CreateModule = () => {
                     textAlign: "center",
                     backgroundColor: "#4F7942",
                     width: "100px",
-                    color:'black'
+                    color:'white'
                   }}
                 >
                   Code
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#4F7942" ,color:'black'}}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942" ,color:'white'}}>
                   Module Name
                 </th>
                 <th
@@ -669,15 +669,15 @@ export const CreateModule = () => {
                     textAlign: "center",
                     backgroundColor: "#4F7942",
                     width: "100px",
-                    color:'black'
+                    color:'white'
                   }}
                 >
                   Duration<small> (in days)</small>
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#4F7942", width: "100px",color:'black' }}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942", width: "100px",color:'white' }}>
                   Prerequisites
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#4F7942",color:'black' }}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942",color:'white' }}>
                   Level
                 </th>
                 {/* <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th> */}
