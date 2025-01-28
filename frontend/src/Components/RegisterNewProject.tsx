@@ -242,7 +242,7 @@ export const RegisterNewProject: React.FC = () => {
                         className="form-select"
                         value={formData.companyName}
                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                        style={{ width: "100%", height: "40px", fontSize: "14px" }}
+                        style={{ width: "100%", height: "40px", fontSize: "14px" , borderBottom: "2px",}}
                       >
                         <option value="">--Select Company--</option>
                         {companyOptions.map((company, index) => (
@@ -857,7 +857,7 @@ const tableStyle = {
 
 const thStyle = {
   textAlign: "left",
-  padding: "8px",
+  padding: "15px",
   background: "#fff",
   color:'black',
   borderRadius: "2px",

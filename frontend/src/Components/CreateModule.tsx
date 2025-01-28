@@ -321,61 +321,103 @@ export const CreateModule = () => {
   };
 
   const handleIncButtonClick = (pCode: string, index: number, values: any) => {
-    console.log("pCode, index, values", pCode, index, values);
-    console.log("Clicked - handleIncButtonClick()");
+    // Create a copy of the module array
+    console.log('pCode, index, values', pCode, index, values);
+    console.log('Clicked - handleIncButtonClick()');
     let tempData = [...module];
-    console.log("tempData = ", tempData);
-  
+    console.log('tempData = ', tempData);
+
     for (let i = 0; i < tempData.length; i++) {
       if (tempData[i].parentModuleCode === pCode) {
         // Get a copy of the activities for the current module
         let act = [...tempData[i].activitys];
-  
+
         if (values.plus === 0) {
-          // Increment the level of the selected activity only
-          const currentLevel = parseInt(
-            typeof act[index].level === "string"
-              ? act[index].level.replace("L", "")
-              : act[index].level
-          );
-          act[index] = {
-            ...act[index],
-            level: `L${currentLevel + 1}`, // Increment the level
-          };
+          // Increment the level of the selected activity
+          act[index].level += 1;
+
+          // Ensure all activities within this submodule have the same level
+          const updatedLevel = act[index].level;
+          const submoduleCodePrefix = act[index].code
+            .split("/")
+            .slice(0, 2)
+            .join("/"); // Extract submodule code prefix
+
+          act = act.map((activity) => {
+            if (activity.code.startsWith(submoduleCodePrefix)) {
+              // Update level for all activities within the submodule
+              return {
+                ...activity,
+                level: updatedLevel,
+              };
+            }
+            return activity;
+          });
         } else {
           // Add a new activity with acronym logic
           const maxLevel = getMaxLevel(act);
-          console.log("maxLevel = ", maxLevel);
-  
+          console.log('maxLevel = ', maxLevel);
+
           // Generate a unique two-letter acronym
-          const acronym = generateTwoLetterAcronym(values.name, existingAcronyms);
-          console.log("acronym = ", acronym);
+          const acronym = generateTwoLetterAcronym(
+            values.name,
+            existingAcronyms
+          );
+          console.log('acronym = ', acronym);
           setExistingAcronyms([...existingAcronyms, acronym]);
-  
+
           // Create a new activity with updated level and code
           const newActivity = {
-            level: `${maxLevel + 1}`, // Increment level by 1
+            level: maxLevel + 1, // Increment level by 1
             name: values.name,
             code: createSubmoduleCode(values.code, acronym), // Generate new code with acronym
             plus: 0,
             duration: "",
-            prerequisites: act[index].code, // Prerequisites set to the current activity code
+            prerequisites: values.prerequisites,
           };
-          console.log("newActivity = ", newActivity);
-  
-          act.splice(index + 1, 0, newActivity); // Add the new activity after the current one
+          console.log('newActivity = ', newActivity);
+
+          //act.push(newActivity);
+
+          // Ensure all activities under this submodule have the same level
+          const submoduleCodePrefix = newActivity.code
+            .split("/")
+            .slice(0, 2)
+            .join("/"); // Extract submodule code prefix
+          const newLevel = newActivity.level;
+
+          act = act.map((activity) => {
+            if (activity.code.startsWith(submoduleCodePrefix)) {
+              // Update level for all activities within the submodule
+              return {
+                ...activity,
+                level: newLevel,
+              };
+            }
+            return activity;
+          });
+          console.log('act = ', act);
+
+          // Remove the activity that was split to create the submodule
+          act.splice(index, 1, newActivity); // Remove the original activity
         }
-  
+
+        // Rearrange the activities sequentially by increments of 10
+        // act = act.map((activity, idx) => ({
+        //   ...activity,
+        //   sequence: (idx + 1) * 10, // Reassign sequence values as 10, 20, 30...
+        // }));
+
         // Update the activities array in the module
         tempData[i].activitys = act;
-        console.log("tempData = ", tempData);
+        console.log('tempData = ', tempData);
         break;
       }
     }
-  
+
     // Update the state with the modified module data
     setModule(tempData);
-  
+
     // Reset input state
     setNewActInput({
       pCode: "",
@@ -384,15 +426,12 @@ export const CreateModule = () => {
       input: "",
     });
   };
-  
+
   // Helper function: Find the maximum level in the current activity list
   const getMaxLevel = (act: any) => {
-    return act.reduce((max: number, curr: any) => {
-      const level = typeof curr.level === "string" ? parseInt(curr.level.replace("L", "")) : curr.level;
-      return Math.max(max, level);
-    }, 0);
+    return act.reduce((max: number, curr: any) => Math.max(max, curr.level), 0);
   };
-  
+
   // Helper function: Create a submodule code based on the previous code and acronym
   const createSubmoduleCode = (prevCode: string, acry: string) => {
     const codeSplit = prevCode.split("/");
