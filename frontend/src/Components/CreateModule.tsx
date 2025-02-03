@@ -1,20 +1,17 @@
 import { useState, useEffect } from "react";
 import { generateTwoLetterAcronym } from "../Utils/generateTwoLetterAcronym";
 import { useLocation } from "react-router-dom";
+import { IconButton } from "@mui/material";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import PersonIcon from "@mui/icons-material/Person";
 import {
   Typography,
   TextField,
   InputAdornment,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Button,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
-// import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   addModule,
   isDuplicateModuleName,
@@ -25,10 +22,8 @@ import { useNavigate } from 'react-router-dom';
 
 
 export const CreateModule = () => {
-  const [newModelName, setNewModelName] = useState<string>("");
   const location = useLocation();
   const { moduleName, mineType, moduleCode } = location.state || {};
-  const [searchQuery, setSearchQuery] = useState("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [collapsedModules, setCollapsedModules] = useState({});
   const [isSaveEnabled, setIsSaveEnabled] = useState(true);
@@ -37,6 +32,8 @@ export const CreateModule = () => {
   const [selectedModuleIndex, setSelectedModuleIndex] = useState(null);
   const [modules, setModules] = useState([]);
   const navigate = useNavigate();
+  const [notificationCount, setNotificationCount] = useState("");
+  const activities = [];
 
   const [existingAcronyms, setExistingAcronyms] = useState([
     "FC",
@@ -47,7 +44,7 @@ export const CreateModule = () => {
 
   const [module, setModule] = useState([
     {
-      parentModuleCode: moduleCode ? moduleCode : '', // Initialize from nav bar
+      parentModuleCode: moduleCode ? moduleCode : '', // Initialize from nav bar else keep empty
       moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
       mineType: mineType,
       lavel: 'L0',
@@ -56,44 +53,12 @@ export const CreateModule = () => {
     },
   ]);
 
-  //Save module to local storage
-  const handleSaveModuleAndActivity = () => {
-    try {
-      console.log('Inside handleSaveModuleAndActivity', module)
-      addModule(module);
-      setIsSaveEnabled(false);
-      window.alert("Modules saved successfully!");
-    } catch (error) {
-      console.error("Error while saving modules:", error);
-      window.alert("Failed to save modules. Check the console for details.");
-    }
-    navigate('/ModuleLibrary');
-  };
-
-  // const editingModuleIndex = selectedRow?.moduleIndex; // Or the appropriate logic to fetch the index
-
-  // const [selectedRow, setSelectedRow] = useState({ moduleIndex: null, activityIndex: null });
-
-  const generateModuleCode = (moduleName: string) => {
-    try {
-      // Generate a two-letter acronym (replace generateTwoLetterAcronym with your actual implementation)
-      const acronym = generateTwoLetterAcronym(moduleName, existingAcronyms);
-
-      //Now checking module code duplication
-      if (isDuplicateModuleCode(acronym)) {
-        //Instead of throwing the error re-generate new acronym
-        const errorMessage = `Duplicate module code found for module name : ${moduleName}`;
-        window.alert(errorMessage); // Show an alert to the user
-        throw new Error(errorMessage); // Throw an exception for duplication
-      }
-      return acronym;
-    } catch (error) {
-      //console.error("Error in generateModuleCode:", error);
-      navigate('/');
-    }
-    return "NA"; // Return a fallback value in case of an error
-  };
-
+  const [newActInput, setNewActInput] = useState({
+    pCode: "",
+    childCode: "",
+    index: 0,
+    input: "",
+  });
 
   // Update parentModuleCode when moduleName changes
   useEffect(() => {
@@ -116,139 +81,101 @@ export const CreateModule = () => {
     }
   }, [moduleName]);
 
-  // const handleModulePlus = () => {
-  //   try {
-  //     const acronym = generateTwoLetterAcronym(newModelName, existingAcronyms);
-  //     setExistingAcronyms([...existingAcronyms, acronym]);
-  //     setModule((pre) => [
-  //       ...pre,
-  //       {
-  //         parentModuleCode: acronym,
-  //         name: newModelName,
-  //         activitys: [],
-  //         lavel: 1,
-  //         plus: 0,
-  //       },
-  //     ]);
-  //   } catch (error) {
-  //     console.error(error);
-  //   }
-  // };
+  //Generate a new code 
+  const generateModuleCode = (moduleName: string) => {
+    try {
+      // Generate a two-letter acronym (replace generateTwoLetterAcronym with your actual implementation)
+      const acronym = generateTwoLetterAcronym(moduleName, existingAcronyms);
 
-  const handleDelete = () => {
-    const { moduleIndex, activityIndex } = selectedRow;
-    if (activityIndex !== null) {
-      setModule((prevModule) => {
-        const updatedModule = [...prevModule];
-        updatedModule[moduleIndex].activitys.splice(activityIndex, 1);
-        return updatedModule;
-      });
-    } else {
-      setModule((prevModule) =>
-        prevModule.filter((_, idx) => idx !== moduleIndex)
-      );
-    }
-    setSelectedRow({ moduleIndex: 0, activityIndex: null });
-  };
-
-  const toggleModule = (moduleIndex) => {
-    setCollapsedModules((prevState) => ({
-      ...prevState,
-      [moduleIndex]: !prevState[moduleIndex], // Toggle the collapse state
-    }));
-  };
-
-  const handleModuleMinus = (pCode: string, index: number, values: any) => {
-    let tempData = [...module]; // Copy module state to avoid mutating it directly
-
-    for (let i = 0; i < tempData.length; i++) {
-      if (tempData[i].parentModuleCode === pCode) {
-        const act = tempData[i].activitys;
-
-        // Check if the selected row exists at the given index
-        if (index >= 0 && index < act.length) {
-          const selectedActivity = act[index];
-
-          // Decrease level only if it's greater than 1
-          if (selectedActivity.level > 1) {
-            selectedActivity.level -= 1;
-          }
-        }
-
-        // Update the activities array
-        tempData[i].activitys = [...act];
-        break;
+      //Now checking module code duplication
+      if (isDuplicateModuleCode(acronym)) {
+        //Instead of throwing the error re-generate new acronym
+        const errorMessage = `Duplicate module code found for module name : ${moduleName}`;
+        window.alert(errorMessage); // Show an alert to the user
+        throw new Error(errorMessage); // Throw an exception for duplication
       }
+      return acronym;
+    } catch (error) {
+      //console.error("Error in generateModuleCode:", error);
+      navigate('/');
     }
-
-    setModule(tempData); // Update the state with the modified data
+    return "NA"; // Return a fallback value in case of an error
   };
 
-  const [newActInput, setNewActInput] = useState({
-    pCode: "",
-    childCode: "",
-    index: 0,
-    input: "",
-  });
-  const handleAddActivity = (id: number, pcode: string, childCode: string) => {
-    setNewActInput({
-      pCode: pcode,
-      index: id,
-      input: "",
-      childCode: childCode,
-    });
-
-    // Retrieve the previous activity
-    const selectedModule = module.find((mod) => mod.parentModuleCode === pcode);
-    const lastActivity =
-      selectedModule?.activitys[selectedModule.activitys.length - 1];
-
-    if (lastActivity) {
-      setNewActInput((prev) => ({
-        ...prev,
-        input: lastActivity.name, // Set the prerequisite to the previous activity's name
-      }));
+  //Save module to local storage
+  const handleSaveModuleAndActivity = () => {
+    try {
+      console.log('Inside handleSaveModuleAndActivity', module)
+      addModule(module);
+      setIsSaveEnabled(false);
+      window.alert("Modules saved successfully!");
+    } catch (error) {
+      console.error("Error while saving modules:", error);
+      window.alert("Failed to save modules. Check the console for details.");
     }
+    navigate('/ModuleLibrary');
   };
 
-  const handleAddActivityToFirstRow = () => {
-    const { moduleIndex, activityIndex } = selectedRow; // Includes `activityIndex` to track the selected row
+  const handleAddActivity = () => {
+    const { moduleIndex, activityIndex } = selectedRow;
 
-    let updatedModules = [...module];
+    // Clone the modules state
+    const updatedModules = [...module];
     const selectedModule = updatedModules[moduleIndex];
     const activities = selectedModule.activitys;
 
-    // Fetch the code of the selected activity
-    const selectedActivity = activities[activityIndex];
-    const previousCode = selectedActivity
-      ? selectedActivity.code
-      : selectedModule.parentModuleCode;
-    // Generate the new code for the activity
-    const newCode = getCode(previousCode);
+    // Determine the parent code and level
+    const isRootLevel = activityIndex === null;
+    const parentCode = isRootLevel
+      ? selectedModule.parentModuleCode // Module-level parent code
+      : activities[activityIndex].code; // Activity-level parent code
 
-    // Create the new activity object
+    const parentLevel = isRootLevel ? 0 : activities[activityIndex].level;
+
+    // Generate the new activity code
+    const newActivityCode = generateActivityCode(activities, parentCode);
+
+    // Create a new activity object
     const newActivity = {
-      level: selectedActivity ? selectedActivity.level : 1,
-      name: `New Activity`,
-      code: newCode,
-      plus: 10,
-      duration: 10,
-      prerequisites: selectedActivity ? selectedActivity.code : "",
+      level: parentLevel + 1, // Increment level for sub-activity
+      name: "New Activity",
+      code: newActivityCode,
+      plus: 10, // Default value
+      duration: 10, // Default value
+      prerequisites: parentCode, // Reference parent code
     };
 
-    // Insert the new activity directly below the selected activity
-    activities.splice(activityIndex + 1, 0, newActivity);
+    // Insert the new activity below the selected one
+    activities.splice(activityIndex !== null ? activityIndex + 1 : activities.length, 0, newActivity);
 
-    // Recalculate codes for all subsequent activities
-    for (let i = activityIndex + 2; i < activities.length; i++) {
-      if (!isSubModule(activities[i - 1].code, activities[i].code)) {
-        activities[i].code = getCode(activities[i - 1].code);
-      }
-    }
+    // Sort activities by code and level for consistency
+    activities.sort((a, b) => {
+      const [codeA, codeB] = [a.code, b.code];
+      if (codeA === codeB) return a.level - b.level;
+      return codeA.localeCompare(codeB, undefined, { numeric: true });
+    });
 
     // Update the module state
-    setModule(updatedModules.map((module) => ({ ...module })));
+    setModule(updatedModules);
   };
+
+  const generateActivityCode = (activities, parentCode) => {
+    // Get direct children of the parent code
+    const childActivities = activities.filter((act) => act.code.startsWith(`${parentCode}/`));
+
+    // Extract numeric suffixes from child activity codes
+    const childNumbers = childActivities.map((act) => {
+      const parts = act.code.split("/");
+      return parseInt(parts[parts.length - 1], 10); // Extract the last numeric part
+    });
+
+    // Determine the next number for the new activity (increment by 10)
+    const nextNumber = childNumbers.length > 0 ? Math.max(...childNumbers) + 10 : 10;
+
+    // Generate the new activity code
+    return `${parentCode}/${nextNumber}`;
+  };
+
 
   // Check if it is a submodule
   const isSubModule = (prevCode: string, currentCode: string): boolean => {
@@ -267,22 +194,107 @@ export const CreateModule = () => {
   };
 
   // Updated `getCode` Function
-  const getCode = (prevCode) => {
-    if (!prevCode) {
-      return "ZX/10"; // Default case if no previous code exists
+  const getCode = (baseCode: string, increment: number = 1): string => {
+    // Split the base code into parts
+    const codeParts = baseCode.split("/");
+
+    // Parse the last part of the code as a number
+    const lastPart = parseInt(codeParts[codeParts.length - 1], 10);
+
+    // If the last part is numeric, increment it; otherwise, start with '10'
+    const newLastPart = isNaN(lastPart) ? 10 : lastPart + increment * 10;
+
+    // Join the base parts with the new incremented part
+    return `${codeParts.slice(0, -1).join("/")}/${newLastPart}`;
+  };
+
+
+  const handleModuleMinus = (pCode: string, index: number, values: any) => {
+    setModule((prevModules) => {
+      return prevModules.map((mod) => {
+        if (mod.parentModuleCode === pCode) {
+          // Step 1: Decrease Level
+          let updatedActivities = mod.activitys.map((act, idx) => {
+            if (idx === index) {
+              if (act.level > 1) {
+                let newLevel = act.level - 1;
+                let newCode = removeLastSegment(act.code);
+                if (!newCode.includes("/")) {
+                  newCode = `${pCode}/10`;
+                }
+                return { ...act, level: newLevel, code: newCode };
+              }
+            }
+            return act;
+          });
+  
+          // Step 2: Sort Activities
+          updatedActivities = updatedActivities.sort((a, b) =>
+            a.code.localeCompare(b.code)
+          );
+  
+          // Step 3: Fix Duplicates
+          updatedActivities = fixDuplicateCodes(updatedActivities, pCode);
+  
+          return { ...mod, activitys: updatedActivities };
+        }
+        return mod;
+      });
+    });
+  };
+  
+  /**
+   * Removes the last segment (e.g., `/10`) from a code.
+   */
+  const removeLastSegment = (code: string) => {
+    const parts = code.split("/");
+    if (parts.length > 1) {
+      parts.pop(); // Remove last segment
     }
-
-    const codeSplit = prevCode.split("/");
-    const baseCode = codeSplit.slice(0, -1).join("/"); // Get the prefix (e.g., 'ZX')
-    const lastNumber = parseInt(codeSplit[codeSplit.length - 1], 10); // Extract the numeric suffix
-
-    // If the code doesn't have a numeric suffix, start with '10'
-    if (isNaN(lastNumber)) {
-      return `${prevCode}/10`;
+    return parts.join("/");
+  };
+  
+  /**
+   * Fixes duplicate activity codes by renaming them uniquely.
+   */
+  const fixDuplicateCodes = (activities: any[], pCode: string) => {
+    const codeMap = new Map<string, number>();
+    const updatedActivities = [];
+  
+    activities.forEach((act) => {
+      let baseCode = act.code.split("/").slice(0, -1).join("/") || pCode;
+      let lastSegment = parseInt(act.code.split("/").pop() || "10", 10);
+  
+      // If baseCode already exists, increment the last segment
+      if (codeMap.has(baseCode)) {
+        lastSegment = codeMap.get(baseCode) + 10;
+      }
+  
+      const newCode = `${baseCode}/${lastSegment}`;
+      codeMap.set(baseCode, lastSegment);
+  
+      updatedActivities.push({ ...act, code: newCode });
+    });
+  
+    return updatedActivities;
+  };
+  
+  
+  
+  const handleDelete = () => {
+    const { moduleIndex, activityIndex } = selectedRow;
+    if (activityIndex !== null) {
+      setModule((prevModule) => {
+        const updatedModule = [...prevModule];
+        updatedModule[moduleIndex].activitys.splice(activityIndex, 1);
+        return updatedModule;
+      });
+    } else {
+      setModule((prevModule) =>
+        prevModule.filter((_, idx) => idx !== moduleIndex)
+      );
     }
-
-    // Increment the numeric suffix by 10
-    return `${baseCode}/${lastNumber + 10}`;
+    setSelectedRow({ moduleIndex: 0, activityIndex: null });
   };
 
   const handleSaveActivity = () => {
@@ -320,130 +332,67 @@ export const CreateModule = () => {
     });
   };
 
-  const handleIncButtonClick = (pCode: string, index: number, values: any) => {
-    // Create a copy of the module array
-    console.log('pCode, index, values', pCode, index, values);
-    console.log('Clicked - handleIncButtonClick()');
-    let tempData = [...module];
-    console.log('tempData = ', tempData);
+ const handleIncButtonClick = (pCode: string, index: number) => {
+  console.log("Called handleIncButtonClick!");
 
-    for (let i = 0; i < tempData.length; i++) {
-      if (tempData[i].parentModuleCode === pCode) {
-        // Get a copy of the activities for the current module
-        let act = [...tempData[i].activitys];
+  setModule((prevModules) => {
+    return prevModules.map((mod) => {
+      if (mod.parentModuleCode === pCode) {
+        console.log("Found parent module:", pCode);
 
-        if (values.plus === 0) {
-          // Increment the level of the selected activity
-          act[index].level += 1;
+        // Find the selected activity
+        const selectedActivity = mod.activitys[index];
+        if (!selectedActivity) return mod;
 
-          // Ensure all activities within this submodule have the same level
-          const updatedLevel = act[index].level;
-          const submoduleCodePrefix = act[index].code
-            .split("/")
-            .slice(0, 2)
-            .join("/"); // Extract submodule code prefix
+        // Compute new values for the selected activity
+        const newLevel = selectedActivity.level + 1;
+        const newCode = `${selectedActivity.code}/10`; // Append "/10" to maintain hierarchy
 
-          act = act.map((activity) => {
-            if (activity.code.startsWith(submoduleCodePrefix)) {
-              // Update level for all activities within the submodule
-              return {
-                ...activity,
-                level: updatedLevel,
-              };
-            }
-            return activity;
-          });
-        } else {
-          // Add a new activity with acronym logic
-          const maxLevel = getMaxLevel(act);
-          console.log('maxLevel = ', maxLevel);
+        // Update the selected activity
+        const updatedActivities = mod.activitys.map((act) => {
+          if (act.code === selectedActivity.code) {
+            return { ...act, level: newLevel, code: newCode };  // Update only the selected activity
+          }
+          return act;
+        });
 
-          // Generate a unique two-letter acronym
-          const acronym = generateTwoLetterAcronym(
-            values.name,
-            existingAcronyms
-          );
-          console.log('acronym = ', acronym);
-          setExistingAcronyms([...existingAcronyms, acronym]);
+        // Now update all child activities (those with prerequisites matching the selected activity's code)
+        const finalActivities = updateChildActivities(updatedActivities, selectedActivity.code, newCode);
 
-          // Create a new activity with updated level and code
-          const newActivity = {
-            level: maxLevel + 1, // Increment level by 1
-            name: values.name,
-            code: createSubmoduleCode(values.code, acronym), // Generate new code with acronym
-            plus: 0,
-            duration: "",
-            prerequisites: values.prerequisites,
-          };
-          console.log('newActivity = ', newActivity);
-
-          //act.push(newActivity);
-
-          // Ensure all activities under this submodule have the same level
-          const submoduleCodePrefix = newActivity.code
-            .split("/")
-            .slice(0, 2)
-            .join("/"); // Extract submodule code prefix
-          const newLevel = newActivity.level;
-
-          act = act.map((activity) => {
-            if (activity.code.startsWith(submoduleCodePrefix)) {
-              // Update level for all activities within the submodule
-              return {
-                ...activity,
-                level: newLevel,
-              };
-            }
-            return activity;
-          });
-          console.log('act = ', act);
-
-          // Remove the activity that was split to create the submodule
-          act.splice(index, 1, newActivity); // Remove the original activity
-        }
-
-        // Rearrange the activities sequentially by increments of 10
-        // act = act.map((activity, idx) => ({
-        //   ...activity,
-        //   sequence: (idx + 1) * 10, // Reassign sequence values as 10, 20, 30...
-        // }));
-
-        // Update the activities array in the module
-        tempData[i].activitys = act;
-        console.log('tempData = ', tempData);
-        break;
+        return { ...mod, activitys: finalActivities };
       }
-    }
-
-    // Update the state with the modified module data
-    setModule(tempData);
-
-    // Reset input state
-    setNewActInput({
-      pCode: "",
-      childCode: "",
-      index: 0,
-      input: "",
+      return mod;
     });
-  };
+  });
 
-  // Helper function: Find the maximum level in the current activity list
-  const getMaxLevel = (act: any) => {
-    return act.reduce((max: number, curr: any) => Math.max(max, curr.level), 0);
-  };
+  setNewActInput({ pCode: "", childCode: "", index: 0, input: "" });
+};
 
-  // Helper function: Create a submodule code based on the previous code and acronym
-  const createSubmoduleCode = (prevCode: string, acry: string) => {
-    const codeSplit = prevCode.split("/");
-    let result = codeSplit.slice(0, -1).join("/");
-    return result + "/" + acry;
-  };
+/**
+ * Recursively updates all child activities when a parent’s code changes.
+ * It checks if the child's code starts with the parent’s code, updates them with the new level and code,
+ * and ensures the child activities’ level increases by 10 (not by 1).
+ */
+const updateChildActivities = (activities: any[], oldCode: string, newCode: string) => {
+  return activities.map((act) => {
+    // If the activity's code starts with the old code, it is a child
+    if (act.prerequisites === oldCode) {
+      // Increase the level of the child activity by 10 (not by 1)
+      const newLevel = act.level + 1;
+      const updatedCode = `${newCode}${act.code.slice(oldCode.length)}`;  // Update child code based on the parent
+
+      return {
+        ...act,
+        level: newLevel,  // Increase the level by 10
+        code: updatedCode,  // Update the code based on parent
+        prerequisites: newCode,  // Update prerequisites to new code
+      };
+    }
+    return act;
+  });
+};
+
   
-
-  const handleEditModule = (index) => {
-    setIsEditing(true);
-    setSelectedModuleIndex(index); // Store the index for handling edit
-  };
 
 
   function handleEditRow(
@@ -456,8 +405,6 @@ export const CreateModule = () => {
     updatedModules[moduleIndex].activitys[activityIndex] = updatedActivity;
     setModule(updatedModules); // Update state
   }
-
-
 
 
   const handleFilterClick = () => {
@@ -529,7 +476,20 @@ export const CreateModule = () => {
 
       return null; // Exclude modules with no matches
     })
-    .filter(Boolean); // Remove null values
+    .filter(Boolean);
+
+
+  const handleNotificationClick = () => {
+    console.log("Notification button clicked!");
+    navigate('/createnotification');
+    // Handle notification logic
+  };
+
+  const handleAssignRACI = () => {
+    console.log("Assign RACI button clicked!");
+    navigate('/assignraci');
+    // Handle Assign RACI logic here
+  };
 
 
   return (
@@ -543,10 +503,10 @@ export const CreateModule = () => {
               alignItems: "center",
             }}
           >
-            <Typography variant="h5" style={{ flexGrow: 1 , color:"green"}}>
+            <Typography variant="h5" style={{ flexGrow: 1, color: "green" }}>
               Tool Bar
             </Typography>
-            <div style={{ display: "flex", gap: "20px" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
               <button
                 className="btn"
                 title="Decrease Level"
@@ -672,11 +632,27 @@ export const CreateModule = () => {
 
               <button
                 className="btn btn-info"
-                onClick={handleAddActivityToFirstRow}
-                style={{ backgroundColor:'#4A90E2' }}
+                onClick={handleAddActivity}
+                style={{ backgroundColor: '#4A90E2' }}
               >
                 Add Activity
               </button>
+
+              {/* Assign RACI Button */}
+              <IconButton title="Assign RACI" onClick={handleAssignRACI}>
+                {/* <Badge badgeContent={assignRACIcount} color="primary"> */}
+                <PersonIcon style={{ color: "blue", fontSize: "30px" }} />
+                {/* </Badge> */}
+              </IconButton>
+
+              {/* Notification Button with Badge */}
+              <IconButton title="Notifications" onClick={handleNotificationClick}>
+                {/* <Badge badgeContent={notificationCount} color="error"> */}
+                <NotificationsIcon style={{ color: "blue", fontSize: "30px" }} />
+                {/* </Badge> */}
+              </IconButton>
+
+
             </div>
           </div>
         </div>
@@ -694,29 +670,31 @@ export const CreateModule = () => {
                   style={{
                     textAlign: "center",
                     backgroundColor: "#4F7942",
-                    width: "100px",
-                    color:'white'
+                    width: "200px",
+                    color: 'white',
+                    // marginLeft: "500px"
                   }}
                 >
                   Code
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#4F7942" ,color:'white'}}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942", color: 'white' }}>
                   Module Name
                 </th>
                 <th
                   style={{
                     textAlign: "center",
                     backgroundColor: "#4F7942",
-                    width: "100px",
-                    color:'white'
+                    width: "200px",
+                    color: 'white',
+                    margin: "20px"
                   }}
                 >
                   Duration<small> (in days)</small>
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#4F7942", width: "100px",color:'white' }}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942", width: "100px", color: 'white' }}>
                   Prerequisites
                 </th>
-                <th style={{ textAlign: "center", backgroundColor: "#4F7942",color:'white' }}>
+                <th style={{ textAlign: "center", backgroundColor: "#4F7942", color: 'white' }}>
                   Level
                 </th>
                 {/* <th style={{ textAlign: 'center', backgroundColor: '#e0f7fa', }}>Action</th> */}
@@ -745,6 +723,8 @@ export const CreateModule = () => {
                         outline: "none",
                         backgroundColor: "inherit",
                         color: "black",
+                        width: "100px",
+                        marginLeft: "100px"
                       }}
                     >
                       {val.parentModuleCode || "N/A"}

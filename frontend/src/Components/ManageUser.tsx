@@ -310,13 +310,13 @@ const ManageUser = () => {
         <DialogContent style={{ padding: "24px", backgroundColor: "#f9f9f9" }}>
           {selectedUser && (
             <div>
-              <h4 style={styles.sectionHeader}>Module Assignments</h4>
+              {/* <h4 style={styles.sectionHeader}>Module Assignments</h4> */}
               <div style={styles.tableContainer}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead style={styles.tableHeader}>
                     <tr>
-                      <th style={{ ...styles.headerCell, padding: "12px" }}>Code</th>
-                      <th style={{ ...styles.headerCell, padding: "12px" }}>Module</th>
+                      {/* <th style={{ ...styles.headerCell, padding: "12px" }}>Code</th>
+                      <th style={{ ...styles.headerCell, padding: "12px" }}>Module</th> */}
                       <th style={{ ...styles.headerCell, padding: "12px" }}>Responsible</th>
                       <th style={{ ...styles.headerCell, padding: "12px" }}>Accountable</th>
                       <th style={{ ...styles.headerCell, padding: "12px" }}>Consulted</th>
@@ -326,8 +326,8 @@ const ManageUser = () => {
                   <tbody>
                     {modules.map((module) => (
                       <tr key={module.parentModuleCode}>
-                        <td style={styles.tableCell}>{module.parentModuleCode}</td>
-                        <td style={styles.tableCell}>{module.moduleName}</td>
+                        {/* <td style={styles.tableCell}>{module.parentModuleCode}</td>
+                        <td style={styles.tableCell}>{module.moduleName}</td> */}
                         <td style={styles.tableCell}>
                           <FormControlLabel
                             control={

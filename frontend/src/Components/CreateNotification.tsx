@@ -1,300 +1,189 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Autocomplete, TextField, Chip } from "@mui/material";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Switch, Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, Chip } from "@mui/material";
 
-const CreateNotification = ({ mode = "create" }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
+const DelayedDropdown = ({ selectedDays, onChange }) => {
+  const delayOptions = ["1 day", "7 days", "14 days", "30 days"];
 
-  // Initialize form state
-  const [form, setForm] = useState({
-    subject: "",
-    message: "",
-    module: "",
-    activity: [],
-    status: "",
-  });
-
-  useEffect(() => {
-    if (mode === "edit" && location.state?.notification) {
-      // Populate form with notification data when in edit mode
-      setForm(location.state.notification);
-    }
-  }, [mode, location.state]);
-
-  const [notificationType, setNotificationType] = useState(
-    mode === "edit" ? "edit" : "create"
-  );
-
-  const modules = {
-    Module1: ["Activity 1.1", "Activity 1.2", "Activity 1.3"],
-    Module2: ["Activity 2.1", "Activity 2.2", "Activity 2.3"],
-    Module3: ["Activity 3.1", "Activity 3.2", "Activity 3.3"],
-  };
-
-  const handleChange = (e: any) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleActivityChange = (event: any, value: any) => {
-    setForm((prevForm) => ({ ...prevForm, activity: value }));
-  };
-
-  const handleRadioChange = (e: any) => {
-    setNotificationType(e.target.value);
-  };
-
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-
-    const notificationData = {
-      ...form,
-      notificationType,
-    };
-
-    if (mode === "create") {
-      navigate("/notificationlibrary", { state: { newNotification: notificationData } });
-    } else {
-      navigate("/notificationlibrary", { state: { updatedNotification: notificationData } });
-    }
+  const handleChange = (event) => {
+    onChange(event.target.value);
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <h5 style={styles.title}>
-            {mode === "create" ? "Create Notification" : "Edit Notification"}
-          </h5>
+    <Select
+      multiple
+      value={selectedDays}
+      onChange={handleChange}
+      renderValue={(selected) => (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" ,flexDirection: "column",width:"100px"}}>
+          {selected.map((value) => (
+            <Chip key={value} label={value} />
+          ))}
         </div>
+      )}
+      fullWidth
+      style={{ width: "130px",margin:"10px" }}
+    >
+      {delayOptions.map((option) => (
+        <MenuItem key={option} value={option}>
+          {option}
+        </MenuItem>
+      ))}
+    </Select>
+  );
+};
 
-        <div style={styles.radioGroup}>
-          <label style={styles.radioLabel}>
-            <input
-              type="radio"
-              value="default"
-              checked={notificationType === "default"}
-              onChange={handleRadioChange}
-              style={styles.radioInput}
-            />
-            Default Message (Alert)
-          </label>
-          <label style={styles.radioLabel}>
-            <input
-              type="radio"
-              value="create"
-              checked={notificationType === "create"}
-              onChange={handleRadioChange}
-              style={styles.radioInput}
-            />
-            Personalized
-          </label>
-        </div>
+const CreateNotification = ({ open, onClose }) => {
+  const navigate = useNavigate();
+  const [form, setForm] = useState([
+    { status: "Started", defaultMessage: "", personalizedMessage: "", notificationEnabled: false },
+    { status: "Completed", defaultMessage: "", personalizedMessage: "", notificationEnabled: false },
+    { status: "Delayed", defaultMessage: "", personalizedMessage: [], selectedDays: [], notificationEnabled: false },
+  ]);
 
-        <div>
-          <h5 style={styles.formTitle}>
-            {notificationType === "default"
-              ? "Default Notification"
-              : "Personalized Message"}
-          </h5>
+  const handlePersonalizedMessageChange = (index, value, dayIndex) => {
+    const updatedForm = [...form];
+    const messages = updatedForm[index].personalizedMessage || [];
+    messages[dayIndex] = value;
+    updatedForm[index].personalizedMessage = messages;
+    setForm(updatedForm);
+  };
 
-          {/* Form Fields */}
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Status</label>
-            <select
-              name="status"
-              value={form.status}
-              onChange={handleChange}
-              style={styles.select}
-            >
-              <option value="">Select status</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-              <option value="Delay">Delay</option>
-            </select>
-          </div>
+  const handleToggle = (index) => {
+    setForm((prevForm) =>
+      prevForm.map((row, i) =>
+        i === index ? { ...row, notificationEnabled: !row.notificationEnabled } : row
+      )
+    );
+  };
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Module</label>
-            <select
-              name="module"
-              value={form.module}
-              onChange={handleChange}
-              style={styles.select}
-            >
-              <option value="">Select a module</option>
-              <option value="Module1">Module 1</option>
-              <option value="Module2">Module 2</option>
-              <option value="Module3">Module 3</option>
-            </select>
-          </div>
+  const handleDaysChange = (index, days) => {
+    const updatedForm = [...form];
+    updatedForm[index].selectedDays = days;
+    setForm(updatedForm);
+  };
 
-          {form.module && (
-            <div style={styles.inputGroup}>
-              <label style={styles.label}>Activity</label>
-              <Autocomplete
-                multiple
-                options={modules[form.module] || []}
-                value={form.activity}
-                onChange={handleActivityChange}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      key={option}
-                      label={option}
-                      {...getTagProps({ index })}
+  const handleSave = () => {
+    console.log("Form Data Saved:", form);
+    alert("Form saved successfully!");
+    onClose();
+    navigate("/createmodule");
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>Notification Settings</DialogTitle>
+      <DialogContent dividers>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.tableHeader}>Status</th>
+              <th style={styles.tableHeader}>Notification Setup</th>
+              <th style={styles.tableHeader}>Personalized Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {form.map((row, index) => (
+              <tr key={index}>
+                <td style={styles.tableCell}>
+                  {row.status}
+                  {row.status === "Delayed" && (
+                    <DelayedDropdown
+                      selectedDays={row.selectedDays}
+                      onChange={(days) => handleDaysChange(index, days)}
+                     
                     />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    variant="outlined"
-                    placeholder="Select activities"
+                  )}
+                </td>
+                <td style={styles.tableCell}>
+                  <Switch
+                    checked={row.notificationEnabled}
+                    onChange={() => handleToggle(index)}
                   />
-                )}
-                style={{ width: "100%" }}
-              />
-            </div>
-          )}
-
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Notification Message</label>
-            <textarea
-              name="message"
-              value={form.message}
-              onChange={handleChange}
-              style={styles.textarea}
-              placeholder="Enter notification message"
-            />
-          </div>
-        </div>
-
-        <div style={styles.buttonGroup}>
-          <button type="button" style={styles.cancelButton} onClick={() => navigate("/notificationlibrary")}>
-            Cancel
-          </button>
-          <button
-            type="submit"
-            style={styles.saveButton}
-            onClick={handleSubmit}
-          >
-            {mode === "create" ? "Save" : "Update"}
-          </button>
-        </div>
-      </div>
-    </div>
+                </td>
+                <td style={styles.tableCell}>
+                  {row.status === "Delayed" &&
+                    row.selectedDays.map((day, i) => (
+                      <div key={i} style={{ marginBottom: "6px" }}>
+                        {/* <strong>{day}:</strong> */}
+                        <input
+                          type="text"
+                          value={row.personalizedMessage[i] || ""}
+                          onChange={(e) =>
+                            handlePersonalizedMessageChange(index, e.target.value, i)
+                          }
+                          style={styles.input}
+                          placeholder={`Message for ${day}`}
+                        />
+                      </div>
+                    ))}
+                  {row.status !== "Delayed" && (
+                    <input
+                      type="text"
+                      value={row.personalizedMessage}
+                      onChange={(e) =>
+                        handlePersonalizedMessageChange(index, e.target.value)
+                      }
+                      style={styles.input}
+                      placeholder="Enter text here"
+                    />
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} style={styles.cancelButton}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} style={styles.saveButton}>
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
 const styles = {
-  container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #f8f9fa, #e9ecef)",
-    padding: "20px",
-    background: "#fff",
-  },
-  card: {
-    background: "#fff",
-    borderRadius: "16px",
-    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-    padding: "40px",
+  table: {
     width: "100%",
-    maxWidth: "600px",
+    borderCollapse: "collapse",
   },
-  header: {
-    textAlign: "center",
-    marginBottom: "30px",
-  },
-  title: {
-    fontSize: "28px",
+  tableHeader: {
+    border: "1px solid #ccc",
+    padding: "10px",
+    backgroundColor: "#4F7942",
+    color: "#fff",
     fontWeight: "bold",
-    color: "#333",
-    margin: 0,
   },
-  formTitle: {
-    fontSize: "20px",
-    fontWeight: "500",
-    color: "#007bff",
-    marginBottom: "20px",
-  },
-  radioGroup: {
-    display: "flex",
-    justifyContent: "space-around",
-    marginBottom: "30px",
-  },
-  radioLabel: {
+  tableCell: {
+    padding: "10px",
+    textAlign: "left",
     fontSize: "18px",
-    color: "#333",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  radioInput: {
-    marginRight: "10px",
-    accentColor: "#007bff",
-    cursor: "pointer",
-  },
-  inputGroup: {
-    marginBottom: "25px",
-  },
-  label: {
-    display: "block",
-    fontSize: "16px",
-    color: "#333",
-    marginBottom: "10px",
+    fontWeight: "bold",
+    
   },
   input: {
     width: "100%",
-    padding: "12px 16px",
-    fontSize: "16px",
-    border: "1px solid #ced4da",
-    borderRadius: "10px",
-  },
-  textarea: {
-    width: "100%",
-    padding: "12px 16px",
-    fontSize: "16px",
-    border: "1px solid #ced4da",
-    borderRadius: "10px",
-    minHeight: "100px",
-  },
-  select: {
-    width: "100%",
-    padding: "12px 16px",
-    fontSize: "16px",
-    border: "1px solid #ced4da",
-    borderRadius: "10px",
-  },
-  buttonGroup: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginTop: "30px",
+    padding: "8px",
+    fontSize: "12px",
+    borderRadius: "4px",
   },
   cancelButton: {
-    background: "#4A90E2",
-    color: "black",
-    border: "1px solid #6c757d",
-    padding: "10px 24px",
-    fontSize: "16px",
-    borderRadius: "12px",
+    backgroundColor: "#f44336",
+    color: "white",
+    padding: "8px 16px",
+    borderRadius: "4px",
     cursor: "pointer",
-    transition: "all 0.3s ease",
   },
   saveButton: {
-    background: "#4A90E2",
-    color: "black",
-    border: "none",
-    padding: "10px 24px",
-    fontSize: "16px",
-    borderRadius: "12px",
+    backgroundColor: "#4A90E2",
+    color: "white",
+    padding: "8px 16px",
+    borderRadius: "4px",
     cursor: "pointer",
-    transition: "all 0.3s ease",
-    
   },
 };
 

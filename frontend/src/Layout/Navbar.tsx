@@ -96,7 +96,7 @@ export const Navbar = () => {
   // Handle adding module
   const handleModulePlus = () => {
     if (newModelName.trim()) {
-      navigate("/CreateModule", {
+      navigate("/module", {
         state: {
           moduleName: newModelName,
           mineType: selectedOption,

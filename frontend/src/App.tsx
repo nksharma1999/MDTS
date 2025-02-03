@@ -24,6 +24,8 @@ import DocumentLibrary from "./Components/DocumentLibrary";
 import ViewDocumentPage from "./Components/ViewDocumentPage";
 import CreateNotification from "./Components/CreateNotification";
 import NotificationLibrary from "./Components/NotificationLibrary";
+import AssignRaci from "./Components/AssignRACI";
+import Module from "./Components/Module";
 
 function App() {
 
@@ -68,6 +70,8 @@ function App() {
         <Route path="/view-document" element={<ViewDocumentPage />} />
         <Route path="/createnotification" element={<CreateNotification />} />
         <Route path="/notificationlibrary" element={<NotificationLibrary />} />
+        <Route path="/assignraci" element={<AssignRaci />} />
+        <Route path="/module" element={<Module />} />
 
 
 
