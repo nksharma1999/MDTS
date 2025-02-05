@@ -12,6 +12,7 @@ import {
   Button,
   Box,
 } from "@mui/material";
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 interface Props { }
 
@@ -264,13 +265,13 @@ export const EmployeeRegistration: React.FC<Props> = () => {
 
             {/* Save and Cancel Buttons */}
             <div className="d-flex justify-content-between mt-4">
-              <button className="btn btn-secondary" style={{ backgroundColor:'#4A90E2' ,color:'black',}}onClick={handleCancel}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" style={{ backgroundColor:'#4A90E2' ,color:'black',}}onClick={handleSaveOrUpdate}>
-                {isEdit ? "Update" : "Save"}
-              </button>
-            </div>
+  <button className="btn" style={{ backgroundColor: '#ED9121', color: 'black' }} onClick={handleCancel}>
+    Cancel
+  </button>
+  <button className="btn d-flex align-items-center" style={{ backgroundColor: '#ED9121', color: 'black' }} onClick={handleSaveOrUpdate}>
+    {isEdit ? "Update" : "Save"} <ArrowForwardIcon style={{ marginLeft: "5px" }} />
+  </button>
+</div>
           </form>
         </div>
       </div>

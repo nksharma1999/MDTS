@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Switch, Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, Chip } from "@mui/material";
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 const DelayedDropdown = ({ selectedDays, onChange }) => {
   const delayOptions = ["1 day", "7 days", "14 days", "30 days"];
@@ -15,7 +16,7 @@ const DelayedDropdown = ({ selectedDays, onChange }) => {
       value={selectedDays}
       onChange={handleChange}
       renderValue={(selected) => (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" ,flexDirection: "column",width:"100px"}}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" ,flexDirection: "column",width:"80px"}}>
           {selected.map((value) => (
             <Chip key={value} label={value} />
           ))}
@@ -135,13 +136,13 @@ const CreateNotification = ({ open, onClose }) => {
         </table>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} style={styles.cancelButton}>
-          Cancel
-        </Button>
-        <Button onClick={handleSave} style={styles.saveButton}>
-          Save
-        </Button>
-      </DialogActions>
+  <Button onClick={onClose} style={styles.cancelButton}>
+    Cancel
+  </Button>
+  <Button onClick={handleSave} style={styles.saveButton} endIcon={<ArrowForwardIcon />}>
+    Save
+  </Button>
+</DialogActions>
     </Dialog>
   );
 };
@@ -172,18 +173,20 @@ const styles = {
     borderRadius: "4px",
   },
   cancelButton: {
-    backgroundColor: "#f44336",
-    color: "white",
+    backgroundColor: "#ED9121",
+    color: "black",
     padding: "8px 16px",
     borderRadius: "4px",
     cursor: "pointer",
+    fontSize: "16px",
   },
   saveButton: {
-    backgroundColor: "#4A90E2",
-    color: "white",
+    backgroundColor: "#ED9121",
+    color: "black",
     padding: "8px 16px",
     borderRadius: "4px",
     cursor: "pointer",
+    fontSize: "16px",
   },
 };
 

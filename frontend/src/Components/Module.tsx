@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { generateTwoLetterAcronym } from "../Utils/generateTwoLetterAcronym";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useLocation } from "react-router-dom";
 import {
     TextField,
@@ -34,6 +35,7 @@ import {
     isDuplicateModuleCode
 } from '../Utils/moduleStorage';
 import CreateNotification from "./CreateNotification";
+import UserRolesPage from './AssignRACI';
 
 const Module = () => {
     const [existingAcronyms, setExistingAcronyms] = useState([
@@ -44,6 +46,7 @@ const Module = () => {
     ]);
     const location = useLocation();
     const { moduleName, mineType, moduleCode } = location.state || {};
+    const [openModal, setOpenModal] = useState(false);
     const [moduleData, setModuleData] = useState({
         parentModuleCode: moduleCode ? moduleCode : generateTwoLetterAcronym(moduleName, existingAcronyms), // Initialize from nav bar else keep empty
         moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
@@ -120,9 +123,9 @@ const Module = () => {
                 parentChildMap[activity.prerequisite].push(activity);
             });
 
-            const adjustCodes = (parentCode, newParentCode) => {
+            const adjustCodes = (parentCode: any, newParentCode: any) => {
                 if (parentChildMap[parentCode]) {
-                    parentChildMap[parentCode].forEach((activity, index) => {
+                    parentChildMap[parentCode].forEach((activity: any, index: any) => {
                         const newCode = `${newParentCode}/${(index + 1) * 10}`;
                         activity.code = newCode;
                         activity.prerequisite = newParentCode;
@@ -151,9 +154,9 @@ const Module = () => {
 
     const changeLevel = (increase: boolean) => {
         if (!selectedRow || selectedRow.level === "L1") return;
-        
+
         //Increase button will be act like new sub-activity or a child row now
-        if (increase){
+        if (increase) {
             addSubActivityOrChild();
             return;
         }
@@ -234,7 +237,7 @@ const Module = () => {
 
             <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h5" style={{ flexGrow: 1, color: "green" }}>
+                    <Typography variant="h5" style={{ flexGrow: 1, color: "black", fontWeight: "bold" }}>
                         Tool Bar
                     </Typography>
                     <Stack direction="row" spacing={1}>
@@ -264,7 +267,6 @@ const Module = () => {
                                 <Delete />
                             </IconButton>
                         </Tooltip>
-
                         <button
                             title="Filter"
                             onClick={""}
@@ -297,13 +299,14 @@ const Module = () => {
                                 variant="contained"
                                 startIcon={<Add />}
                                 onClick={addActivity}
-                                sx={{ backgroundColor: '#4A90E2', color: "black" }}
+                                sx={{ backgroundColor: '#ED9121', color: "black" }}
                             >
                                 Add Activity
                             </Button>
                         </Tooltip>
-                        <IconButton title="Assign RACI" onClick={handleAssignRACI}>
+                        <IconButton title="Assign RACI" onClick={() => setOpenModal(true)}>
                             <PersonIcon style={{ color: "blue", fontSize: "30px" }} />
+                            <UserRolesPage open={openModal} handleClose={() => setOpenModal(false)} />
                         </IconButton>
                         <IconButton title="Notifications" onClick={() => setOpen(true)}>
                             <NotificationsIcon style={{ color: "blue", fontSize: "30px" }} />
@@ -365,20 +368,24 @@ const Module = () => {
                 <Button
                     variant="contained"
                     onClick={handleSaveModuleAndActivity}
-                    // disabled={!isSaveEnabled}
                     style={{
                         position: "fixed",
                         bottom: "20px",
                         right: "20px",
                         zIndex: 1000,
-                        fontSize: '18px',
-                        backgroundColor: "#4A90E2", // Blue background
-                        color: "black", // White text for better contrast
-                        //   opacity: isSaveEnabled ? 1 : 0.6, // Dim button if disabled
+                        fontSize: "18px",
+                        backgroundColor: "#ED9121", // Orange background
+                        color: "black", // Black text for contrast
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px", // Space between text and icon
+                        padding: "10px 16px",
+                        borderRadius: "8px",
                     }}
                 >
-                    Save
+                    Save <ArrowForwardIcon style={{ fontSize: "22px" }} />
                 </Button>
+
             </div>
         </div>
     );

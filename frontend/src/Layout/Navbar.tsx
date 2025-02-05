@@ -613,119 +613,132 @@ export const Navbar = () => {
       </nav>
 
 
-      {/* Modal for Adding New Module */}
-      <div
-        className="modal fade"
-        id="exampleModal"
-        tabIndex={-1}
-        aria-labelledby="exampleModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title" id="exampleModalLabel">
-                Add New Module
-              </h5>
-              <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-              ></button>
-            </div>
-            <div className="modal-body">
-              {/* Module Name */}
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Module Name"
-                  value={newModelName}
-                  onChange={(e) => setNewModelName(e.target.value)}
-                />
-                <label>Module Name</label>
-              </div>
+    {/* Modal for Adding New Module */}
+<div
+  className="modal fade"
+  id="exampleModal"
+  tabIndex={-1}
+  aria-labelledby="exampleModalLabel"
+  aria-hidden="true"
+>
+  <div className="modal-dialog modal-dialog-centered">
+    <div className="modal-content" style={{ borderRadius: "12px", padding: "15px" }}>
+      {/* Modal Header */}
+      <div className="modal-header" style={{ borderBottom: "1px solid #ddd" }}>
+        <h5 className="modal-title" id="exampleModalLabel" style={{ fontWeight: "bold" }}>
+          Add New Module
+        </h5>
+        <button
+          type="button"
+          className="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
 
-              <div className="border p-3 mb-3" style={{ borderRadius: "8px" }}>
-                <div
-                  className="d-flex align-items-center justify-content-between"
-                  style={{ gap: "10px", }}
-                >
-                  <label
-                    className="form-label"
-                    style={{
-                      fontWeight: "bold",
-                      fontSize: "16px",
-                      marginBottom: "0",
-                      color: "#000",
-                    }}
-                  >
-                    Applicable Mine Type
-                  </label>
-                  <button
-                    type="button"
-                    className="btn btn-link text-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#addOptionModal"
-                    style={{
-                      fontSize: "25px",
-                      textDecoration: "none",
-                    }}
-                  >
-                    +
-                  </button>
+      {/* Modal Body */}
+      <div className="modal-body">
+        {/* Module Name */}
+        <div className="form-floating mb-3">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Module Name"
+            value={newModelName}
+            onChange={(e) => setNewModelName(e.target.value)}
+            style={{ borderRadius: "8px" }}
+          />
+          <label>Module Name</label>
+        </div>
 
-                  <select
-                    className="form-select"
-                    value={selectedOption}
-                    onChange={(e) => setSelectedOption(e.target.value)}
-                    style={{ width: "40%", height: "40px", fontSize: "14px" }}
-                  >
-                    <option value="">--select--</option>
-                    {options.map((option, index) => (
-                      <option key={index} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-
-                </div>
-              </div>
-
-              {/* Module Level */}
-              <div className="form-floating mb-3">
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Module Level"
-                  value={moduleCode}
-                  onChange={(e) => setModuleCode(e.target.value)}
-                />
-                <label>Module Code</label>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                data-bs-dismiss="modal"
-                style={{ backgroundColor: '#4A90E2', color: 'black' }}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleModulePlus}
-                style={{ backgroundColor: '#4A90E2', color: 'black' }}
-              >
-                Add Module
-              </button>
-            </div>
+        {/* Applicable Mine Type */}
+        <div className="border p-3 mb-3" style={{ borderRadius: "10px", background: "#f8f9fa" }}>
+          <div
+            className="d-flex align-items-center justify-content-between"
+            style={{ gap: "10px" }}
+          >
+            <label
+              className="form-label"
+              style={{
+                fontWeight: "bold",
+                fontSize: "16px",
+                marginBottom: "0",
+                color: "#333",
+              }}
+            >
+              Applicable Mine Type
+            </label>
+            <button
+              type="button"
+              className="btn btn-link text-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#addOptionModal"
+              style={{
+                fontSize: "24px",
+                textDecoration: "none",
+                fontWeight: "bold",
+              }}
+            >
+              +
+            </button>
           </div>
+
+          {/* Dropdown */}
+          <select
+            className="form-select mt-2"
+            value={selectedOption}
+            onChange={(e) => setSelectedOption(e.target.value)}
+            style={{
+              width: "100%",
+              height: "45px",
+              fontSize: "14px",
+              borderRadius: "8px",
+            }}
+          >
+            <option value="">-- Select --</option>
+            {options.map((option, index) => (
+              <option key={index} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Module Code */}
+        <div className="form-floating mb-3">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Module Code"
+            value={moduleCode}
+            onChange={(e) => setModuleCode(e.target.value)}
+            style={{ borderRadius: "8px" }}
+          />
+          <label>Module Code</label>
         </div>
       </div>
+
+      {/* Modal Footer */}
+      <div className="modal-footer" style={{ borderTop: "1px solid #ddd" }}>
+        <button
+          type="button"
+          className="btn"
+          onClick={handleModulePlus}
+          style={{
+            backgroundColor: "#ED9121",
+            color: "black",
+            borderRadius: "8px",
+            padding: "8px 16px",
+            fontWeight: "bold",
+          }}
+        >
+          Add Module
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
       {/* Modal for Adding New Mine Type */}

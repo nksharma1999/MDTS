@@ -112,7 +112,7 @@ export const ModuleLibrary = () => {
       {/* Content */}
       <Box sx={{ display: 'flex', flex: 1, gap: '0px', }}>
         {/* Left Section: Search and Table */}
-        <Box sx={{ flex: 3, display:"flex", flexDirection: 'column' ,marginTop:"57px"}}>
+        <Box sx={{ flex: 3, display:"flex", flexDirection: 'column' ,marginTop:"10px"}}>
           <TableContainer component={Paper} sx={{ boxShadow: 3, borderRadius: 1, flex: 1 }}>
             <Table>
               <TableHead>
@@ -164,11 +164,12 @@ export const ModuleLibrary = () => {
             alt="Module Library Illustration"
             style={{
               width: '100%',
-              height: '87%',
+              height: '100%',
               // objectFit: 'cover',
-              marginBottom:"50%",
+              marginBottom:"12%",
+              marginTop:"15%",
               maxHeight: '100%',
-              borderRadius: '1px',
+              borderRadius: '2px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
               margin:"0px"
             }}
