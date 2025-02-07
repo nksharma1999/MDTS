@@ -1,4 +1,4 @@
-import { Button, Typography, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import Hero from "./Hero";
 
 const Dashboard = () => {
@@ -15,14 +15,6 @@ const Dashboard = () => {
             >
                 <Typography variant="h3" fontWeight="bold">Welcome to Mining Project</Typography>
                 <Typography variant="body1" color="textSecondary" marginTop={2}>Efficient Mining Management System</Typography>
-                <Box marginTop={3}>
-                    <Button variant="contained" color="primary" href="/signin" sx={{ marginRight: 2 }}>
-                        Sign In
-                    </Button>
-                    <Button variant="contained" color="success" href="/register">
-                        Register
-                    </Button>
-                </Box>
             </Box>
         </>
     );

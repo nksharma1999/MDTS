@@ -8,7 +8,7 @@ const LandingPage = () => {
         <>
             <Box
                 sx={{
-                    background: "linear-gradient(135deg, #1a1a2e 20%, #e33b28 80%)",
+                    background: "linear-gradient(135deg, #257180 20%, #e33b28 60%, #257180 80%)",
                     textAlign: "center",
                     position: "relative",
                     display: "flex",
@@ -21,12 +21,12 @@ const LandingPage = () => {
             >
                 <div className="logo-sections">
                     <img
-                        src="../public/image2.png"
+                        src="../public/images/logos/main-logo.png"
                         alt="Logo"
                         className="logo-image"
                     />
                 </div>
-                <p className="heading-title">Mine Development Tracking System (MDTS)</p>
+                <p className="heading-title">Mine Development Tracking System</p>
             </Box>
 
             <div className="navbar-div" >

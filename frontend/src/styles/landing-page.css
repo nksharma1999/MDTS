@@ -22,10 +22,11 @@
 }
 
 .heading-title {
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 700;
     padding-top: 10px;
     color: #fff;
+    margin-top: 8px;
     padding-left: 10px;
     font-family: 'Syne', sans-serif;
     text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);

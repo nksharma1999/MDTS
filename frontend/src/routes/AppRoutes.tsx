@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Register from "../pages/Registration";
 import Dashboard from "../pages/dashboard";
 import LandingPage from "../pages/LandingPage";
@@ -7,7 +7,6 @@ import CreateDocument from "../components/CreateDocument";
 import { CreateModule } from "../components/CreateModule";
 import DocumentPage from "../components/Document";
 import DocumentLibrary from "../components/DocumentLibrary";
-import { EmployeeRegistration } from "../components/EmployeeRegistration";
 import { HolidayCalender } from "../components/HolidayCalender";
 import ManageUser from "../components/ManageUser";
 import ModuleBuilder from "../components/ModuleBuilder";
@@ -25,15 +24,21 @@ import Projects from "../pages/Projects";
 import KnowledgeCenter from "../pages/KnowledgeCenter";
 import Document from "../pages/Document";
 import DataMaster from "../pages/DataMaster";
+import NotFound from "../pages/NotFound";
+import { EmployeeRegistration } from "../components/EmployeeRegistration";
 
 const AppRoutes = () => {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<LandingPage />}>
-                    <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/" element={<Navigate to="/not-found" replace />} />
+                <Route path="/sign-in" element={<SignIn />} />
+                <Route path="/register" element={<Register />} />
+                <Route element={<LandingPage />}>
+                    <Route path="/home" element={<Dashboard />} />
+                    <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
-                    <Route path="/EmployeeRegistration" element={<EmployeeRegistration />} />
+                    <Route path="/employee-registration" element={<EmployeeRegistration />} />
                     <Route path="/create/status-update" element={<ModuleBuilder />} />
                     <Route path="/CreateModule" element={<CreateModule />} />
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
@@ -54,9 +59,8 @@ const AppRoutes = () => {
                     <Route path="/projects" element={<Projects />} />
                     <Route path="/knowledge-center" element={<KnowledgeCenter />} />
                     <Route path="/document" element={<Document />} />
+                    <Route path="*" element={<Navigate to="/not-found" replace />} />
                 </Route>
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/register" element={<Register />} />
             </Routes>
         </Router>
     );

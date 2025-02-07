@@ -8,13 +8,14 @@ import {
     MenuItem,
     IconButton,
     Divider,
-    Box
+    Box,
+    Button
 } from "@mui/material";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import "../styles/nav-bar.css";
 
 const navLinks = [
-    { label: "Home", action: "/dashboard" },
+    { label: "Home", action: "/home" },
     { label: "About", action: "/about" },
     { label: "Projects", action: "/projects" },
     { label: "Document", action: "/document" },
@@ -55,7 +56,7 @@ const Navbar = () => {
     const isActive = (action: string) => location.pathname.startsWith(action);
 
     return (
-        <AppBar position="static" sx={{ bgcolor: "#212121" }}>
+        <AppBar position="static" sx={{ bgcolor: "#257180" }}>
             <Toolbar>
                 <Typography variant="h6" sx={{ flexGrow: 1 }}>
                     MDTS
@@ -87,7 +88,7 @@ const Navbar = () => {
                                 <IconButton
                                     className="nav-menu"
                                     color="inherit"
-                                    sx={{ fontSize: "1.2rem" }}
+                                    sx={{ fontSize: "1.1rem !important" }}
                                 >
                                     {link.label} <ArrowDropDownIcon />
                                 </IconButton>
@@ -147,6 +148,23 @@ const Navbar = () => {
                         )}
                     </div>
                 ))}
+                <Button
+                    component={Link}
+                    to="/sign-in"
+                    variant="contained"
+                    className="signin-btn"
+                >
+                    Login
+                </Button>
+                <Button
+                    sx={{ marginLeft: "20px" }}
+                    component={Link}
+                    to="/employee-registration"
+                    variant="contained"
+                    className="signin-btn"
+                >
+                    Registration
+                </Button>
             </Toolbar>
         </AppBar>
     );

@@ -1,6 +1,4 @@
 .nav-menu {
-    text-transform: uppercase !important;
-    font-size: 14px !important;
     margin-left: -8px !important;
 }
 
@@ -91,4 +89,51 @@
     .nav-menu {
         font-size: 14px !important;
     }
+}
+
+.signin-btn {
+    outline: 2px solid #fff !important;
+    background-color: transparent !important;
+    color: white;
+    text-transform: lowercase !important;
+    border-radius: 5px;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
+    font-size: 17px !important;
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+.signin-btn:hover {
+    background-color: #e33b28 !important;
+    outline: none !important;
+    color: white !important;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    filter: brightness(1.2);
+}
+
+.signin-btn:active {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    filter: brightness(1);
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.signin-btn:focus {
+    animation: pulse 1s ease-in-out infinite;
 }
