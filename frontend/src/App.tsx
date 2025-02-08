@@ -1,31 +1,31 @@
 import { Route, Routes } from "react-router-dom";
 import "./App.css";
-import { Header } from "./Layout/Header";
-import { Navbar } from "./Layout/Navbar";
-import { RegisterNewProject } from "./Components/RegisterNewProject";
-import { EmployeeRegistration } from "./Components/EmployeeRegistration";
-import { ModuleBuilder } from "./Components/ModuleBuilder";
-import {CreateModule} from './Components/CreateModule';
-import { ModuleLibrary } from './Components/ModuleLibrary';
+import { Header } from "./layouts/Header";
+import { Navbar } from "./layouts/Navbar";
+import { RegisterNewProject } from "./components/RegisterNewProject";
+import { EmployeeRegistration } from "./components/EmployeeRegistration";
+import { ModuleBuilder } from "./components/ModuleBuilder";
+import { CreateModule } from './components/CreateModule';
+import { ModuleLibrary } from './components/ModuleLibrary';
 import React, { useEffect } from "react";
-import {ModuleDetails} from './Components/ModuleDetail';
-import {HolidayCalender} from './Components/HolidayCalender';
+import { ModuleDetails } from './components/ModuleDetail';
+import { HolidayCalender } from './components/HolidayCalender';
 import {
   initializeModules,
 } from './Utils/moduleStorage';
-import { ProjectDetails } from "./Components/ProjectDetails";
-import ProjectParametersPage from "./Components/ProjectParameterPage";
-import ManageUser from "./Components/ManageUser";
-import ViewUser from "./Components/ViewUser";
-import { TimelineBuilder } from "./Components/TimelineBuilder";
-import DocumentPage from "./Components/Document";
-import CreateDocument from "./Components/CreateDocument";
-import DocumentLibrary from "./Components/DocumentLibrary";
-import ViewDocumentPage from "./Components/ViewDocumentPage";
-import CreateNotification from "./Components/CreateNotification";
-import NotificationLibrary from "./Components/NotificationLibrary";
-import AssignRaci from "./Components/AssignRACI";
-import Module from "./Components/Module";
+import { ProjectDetails } from "./components/ProjectDetails";
+import ProjectParametersPage from "./components/ProjectParameterPage";
+import ManageUser from "./components/ManageUser";
+import ViewUser from "./components/ViewUser";
+import { TimelineBuilder } from "./components/TimelineBuilder";
+import DocumentPage from "./components/Document";
+import CreateDocument from "./components/CreateDocument";
+import DocumentLibrary from "./components/DocumentLibrary";
+import ViewDocumentPage from "./components/ViewDocumentPage";
+import CreateNotification from "./components/CreateNotification";
+import NotificationLibrary from "./components/NotificationLibrary";
+import AssignRaci from "./components/AssignRACI";
+import Module from "./components/Module";
 
 function App() {
 
@@ -72,9 +72,6 @@ function App() {
         <Route path="/notificationlibrary" element={<NotificationLibrary />} />
         <Route path="/assignraci" element={<AssignRaci />} />
         <Route path="/module" element={<Module />} />
-
-
-
         <Route path="/timeline-builder" element={<TimelineBuilder />} />
       </Routes>
     </>
