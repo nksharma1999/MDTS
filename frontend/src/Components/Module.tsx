@@ -72,94 +72,124 @@ const Module = () => {
     };
 
     const addActivity = () => {
-        //Only first row will be created by parent module, it measn only L2 as add activity
-        if (!selectedRow || 'L1' !== selectedRow.level) return;
-        addSubActivityOrChild();
-    };
-
-    const addSubActivityOrChild = () => {
-        // Get all existing codes for accurate numbering
-        const parentCode = selectedRow.code || moduleData.parentModuleCode;
-        console.log("selectedRow.code : ", selectedRow.code);
-        const siblings = moduleData.activities.filter(a => a.prerequisite === parentCode);
-
-        // Find highest existing number under this parent
-        const existingNumbers = siblings.map(a => {
-            const parts = a.code.split('/');
-            return parseInt(parts[parts.length - 1]);
-        });
-
-        const newNumber = existingNumbers.length > 0
-            ? Math.max(...existingNumbers) + 10
-            : 10;
-
-        const newCode = `${parentCode}/${newNumber}`;
+        if (!selectedRow) return;
+    
+        const isModuleSelected = selectedRow.level === "L1"; // Check if L1 is selected
+        const parentCode = isModuleSelected ? moduleData.parentModuleCode : selectedRow.code;
+        const newLevel = isModuleSelected ? "L2" : selectedRow.level;
+    
+        // Find all activities at the same level
+        const sameLevelActivities = moduleData.activities.filter(a => a.level === newLevel);
+        
+        // Find the index of the selectedRow in the list
+        const selectedIndex = sameLevelActivities.findIndex(a => a.code === selectedRow.code);
+        
+        // Determine the new activity number
+        const lastActivity = sameLevelActivities.length > 0 ? sameLevelActivities[sameLevelActivities.length - 1] : null;
+        const lastNumber = lastActivity ? parseInt(lastActivity.code.split('/').pop()) : 0;
+    
+        // Assign new code
+        const newNumber = isModuleSelected
+            ? (lastNumber ? lastNumber + 10 : 10)
+            : parseInt(selectedRow.code.split('/').pop()) + 10;
+        
+        const newCode = isModuleSelected
+            ? `${moduleData.parentModuleCode}/${newNumber}`
+            : `${parentCode.split('/').slice(0, -1).join('/')}/${newNumber}`;
+    
+        // Timestamp for naming the new activity
+        const timestamp = new Date().toLocaleTimeString('en-GB');
+    
+        // Create new activity
         const newActivity = {
             code: newCode,
-            activityName: "New Activity",
+            activityName: "New Activity " + timestamp,
             duration: 10,
-            prerequisite: parentCode,
-            level: `L${parseInt(selectedRow.level.slice(1)) + 1}`
+            prerequisite: isModuleSelected ? "-" : selectedRow.code,
+            level: newLevel
         };
-
+    
+        // Reorder and update existing activities
+        const updatedActivities = [];
+        let inserted = false;
+    
+        moduleData.activities.forEach(activity => {
+            if (activity.code === selectedRow.code) {
+                updatedActivities.push(activity);
+                updatedActivities.push(newActivity);
+                inserted = true;
+            } else if (inserted && activity.level === newLevel) {
+                // Increment the numbering for activities at the same level after the insertion
+                const activityNumber = parseInt(activity.code.split('/').pop());
+                const updatedCode = activity.code.replace(`/${activityNumber}`, `/${activityNumber + 10}`);
+                updatedActivities.push({ ...activity, code: updatedCode });
+            } else {
+                updatedActivities.push(activity);
+            }
+        });
+    
+        // If adding under L1 and no insertion happened, push to the end
+        if (isModuleSelected && !inserted) {
+            updatedActivities.push(newActivity);
+        }
+    
+        // Update state
         setModuleData(prev => ({
             ...prev,
-            activities: [...prev.activities, newActivity]
+            activities: updatedActivities
         }));
-    }
+    
+        console.log("Updated Activities:", updatedActivities);
+    };
+    
+
 
     const deleteActivity = () => {
         if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
-
+    
         setModuleData(prev => {
-            let filteredActivities = prev.activities.filter(activity => !activity.code.startsWith(selectedRow.code));
-            let updatedActivities = [];
-            let parentChildMap = {};
-
-            filteredActivities.forEach(activity => {
-                if (!parentChildMap[activity.prerequisite]) {
-                    parentChildMap[activity.prerequisite] = [];
-                }
-                parentChildMap[activity.prerequisite].push(activity);
+            let activities = [...prev.activities];
+    
+            // Step 1: Find all children of the selected activity
+            let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
+    
+            // Step 2: Update children to adopt the deleted row's parent
+            children.forEach(child => {
+                let newParentCode = selectedRow.prerequisite; // Assign new parent
+                let childParts = child.code.split("/");
+                childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop(); // Adjust numbering
+                child.code = newParentCode + "/" + childParts.slice(-1); // Rebuild child code
+                child.prerequisite = newParentCode; // Update prerequisite
             });
-
-            const adjustCodes = (parentCode: any, newParentCode: any) => {
-                if (parentChildMap[parentCode]) {
-                    parentChildMap[parentCode].forEach((activity: any, index: any) => {
-                        const newCode = `${newParentCode}/${(index + 1) * 10}`;
-                        activity.code = newCode;
-                        activity.prerequisite = newParentCode;
-                        updatedActivities.push(activity);
-                        adjustCodes(activity.code, newCode);
-                    });
-                }
-            };
-
-            let mainActivities = filteredActivities.filter(activity => activity.prerequisite === moduleData.parentModuleCode);
-            mainActivities.forEach((activity, index) => {
-                const newCode = `${moduleData.parentModuleCode}/${(index + 1) * 10}`;
+    
+            // Step 3: Remove the selected activity
+            let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
+    
+            // Step 4: Renumber the remaining activities at the same level
+            let sameLevelActivities = updatedActivities.filter(activity => {
+                let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
+                return activity.code.startsWith(parentCode) && activity.level === selectedRow.level;
+            });
+    
+            sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
+    
+            sameLevelActivities.forEach((activity, index) => {
+                let newCode = `${selectedRow.code.split("/").slice(0, -1).join("/")}/${(index + 1) * 10}`;
                 activity.code = newCode;
-                updatedActivities.push(activity);
-                adjustCodes(activity.code, newCode);
             });
-
+    
             return {
                 ...prev,
                 activities: updatedActivities
             };
         });
-
+    
         setSelectedRow(null);
     };
+    
 
-    const changeLevel = (increase: boolean) => {
+    const increaseLevel = () => {
         if (!selectedRow || selectedRow.level === "L1") return;
-
-        //Increase button will be act like new sub-activity or a child row now
-        if (increase) {
-            addSubActivityOrChild();
-            return;
-        }
 
         setModuleData((prev) => {
             let activities = [...prev.activities];
@@ -169,69 +199,134 @@ const Module = () => {
             let activity = activities[activityIndex];
             let currentLevel = parseInt(activity.level.slice(1));
 
-            if (increase && currentLevel >= 3) return prev; // Max level L3
-            if (!increase && currentLevel === 2) return prev; // Min level L2
+            if (currentLevel >= 3) return prev; // Max level L3
 
-            let newPrerequisite, newLevelValue;
+            // Find immediate above row of the same level
+            let aboveIndex = activityIndex - 1;
+            while (aboveIndex >= 0 && activities[aboveIndex].level !== activity.level) {
+                aboveIndex--;
+            }
 
-            let parentCodeParts = activity.prerequisite.split("/");
-            parentCodeParts.pop();
-            newPrerequisite = parentCodeParts.join("/") || prev.parentModuleCode;
-            newLevelValue = currentLevel - 1;
+            if (aboveIndex < 0) return prev;
 
-            const parentExists =
-                newPrerequisite === prev.parentModuleCode ||
-                activities.some((a) => a.code === newPrerequisite);
+            let aboveActivity = activities[aboveIndex];
 
-            if (!parentExists) return prev;
+            // Find the last child of the above activity to generate the next sequential code
+            let lastChildCode = aboveActivity.code;
+            let children = activities.filter((a) => a.code.startsWith(`${aboveActivity.code}/`));
+            if (children.length > 0) {
+                let lastChild = children[children.length - 1];
+                let lastChildParts = lastChild.code.split("/");
+                let lastChildNumber = parseInt(lastChildParts[lastChildParts.length - 1]);
+                lastChildCode = `${aboveActivity.code}/${lastChildNumber + 10}`; // Increment by 10
+            } else {
+                lastChildCode = `${aboveActivity.code}/10`; // First child
+            }
 
-            let siblingsNewParent = activities.filter((a) => a.prerequisite === newPrerequisite);
-            let existingNumbers = siblingsNewParent.map((a) => {
-                const parts = a.code.split("/");
-                return parseInt(parts[parts.length - 1]) || 0;
-            });
-
-            let newNumber = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 10 : 10;
-            let newCode = newPrerequisite === prev.parentModuleCode
-                ? `${prev.parentModuleCode}/${newNumber}`
-                : `${newPrerequisite}/${newNumber}`;
+            let newLevelValue = currentLevel + 1;
 
             let updatedActivity = {
                 ...activity,
-                code: newCode,
-                prerequisite: newPrerequisite,
+                code: lastChildCode,
+                prerequisite: aboveActivity.code,
                 level: `L${newLevelValue}`,
             };
 
             let updatedActivities = [...activities];
             updatedActivities[activityIndex] = updatedActivity;
 
-            const updateChildren = (oldParent, newParent) => {
-                updatedActivities.forEach((a) => {
-                    if (a.prerequisite === oldParent) {
-                        let parts = a.code.split("/");
-                        let newChildCode = `${newParent}/${parts[parts.length - 1]}`;
-                        a.code = newChildCode;
-                        a.prerequisite = newParent;
-                        updateChildren(oldParent, newChildCode);
-                    }
-                });
-            };
+            // Adjust remaining activities at previous level (L2)
+            let previousLevel = `L${currentLevel}`;
+            let siblings = updatedActivities.filter((a) => a.level === previousLevel && a.code !== activity.code);
 
-            updateChildren(activity.code, newCode);
+            let lastSiblingCode = aboveActivity.code; // Find the last valid L2 code
+            let count = 10;
+
+            siblings.forEach((sibling) => {
+                let newSiblingCode = `${lastSiblingCode.split("/")[0]}/${count}`;
+                sibling.code = newSiblingCode;
+                sibling.prerequisite = lastSiblingCode;
+                count += 10;
+            });
+
+            // Sort activities by code to ensure they are in correct order
+            updatedActivities.sort((a, b) => {
+                let aParts = a.code.split("/").map(Number);
+                let bParts = b.code.split("/").map(Number);
+                for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+                    let aPart = aParts[i] || 0;
+                    let bPart = bParts[i] || 0;
+                    if (aPart !== bPart) return aPart - bPart;
+                }
+                return 0;
+            });
 
             return { ...prev, activities: updatedActivities };
         });
     };
 
-    const handleDialogClose = () => {
-        setOpen(false); // Close the dialog
+    const decreaseLevel = () => {
+        if (!selectedRow || selectedRow.level === "L1") return; // L1 cannot be decreased
+    
+        setModuleData((prev) => {
+            let activities = [...prev.activities];
+            let activityIndex = activities.findIndex((a) => a.code === selectedRow.code);
+            if (activityIndex === -1) return prev;
+    
+            let activity = activities[activityIndex];
+            let currentLevel = parseInt(activity.level.slice(1));
+    
+            // Step A: Find the nearest parent row with a lower level
+            let aboveIndex = activityIndex - 1;
+            let newParentCode = "";
+            while (aboveIndex >= 0) {
+                let aboveActivity = activities[aboveIndex];
+                let aboveLevel = parseInt(aboveActivity.level.slice(1));
+    
+                if (aboveLevel < currentLevel) {
+                    newParentCode = aboveActivity.code;
+                    break;
+                }
+                aboveIndex--;
+            }
+    
+            if (!newParentCode) return prev; // No valid parent found
+    
+            // Step B: Generate new L2 code (last L2 code + 10)
+            let lastL2 = activities
+                .filter(a => a.level === "L2")
+                .pop()?.code || `${newParentCode}/0`;
+    
+            let lastL2Number = parseInt(lastL2.split("/").pop()) || 0;
+            let newCode = `${newParentCode.split("/")[0]}/${lastL2Number + 10}`;
+            let newLevel = `L${currentLevel - 1}`;
+    
+            // Step C: Update the selected row
+            let updatedActivity = {
+                ...activity,
+                code: newCode,
+                prerequisite: newParentCode,
+                level: newLevel,
+            };
+    
+            let updatedActivities = [...activities];
+            updatedActivities[activityIndex] = updatedActivity;
+    
+            // Step D: Adjust child modules (if any)
+            for (let i = activityIndex + 1; i < updatedActivities.length; i++) {
+                let item = updatedActivities[i];
+    
+                if (item.prerequisite.startsWith(selectedRow.code)) {
+                    let newItemCode = item.code.replace(selectedRow.code, newCode);
+                    item.code = newItemCode;
+                    item.prerequisite = newCode;
+                }
+            }
+    
+            return { ...prev, activities: updatedActivities };
+        });
     };
-
-    const handleAssignRACI = () => {
-        navigate('/assignraci');
-    };
-
+    
     return (
         <div style={{ padding: '20px' }}>
 
@@ -243,7 +338,7 @@ const Module = () => {
                     <Stack direction="row" spacing={1}>
 
                         <Tooltip title="Decrease Level">
-                            <IconButton onClick={() => changeLevel(false)} style={{
+                            <IconButton onClick={() => decreaseLevel()} style={{
                                 padding: 0,
                                 margin: 0,
                                 fontSize: "22px",
@@ -253,7 +348,7 @@ const Module = () => {
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Increase Level">
-                            <IconButton onClick={() => changeLevel(true)} style={{
+                            <IconButton onClick={() => increaseLevel()} style={{
                                 padding: 0,
                                 margin: 0,
                                 fontSize: "22px",
