@@ -31,7 +31,7 @@ const AppRoutes = () => {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Navigate to="/not-found" replace />} />
+                <Route path="/" element={<Navigate to="/home" replace />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/register" element={<Register />} />
                 <Route element={<LandingPage />}>
