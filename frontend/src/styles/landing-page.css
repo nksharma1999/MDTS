@@ -1,0 +1,49 @@
+.logo-sections {
+    background: white;
+    padding: 3px 0px 3px 5px;
+    border-radius: 6px;
+    border-right: 6px solid #e33b28;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease-in-out;
+    margin-left: 10px;
+
+    &:hover {
+        transform: scale(1.02);
+        box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.25);
+    }
+}
+
+.logo-image {
+    height: 65px;
+    object-fit: contain;
+    max-height: 100%;
+}
+
+.heading-title {
+    font-size: 22px;
+    font-weight: 700;
+    padding-top: 10px;
+    color: #fff;
+    margin-top: 8px;
+    padding-left: 10px;
+    font-family: 'Syne', sans-serif;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+    transition: color 0.3s ease-in-out;
+    text-shadow: 3px 3px 10px rgba(236, 125, 125, 0.5);
+}
+
+
+.navbar-div {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: top 0.3s ease;
+}
+
+.main-content {
+    transition: margin-top 0.3s ease;
+}
