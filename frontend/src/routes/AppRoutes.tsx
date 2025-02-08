@@ -26,6 +26,7 @@ import Document from "../pages/Document";
 import DataMaster from "../pages/DataMaster";
 import NotFound from "../pages/NotFound";
 import { EmployeeRegistration } from "../components/EmployeeRegistration";
+import Module from "../components/Module";
 
 const AppRoutes = () => {
     return (
@@ -57,6 +58,7 @@ const AppRoutes = () => {
                     <Route path="/data-master" element={<DataMaster />} />
                     <Route path="/about" element={<About />} />
                     <Route path="/projects" element={<Projects />} />
+                    <Route path="/modules" element={<Module />} />
                     <Route path="/knowledge-center" element={<KnowledgeCenter />} />
                     <Route path="/document" element={<Document />} />
                     <Route path="*" element={<Navigate to="/not-found" replace />} />
