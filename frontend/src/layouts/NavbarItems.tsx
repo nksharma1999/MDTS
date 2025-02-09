@@ -179,7 +179,7 @@ const Navbar: React.FC = () => {
                                         </Menu>
                                     }
                                 >
-                                    <Button type="text" style={{ color: "white" }}>
+                                    <Button type="text" style={{ color: "white", fontSize: "16px" }}>
                                         {link.label} <DownOutlined />
                                     </Button>
                                 </Dropdown>
