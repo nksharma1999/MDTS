@@ -50,7 +50,6 @@
     color: #e33b28 !important;
 }
 
-/* Mobile View */
 @media (max-width: 600px) {
     .nav-item {
         display: block;
@@ -76,7 +75,6 @@
     }
 }
 
-/* Desktop and Tablet View */
 @media (min-width: 601px) {
     .nav-item {
         padding: 5px 10px;

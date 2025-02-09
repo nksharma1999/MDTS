@@ -42,16 +42,6 @@ export const RegisterNewProject: React.FC = () => {
   };
 
 
-
-  // const handleSubmit = () => {
-  //   const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
-  //   finalData[currentStep - 1] = { ...formData };
-
-  //   console.log("Final Form Data:", finalData);
-  //   localStorage.setItem("projectFormData", JSON.stringify(finalData));
-  // };
-
-
   const handleChange = (name: string, value: any) => {
     setFormData({ ...formData, [name]: value });
   };
@@ -64,25 +54,6 @@ export const RegisterNewProject: React.FC = () => {
     setIsModalVisible(false);
   };
 
-  // const handleSubmit = () => {
-  //   const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
-  //   finalData[currentStep - 1] = { ...formData };
-  //   localStorage.setItem("projectFormData", JSON.stringify(finalData));
-
-  //   notification.success({
-  //     message: "Project Created Successfully",
-  //     description: "All form data has been saved and cleared.",
-  //     duration: 3,
-  //   });
-
-  //   setFormStepsData([]);
-  //   setFormData({});
-  //   setCurrentStep(1);
-  //   setIsModalVisible(false);
-  // };
-
-
-  // Component A
   const handleSubmit = () => {
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
@@ -101,7 +72,6 @@ export const RegisterNewProject: React.FC = () => {
     setCurrentStep(1);
     setIsModalVisible(false);
   };
-
 
   const renderStepForm = () => {
     switch (currentStep) {
