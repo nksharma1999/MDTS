@@ -19,12 +19,34 @@
 
 .bg-primary {
     background-color: #e33b28 !important;
+    color: white !important;
+    transition: background-color 0.3s ease;
+}
+
+.bg-primary:hover {
+    background-color: #c5301f !important;
 }
 
 .bg-secondary {
     background-color: #257180 !important;
+    color: white !important;
+    transition: background-color 0.3s ease !important;
+}
+
+.bg-secondary:hover {
+    background-color: #1e5a65 !important;
 }
 
 .bg-tertiary {
     background-color: #6c757d !important;
+    color: white !important;
+    transition: background-color 0.3s ease !important;
+}
+
+.bg-tertiary:hover {
+    background-color: #565d64 !important;
+}
+
+.ant-form-item {
+    margin-bottom: 0px !important;
 }

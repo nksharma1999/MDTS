@@ -168,16 +168,17 @@ a {
 }
 
 .text {
-    margin-top: 5rem;
+    margin-top: 2rem;
     font-weight: 300;
     color: var(--blue);
 }
 
 .button {
-    margin-top: 4rem;
-    padding: 1.2rem 3rem;
-    color: var(--white);
+    margin-top: 3rem;
+    padding: .8rem 3rem;
+    color: var(--white) !important;
     background-color: var(--green);
+    border-radius: 5px;
 }
 
 .button:hover {
