@@ -85,7 +85,7 @@ const Navbar = () => {
     const handleModulePlus = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
-                navigate("/modules", {
+                navigate("/module", {
                     state: {
                         moduleName: newModelName,
                         mineType: selectedOption,

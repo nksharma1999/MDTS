@@ -73,33 +73,33 @@ const Module = () => {
 
     const addActivity = () => {
         if (!selectedRow) return;
-    
+
         const isModuleSelected = selectedRow.level === "L1"; // Check if L1 is selected
         const parentCode = isModuleSelected ? moduleData.parentModuleCode : selectedRow.code;
         const newLevel = isModuleSelected ? "L2" : selectedRow.level;
-    
+
         // Find all activities at the same level
         const sameLevelActivities = moduleData.activities.filter(a => a.level === newLevel);
-        
+
         // Find the index of the selectedRow in the list
         const selectedIndex = sameLevelActivities.findIndex(a => a.code === selectedRow.code);
-        
+
         // Determine the new activity number
         const lastActivity = sameLevelActivities.length > 0 ? sameLevelActivities[sameLevelActivities.length - 1] : null;
         const lastNumber = lastActivity ? parseInt(lastActivity.code.split('/').pop()) : 0;
-    
+
         // Assign new code
         const newNumber = isModuleSelected
             ? (lastNumber ? lastNumber + 10 : 10)
             : parseInt(selectedRow.code.split('/').pop()) + 10;
-        
+
         const newCode = isModuleSelected
             ? `${moduleData.parentModuleCode}/${newNumber}`
             : `${parentCode.split('/').slice(0, -1).join('/')}/${newNumber}`;
-    
+
         // Timestamp for naming the new activity
         const timestamp = new Date().toLocaleTimeString('en-GB');
-    
+
         // Create new activity
         const newActivity = {
             code: newCode,
@@ -108,11 +108,11 @@ const Module = () => {
             prerequisite: isModuleSelected ? "-" : selectedRow.code,
             level: newLevel
         };
-    
+
         // Reorder and update existing activities
         const updatedActivities = [];
         let inserted = false;
-    
+
         moduleData.activities.forEach(activity => {
             if (activity.code === selectedRow.code) {
                 updatedActivities.push(activity);
@@ -127,32 +127,32 @@ const Module = () => {
                 updatedActivities.push(activity);
             }
         });
-    
+
         // If adding under L1 and no insertion happened, push to the end
         if (isModuleSelected && !inserted) {
             updatedActivities.push(newActivity);
         }
-    
+
         // Update state
         setModuleData(prev => ({
             ...prev,
             activities: updatedActivities
         }));
-    
+
         console.log("Updated Activities:", updatedActivities);
     };
-    
+
 
 
     const deleteActivity = () => {
         if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
-    
+
         setModuleData(prev => {
             let activities = [...prev.activities];
-    
+
             // Step 1: Find all children of the selected activity
             let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
-    
+
             // Step 2: Update children to adopt the deleted row's parent
             children.forEach(child => {
                 let newParentCode = selectedRow.prerequisite; // Assign new parent
@@ -161,57 +161,59 @@ const Module = () => {
                 child.code = newParentCode + "/" + childParts.slice(-1); // Rebuild child code
                 child.prerequisite = newParentCode; // Update prerequisite
             });
-    
+
             // Step 3: Remove the selected activity
             let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
-    
+
             // Step 4: Renumber the remaining activities at the same level
             let sameLevelActivities = updatedActivities.filter(activity => {
                 let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
                 return activity.code.startsWith(parentCode) && activity.level === selectedRow.level;
             });
-    
+
             sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
-    
+
             sameLevelActivities.forEach((activity, index) => {
                 let newCode = `${selectedRow.code.split("/").slice(0, -1).join("/")}/${(index + 1) * 10}`;
                 activity.code = newCode;
             });
-    
+
             return {
                 ...prev,
                 activities: updatedActivities
             };
         });
-    
+
         setSelectedRow(null);
     };
-    
+
 
     const increaseLevel = () => {
         if (!selectedRow || selectedRow.level === "L1") return;
 
         setModuleData((prev) => {
             let activities = [...prev.activities];
+            //Find the index of selected activity
             let activityIndex = activities.findIndex((a) => a.code === selectedRow.code);
+            //If level -1 the return but this case will never happen
             if (activityIndex === -1) return prev;
 
-            let activity = activities[activityIndex];
-            let currentLevel = parseInt(activity.level.slice(1));
+            let activity = activities[activityIndex];//Activity to increase level
+            let currentLevel = parseInt(activity.level.slice(1));//Level of the selected activity
 
-            if (currentLevel >= 3) return prev; // Max level L3
-
-            // Find immediate above row of the same level
+            // Find immediat activity's index of same level
             let aboveIndex = activityIndex - 1;
             while (aboveIndex >= 0 && activities[aboveIndex].level !== activity.level) {
                 aboveIndex--;
             }
 
+            console.log("Above index : ", aboveIndex)
             if (aboveIndex < 0) return prev;
 
+            //Immediate activity of same level above
             let aboveActivity = activities[aboveIndex];
 
-            // Find the last child of the above activity to generate the next sequential code
+            // Last child (if any) code of immedidate activity of same level else code of activity
             let lastChildCode = aboveActivity.code;
             let children = activities.filter((a) => a.code.startsWith(`${aboveActivity.code}/`));
             if (children.length > 0) {
@@ -233,21 +235,30 @@ const Module = () => {
             };
 
             let updatedActivities = [...activities];
+            //Pushed the updated activity in the row
             updatedActivities[activityIndex] = updatedActivity;
 
             // Adjust remaining activities at previous level (L2)
             let previousLevel = `L${currentLevel}`;
+            console.log("previousLevel : ", previousLevel);
             let siblings = updatedActivities.filter((a) => a.level === previousLevel && a.code !== activity.code);
+            console.log("siblings : ", siblings);
 
-            let lastSiblingCode = aboveActivity.code; // Find the last valid L2 code
-            let count = 10;
+            if (siblings) {
+                let lastSiblingCode = aboveActivity.code; // last sibling code 
+                console.log('lastSiblingCode : ', lastSiblingCode)
+                let lastSiblingPrefix = removeLastSegment(lastSiblingCode);
+                let count = 10;
 
-            siblings.forEach((sibling) => {
-                let newSiblingCode = `${lastSiblingCode.split("/")[0]}/${count}`;
-                sibling.code = newSiblingCode;
-                sibling.prerequisite = lastSiblingCode;
-                count += 10;
-            });
+                siblings.forEach((sibling) => {
+                    let newSiblingCode = `${lastSiblingPrefix}/${count}`;
+                    console.log("newSiblingCode : ", newSiblingCode);
+                    sibling.code = newSiblingCode;
+                    sibling.prerequisite = lastSiblingCode;
+                    count += 10;
+                    lastSiblingCode = newSiblingCode;
+                });
+            }
 
             // Sort activities by code to ensure they are in correct order
             updatedActivities.sort((a, b) => {
@@ -265,42 +276,47 @@ const Module = () => {
         });
     };
 
+    const removeLastSegment = (code) => {
+        let parts = code.split('/');
+        if (parts.length > 1) {
+            parts.pop();
+        }
+        return parts.join('/');
+    };
+
     const decreaseLevel = () => {
-        if (!selectedRow || selectedRow.level === "L1") return; // L1 cannot be decreased
-    
+        if (!selectedRow || selectedRow.level === "L1" || selectedRow.level === "L2") return; // L1 cannot be decreased
+
         setModuleData((prev) => {
             let activities = [...prev.activities];
             let activityIndex = activities.findIndex((a) => a.code === selectedRow.code);
             if (activityIndex === -1) return prev;
-    
+
             let activity = activities[activityIndex];
             let currentLevel = parseInt(activity.level.slice(1));
-    
+
             // Step A: Find the nearest parent row with a lower level
             let aboveIndex = activityIndex - 1;
             let newParentCode = "";
             while (aboveIndex >= 0) {
                 let aboveActivity = activities[aboveIndex];
                 let aboveLevel = parseInt(aboveActivity.level.slice(1));
-    
+
                 if (aboveLevel < currentLevel) {
                     newParentCode = aboveActivity.code;
                     break;
                 }
                 aboveIndex--;
             }
-    
+
             if (!newParentCode) return prev; // No valid parent found
-    
-            // Step B: Generate new L2 code (last L2 code + 10)
-            let lastL2 = activities
-                .filter(a => a.level === "L2")
-                .pop()?.code || `${newParentCode}/0`;
-    
-            let lastL2Number = parseInt(lastL2.split("/").pop()) || 0;
-            let newCode = `${newParentCode.split("/")[0]}/${lastL2Number + 10}`;
+
+            // Step B: Generate new code for immediate lower level code + 10
+            let splited = newParentCode.split("/");
+            let newNumber = parseInt(splited[splited.length - 1]) + 10;
+            let newCode = `${removeLastSegment(newParentCode)}/${newNumber}`;
             let newLevel = `L${currentLevel - 1}`;
-    
+
             // Step C: Update the selected row
             let updatedActivity = {
                 ...activity,
@@ -308,25 +324,55 @@ const Module = () => {
                 prerequisite: newParentCode,
                 level: newLevel,
             };
-    
+
             let updatedActivities = [...activities];
             updatedActivities[activityIndex] = updatedActivity;
-    
-            // Step D: Adjust child modules (if any)
-            for (let i = activityIndex + 1; i < updatedActivities.length; i++) {
-                let item = updatedActivities[i];
-    
-                if (item.prerequisite.startsWith(selectedRow.code)) {
-                    let newItemCode = item.code.replace(selectedRow.code, newCode);
-                    item.code = newItemCode;
-                    item.prerequisite = newCode;
+            console.log("updatedActivities : ", updatedActivities);
+
+            console.log("Selected row: ", selectedRow);
+            let startRow = activityIndex + 1;
+            let lastSiblingCode = newCode;
+            // Step D: Update all sibling and other row
+            while(activities.length > startRow){
+                newNumber += 10;
+                let siblingNumber  = 10;
+                let tempActivity = activities[startRow];
+                //update sibling
+                if(tempActivity.level === selectedRow.level){
+                    tempActivity.code = `${newCode}/${siblingNumber}`;
+                    siblingNumber += 10;
+                }else if(newLevel === activities[startRow].level){
+                    //Update other row
+                    tempActivity.code = `${removeLastSegment(newCode)}/${newNumber}`;
+                    newNumber += 10;
+                }else{
+                    break;
                 }
+                tempActivity.prerequisite = lastSiblingCode;
+                activities[startRow] = tempActivity;
+                lastSiblingCode = tempActivity.code;
+                startRow++;
             }
-    
+
             return { ...prev, activities: updatedActivities };
         });
     };
+
+    const handleEdit = (field, value) => {
+        setModuleData((prev) => ({ ...prev, [field]: value }));
+    };
     
+    const handleActivityEdit = (code, field, value) => {
+        setModuleData((prev) => ({
+            ...prev,
+            activities: prev.activities.map(activity =>
+                activity.code === code ? { ...activity, [field]: value } : activity
+            ),
+        }));
+    };
+    
+
+
     return (
         <div style={{ padding: '20px' }}>
 
@@ -412,53 +458,89 @@ const Module = () => {
             </Paper>
 
             <Paper elevation={3}>
-                <Table>
-                    <TableHead>
-                        <TableRow sx={{ backgroundColor: '#4F7942' }}>
-                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Code</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Module Name</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Duration (in days)</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Prerequisites</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Level</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        <TableRow
-                            hover
-                            selected={selectedRow === moduleData}
-                            onClick={() => setSelectedRow(moduleData)}
-                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+    <Table>
+        <TableHead>
+            <TableRow sx={{ backgroundColor: '#4F7942' }}>
+                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Code</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Module Name</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Duration (in days)</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Prerequisites</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Level</TableCell>
+            </TableRow>
+        </TableHead>
+        <TableBody>
+            <TableRow
+                hover
+                selected={selectedRow === moduleData}
+                onClick={() => setSelectedRow(moduleData)}
+                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+            >
+                <TableCell contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
+                    sx={{ cursor: 'text', outline: 'none' }}
+    >{moduleData.parentModuleCode}</TableCell>
+                <TableCell 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleEdit('moduleName', e.target.innerText)}
+                    sx={{ cursor: 'text', outline: 'none' }}
+
+                >
+                    {moduleData.moduleName}
+                </TableCell>
+                <TableCell 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleEdit('duration', e.target.innerText)}
+                    sx={{ cursor: 'text', outline: 'none' }}
+
+                >
+                    10
+                </TableCell>
+                <TableCell contentEditable 
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleEdit('', e.target.innerText)}
+                    sx={{ cursor: 'text', outline: 'none' }}
+>-</TableCell>
+                <TableCell>{moduleData.level}</TableCell>
+            </TableRow>
+            {moduleData.activities
+                .sort((a, b) => a.code.localeCompare(b.code))
+                .map((activity, index, sortedActivities) => (
+                    <TableRow
+                        hover
+                        key={activity.code}
+                        selected={selectedRow?.code === activity.code}
+                        onClick={() => setSelectedRow(activity)}
+                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                    >
+                        <TableCell>{activity.code}</TableCell>
+                        <TableCell 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleActivityEdit(activity.code, 'activityName', e.target.innerText)}
+                            sx={{ cursor: 'text', outline: 'none' }}
                         >
-                            <TableCell>{moduleData.parentModuleCode}</TableCell>
-                            <TableCell>{moduleData.moduleName}</TableCell>
-                            <TableCell>10</TableCell>
-                            <TableCell>-</TableCell>
-                            <TableCell>{moduleData.level}</TableCell>
-                        </TableRow>
-                        {moduleData.activities
-                            .sort((a, b) => a.code.localeCompare(b.code))
-                            .map((activity, index, sortedActivities) => (
-                                <TableRow
-                                    hover
-                                    key={activity.code}
-                                    selected={selectedRow?.code === activity.code}
-                                    onClick={() => setSelectedRow(activity)}
-                                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                                >
-                                    <TableCell>{activity.code}</TableCell>
-                                    <TableCell>{activity.activityName}</TableCell>
-                                    <TableCell>{activity.duration}</TableCell>
-                                    <TableCell>
-                                        {(index === 0 && activity.level === 'L2') // First row with level 'L2' should display nothing
-                                            ? null
-                                            : (sortedActivities[index - 1]?.code || "-")} {/* Display previous row's code */}
-                                    </TableCell>
-                                    <TableCell>{activity.level}</TableCell>
-                                </TableRow>
-                            ))}
-                    </TableBody>
-                </Table>
-            </Paper>
+                            {activity.activityName}
+                        </TableCell>
+                        <TableCell 
+                            contentEditable 
+                            suppressContentEditableWarning
+                            onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
+                            sx={{ cursor: 'text', outline: 'none' }}
+                        >
+                            {activity.duration}
+                        </TableCell>
+                        <TableCell>
+                            {(index === 0 && activity.level === 'L2') ? null : (sortedActivities[index - 1]?.code || "-")}
+                        </TableCell>
+                        <TableCell>{activity.level}</TableCell>
+                    </TableRow>
+                ))}
+        </TableBody>
+    </Table>
+</Paper>
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                     variant="contained"
