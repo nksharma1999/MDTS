@@ -270,7 +270,7 @@ export const RegisterNewProject: React.FC = () => {
   return (
     <div className="main-container-div">
       <div className="form-container-item-div">
-        <div className="page-heading-main">
+        <div className="page-heading-main bg-secondary">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
