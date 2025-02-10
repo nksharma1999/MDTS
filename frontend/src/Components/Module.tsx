@@ -333,19 +333,19 @@ const Module = () => {
             let startRow = activityIndex + 1;
             let lastSiblingCode = newCode;
             // Step D: Update all sibling and other row
-            while(activities.length > startRow){
+            while (activities.length > startRow) {
                 newNumber += 10;
-                let siblingNumber  = 10;
+                let siblingNumber = 10;
                 let tempActivity = activities[startRow];
                 //update sibling
-                if(tempActivity.level === selectedRow.level){
+                if (tempActivity.level === selectedRow.level) {
                     tempActivity.code = `${newCode}/${siblingNumber}`;
                     siblingNumber += 10;
-                }else if(newLevel === activities[startRow].level){
+                } else if (newLevel === activities[startRow].level) {
                     //Update other row
                     tempActivity.code = `${removeLastSegment(newCode)}/${newNumber}`;
                     newNumber += 10;
-                }else{
+                } else {
                     break;
                 }
                 tempActivity.prerequisite = lastSiblingCode;
@@ -361,7 +361,7 @@ const Module = () => {
     const handleEdit = (field, value) => {
         setModuleData((prev) => ({ ...prev, [field]: value }));
     };
-    
+
     const handleActivityEdit = (code, field, value) => {
         setModuleData((prev) => ({
             ...prev,
@@ -370,7 +370,7 @@ const Module = () => {
             ),
         }));
     };
-    
+
 
 
     return (
@@ -458,89 +458,91 @@ const Module = () => {
             </Paper>
 
             <Paper elevation={3}>
-    <Table>
-        <TableHead>
-            <TableRow sx={{ backgroundColor: '#4F7942' }}>
-                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Code</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Module Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Duration (in days)</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Prerequisites</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Level</TableCell>
-            </TableRow>
-        </TableHead>
-        <TableBody>
-            <TableRow
-                hover
-                selected={selectedRow === moduleData}
-                onClick={() => setSelectedRow(moduleData)}
-                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-            >
-                <TableCell contentEditable 
-                    suppressContentEditableWarning
-                    onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
-                    sx={{ cursor: 'text', outline: 'none' }}
-    >{moduleData.parentModuleCode}</TableCell>
-                <TableCell 
-                    contentEditable 
-                    suppressContentEditableWarning
-                    onBlur={(e) => handleEdit('moduleName', e.target.innerText)}
-                    sx={{ cursor: 'text', outline: 'none' }}
-
-                >
-                    {moduleData.moduleName}
-                </TableCell>
-                <TableCell 
-                    contentEditable 
-                    suppressContentEditableWarning
-                    onBlur={(e) => handleEdit('duration', e.target.innerText)}
-                    sx={{ cursor: 'text', outline: 'none' }}
-
-                >
-                    10
-                </TableCell>
-                <TableCell contentEditable 
-                    suppressContentEditableWarning
-                    onBlur={(e) => handleEdit('', e.target.innerText)}
-                    sx={{ cursor: 'text', outline: 'none' }}
->-</TableCell>
-                <TableCell>{moduleData.level}</TableCell>
-            </TableRow>
-            {moduleData.activities
-                .sort((a, b) => a.code.localeCompare(b.code))
-                .map((activity, index, sortedActivities) => (
-                    <TableRow
-                        hover
-                        key={activity.code}
-                        selected={selectedRow?.code === activity.code}
-                        onClick={() => setSelectedRow(activity)}
-                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                    >
-                        <TableCell>{activity.code}</TableCell>
-                        <TableCell 
-                            contentEditable 
-                            suppressContentEditableWarning
-                            onBlur={(e) => handleActivityEdit(activity.code, 'activityName', e.target.innerText)}
-                            sx={{ cursor: 'text', outline: 'none' }}
+                <Table>
+                    <TableHead>
+                        <TableRow sx={{ backgroundColor: '#4F7942' }}>
+                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Code</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Module Name</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Duration (in days)</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Prerequisites</TableCell>
+                            <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Level</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        <TableRow
+                            hover
+                            selected={selectedRow === moduleData}
+                            onClick={() => setSelectedRow(moduleData)}
+                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                         >
-                            {activity.activityName}
-                        </TableCell>
-                        <TableCell 
-                            contentEditable 
-                            suppressContentEditableWarning
-                            onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
-                            sx={{ cursor: 'text', outline: 'none' }}
-                        >
-                            {activity.duration}
-                        </TableCell>
-                        <TableCell>
-                            {(index === 0 && activity.level === 'L2') ? null : (sortedActivities[index - 1]?.code || "-")}
-                        </TableCell>
-                        <TableCell>{activity.level}</TableCell>
-                    </TableRow>
-                ))}
-        </TableBody>
-    </Table>
-</Paper>
+                            <TableCell contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
+                                sx={{ cursor: 'text', outline: 'none' }}
+                            >{moduleData.parentModuleCode}</TableCell>
+                            <TableCell
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => handleEdit('moduleName', e.target.innerText)}
+                                sx={{ cursor: 'text', outline: 'none' }}
+
+                            >
+                                {moduleData.moduleName}
+                            </TableCell>
+                            <TableCell
+                                contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => handleEdit('duration', e.target.innerText)}
+                                sx={{ cursor: 'text', outline: 'none' }}
+
+                            >
+                                10
+                            </TableCell>
+                            <TableCell contentEditable
+                                suppressContentEditableWarning
+                                onBlur={(e) => handleEdit('', e.target.innerText)}
+                                sx={{ cursor: 'text', outline: 'none' }}>-</TableCell>
+                            <TableCell>{moduleData.level}</TableCell>
+                        </TableRow>
+                        {moduleData.activities
+                            .sort((a, b) => a.code.localeCompare(b.code))
+                            .map((activity, index, sortedActivities) => (
+                                <TableRow
+                                    hover
+                                    key={activity.code}
+                                    selected={selectedRow?.code === activity.code}
+                                    onClick={() => setSelectedRow(activity)}
+                                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                >
+                                    <TableCell>{activity.code}</TableCell>
+                                    <TableCell
+                                        contentEditable
+                                        suppressContentEditableWarning
+                                        onBlur={(e) => handleActivityEdit(activity.code, 'activityName', e.target.innerText)}
+                                        sx={{ cursor: 'text', outline: 'none' }}
+                                    >
+                                        {activity.activityName}
+                                    </TableCell>
+                                    <TableCell
+                                        contentEditable
+                                        suppressContentEditableWarning
+                                        onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
+                                        sx={{ cursor: 'text', outline: 'none' }}
+                                    >
+                                        {activity.duration}
+                                    </TableCell>
+                                    <TableCell contentEditable
+                                        suppressContentEditableWarning
+                                        onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
+                                        sx={{ cursor: 'text', outline: 'none' }}>
+                                        {(index === 0 && activity.level === 'L2') ? null : (sortedActivities[index - 1]?.code || "-")}
+                                    </TableCell>
+                                    <TableCell>{activity.level}</TableCell>
+                                </TableRow>
+                            ))}
+                    </TableBody>
+                </Table>
+            </Paper>
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                     variant="contained"
