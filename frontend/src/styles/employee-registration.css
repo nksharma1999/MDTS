@@ -1,20 +1,29 @@
 .employee-registration {
     margin: 8px;
-    min-height: calc(100vh - 168px);
     border: 1px solid gray;
     border-radius: 4px;
+    width: 100%;
 }
 
 .card {
     border: none !important;
 }
 
+.card-body {
+    padding: 10px !important;
+}
+
 .professional-form {
+    height: calc(100vh - 230px);
+    overflow-y: auto;
+    overflow-x: hidden;
+
     .form-row {
         margin-bottom: 16px;
         display: flex;
         flex-wrap: wrap;
     }
+
 
     label {
         display: block;

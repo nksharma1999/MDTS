@@ -20,7 +20,13 @@ interface NavItem {
 const initialNavLinks: any = [
     { label: "Home", action: "/home" },
     { label: "About", action: "/about" },
-    { label: "Projects", action: "/projects" },
+    {
+        label: "Projects",
+        subItems: [
+            { label: "Register New Project", action: "/create/register-new-project" },
+            { label: "Create New Module", option: "popup", name: "add_new_modal" },
+        ]
+    },
     { label: "Document", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
     { label: "Data Master", action: "/data-master" },
@@ -152,7 +158,7 @@ const Navbar: React.FC = () => {
     return (
         <>
             <Header className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", paddingRight: "15px" }}>
-                <Title level={3} style={{ color: "white", flexGrow: 1 }}>MDTS</Title>
+                <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
                 {navLinks.map((link, index) => (
                     <div key={index} style={{ margin: "0 5px" }}>
                         {link.subItems ? (
@@ -204,7 +210,6 @@ const Navbar: React.FC = () => {
                         <Link to="/employee-registration" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Registration</Link>
                     </Button>
                 </div>
-
 
             </Header>
 

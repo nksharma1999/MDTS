@@ -1,0 +1,35 @@
+.main-doc-container {
+    display: flex;
+    width: 100%;
+}
+
+.left-create-document {
+    width: 100%;
+    margin: 8px;
+    margin-right: 0px;
+    border: 1px solid gray;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.left-create-document-item {
+    padding: 10px;
+    height: calc(100vh - 230px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.create-doc-heading {
+    font-size: 16px !important;
+    font-weight: 400 !important;
+}
+
+.right-images {
+    flex: 0 0 30%;
+    margin-left: 0px;
+}
+
+.action-buttons {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+}

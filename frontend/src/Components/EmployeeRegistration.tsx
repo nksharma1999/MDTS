@@ -4,6 +4,7 @@ import { Input, Select, Button, Form, Upload, DatePicker, Row, Col } from "antd"
 import { UploadOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import moment from "moment";
 import "../styles/employee-registration.css"
+import ImageContainer from "./ImageContainer";
 interface EmployeeData {
   name: string;
   company: string;
@@ -62,129 +63,162 @@ export const EmployeeRegistration = () => {
     navigate("/manageuser");
   };
 
-  const handleCancel = () => {
-    navigate("/manageuser");
-  };
-
   return (
-    <div className="employee-registration">
-      <div className="card">
-        <div className="card-header bg-secondary">
-          {isEdit ? "Edit Employee Details" : "Employee Registration"}
-        </div>
-
-        <div className="card-body">
-          <Form className="professional-form">
-            <Row gutter={[16, 16]} className="form-row">
-              <Col span={8}>
-                <label>Name</label>
-                <Input
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Enter Name"
-                />
-              </Col>
-              <Col span={8}>
-                <label>Company</label>
-                <Select
-                  value={formData.company}
-                  onChange={(value) => setFormData((prev) => ({ ...prev, company: value }))}
-                  placeholder="Select Company"
-                >
-                  {companyOptions.map((company) => (
-                    <Select.Option key={company} value={company}>
-                      {company}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Col>
-              <Col span={8}>
-                <label>Project</label>
-                <Select
-                  mode="multiple"
-                  value={formData.project}
-                  onChange={handleProjectChange}
-                  placeholder="Select Projects"
-                >
-                  {projectOptions.map((project) => (
-                    <Select.Option key={project} value={project}>
-                      {project}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Col>
-            </Row>
-
-            <Row gutter={[16, 16]} className="form-row">
-              <Col span={8}>
-                <label>Mobile No</label>
-                <Input
-                  name="mobile"
-                  value={formData.mobile}
-                  onChange={handleInputChange}
-                  placeholder="Enter Mobile No"
-                />
-              </Col>
-              <Col span={8}>
-                <label>Email</label>
-                <Input
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter Email"
-                />
-              </Col>
-              <Col span={8}>
-                <label>WhatsApp No</label>
-                <Input
-                  name="whatsapp"
-                  value={formData.whatsapp}
-                  onChange={handleInputChange}
-                  placeholder="Enter WhatsApp No"
-                />
-              </Col>
-            </Row>
-
-            <Row gutter={[16, 16]} className="form-row">
-              <Col span={8}>
-                <label>Registration Date</label>
-                <DatePicker
-                  value={formData.registrationDate ? moment(formData.registrationDate) : null}
-                  onChange={(date, dateString) => setFormData((prev: any) => ({ ...prev, registrationDate: dateString || "" }))}
-                  style={{ width: '100%' }}
-                />
-              </Col>
-              <Col span={8}>
-                <label>Upload Photo</label>
-                <Upload
-                  showUploadList={false}
-                  customRequest={handlePhotoUpload}
-                  maxCount={1}
-                  accept="image/*"
-                >
-                  <Button icon={<UploadOutlined />}>Click to Upload</Button>
-                </Upload>
-                {formData.photo && (
-                  <img src={formData.photo} alt="Uploaded" className="uploaded-photo" />
-                )}
-              </Col>
-            </Row>
-
-            <div className="button-group">
-              {/* <Button onClick={handleCancel} className="bg-tertiary">Cancel</Button> */}
-              <Button
-                className="bg-secondary"
-                icon={<ArrowRightOutlined />}
-                onClick={handleSaveOrUpdate}
-              >
-                {isEdit ? "Update" : "Save"}
-              </Button>
+    <>
+      <div className="main-container-div">
+        <div className="employee-registration">
+          <div className="card">
+            <div className="card-header bg-secondary">
+              {isEdit ? "Edit Employee Details" : "Employee Registration"}
             </div>
-          </Form>
 
+            <div className="card-body">
+              <Form className="professional-form">
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Name</label>
+                  </Col>
+                  <Col span={18}>
+                    <Input
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter Name"
+                    />
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Company</label>
+                  </Col>
+                  <Col span={18}>
+                    <Select
+                      value={formData.company}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, company: value }))}
+                      placeholder="Select Company"
+                    >
+                      {companyOptions.map((company) => (
+                        <Select.Option key={company} value={company}>
+                          {company}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Project</label>
+                  </Col>
+                  <Col span={18}>
+                    <Select
+                      mode="multiple"
+                      value={formData.project}
+                      onChange={handleProjectChange}
+                      placeholder="Select Projects"
+                    >
+                      {projectOptions.map((project) => (
+                        <Select.Option key={project} value={project}>
+                          {project}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Mobile No</label>
+                  </Col>
+                  <Col span={18}>
+                    <Input
+                      name="mobile"
+                      value={formData.mobile}
+                      onChange={handleInputChange}
+                      placeholder="Enter Mobile No"
+                    />
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Email</label>
+                  </Col>
+                  <Col span={18}>
+                    <Input
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Enter Email"
+                    />
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>WhatsApp No</label>
+                  </Col>
+                  <Col span={18}>
+                    <Input
+                      name="whatsapp"
+                      value={formData.whatsapp}
+                      onChange={handleInputChange}
+                      placeholder="Enter WhatsApp No"
+                    />
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Registration Date</label>
+                  </Col>
+                  <Col span={18}>
+                    <DatePicker
+                      value={formData.registrationDate ? moment(formData.registrationDate) : null}
+                      onChange={(_date, dateString) => setFormData((prev: any) => ({ ...prev, registrationDate: dateString || "" }))}
+                      style={{ width: '100%' }}
+                    />
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Upload Photo</label>
+                  </Col>
+                  <Col span={18}>
+                    <Upload
+                      showUploadList={false}
+                      customRequest={handlePhotoUpload}
+                      maxCount={1}
+                      accept="image/*"
+                    >
+                      <Button icon={<UploadOutlined />}>Click to Upload</Button>
+                    </Upload>
+                    {formData.photo && (
+                      <img src={formData.photo} alt="Uploaded" className="uploaded-photo" />
+                    )}
+                  </Col>
+                </Row>
+
+                <div className="button-group">
+                  <Button
+                    className="bg-secondary"
+                    icon={<ArrowRightOutlined />}
+                    onClick={handleSaveOrUpdate}
+                  >
+                    {isEdit ? "Update" : "Save"}
+                  </Button>
+                </div>
+              </Form>
+
+            </div>
+          </div>
+        </div>
+        <div>
+          <ImageContainer imageUrl="/images/auths/m7.jpg" />
         </div>
       </div>
-    </div>
+    </>
   );
 };

@@ -11,23 +11,15 @@ import {
   TextField,
   Typography,
   Paper,
-  IconButton,
-  Select,
-  MenuItem,
-  Button,
-  Chip,
-  OutlinedInput,
 } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import SaveIcon from "@mui/icons-material/Save";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
-
+import "../styles/holiday.css"
+import { Button, DatePicker, Input, Select, Tooltip } from "antd";
+import { SaveOutlined, DeleteOutlined, EditOutlined } from "@mui/icons-material";
 const moduleOptions = [
   "Land Acquisition",
   "Forest Clearance",
@@ -38,10 +30,9 @@ export const HolidayCalender = () => {
   const [rows, setRows] = useState([
     { from: null, to: null, holiday: "", module: [], impact: {}, editing: true },
   ]);
-
   const [baseMonth, setBaseMonth] = useState(new Date());
-
-  // Calculate holiday dates for calendar marking
+  const nextMonth = addMonths(baseMonth, 1);
+  const tableHeaders = ["From Date", "To Date", "Holiday", "Modules", "Impact", "Actions"];
   const holidayDates = rows
     .filter(row => !row.editing && row.from && row.to)
     .flatMap(row => {
@@ -63,8 +54,6 @@ export const HolidayCalender = () => {
   const handleUpperCalendarNavigation = (activeStartDate: any) => {
     setBaseMonth(activeStartDate);
   };
-
-  const nextMonth = addMonths(baseMonth, 1);
 
   const handleInputChange = (index: any, field: any, value: any) => {
     const updatedRows = [...rows];
@@ -115,12 +104,11 @@ export const HolidayCalender = () => {
     setRows(updatedRows);
   };
 
-  // Calendar tile content for holiday markers
   const calendarTileContent = ({ date, view }: { date: Date; view: string }) => {
     if (view !== 'month') return null;
     const dateStr = format(date, 'yyyy-MM-dd');
     const isHoliday = holidayDates.includes(dateStr);
-    
+
     return isHoliday ? (
       <div style={{
         display: 'flex',
@@ -139,27 +127,15 @@ export const HolidayCalender = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Paper
-        elevation={0}
-        sx={{
-          margin: "10px",
-          padding: "0px",
-          borderRadius: "8px",
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "50px"
-        }}
-      >
-        <Box sx={{ width: "80%", pr: 2 }}>
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "20px" }}>
-            <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+      <Paper className="main-container-div" elevation={0}>
+        <Box className="left-part">
+          <Box className="card-header-items">
+            <div className="holiday-page-heading">
               Holiday Calendar
-            </Typography>
-            
+            </div>
+
             <Button
-              variant="contained"
-              sx={{ backgroundColor: "#4A90E2", color: "black", marginBottom: "10px" }}
-              startIcon={<AddIcon />}
+              className="aad-btn bg-secondary"
               onClick={addRow}
             >
               Add New Row
@@ -168,62 +144,54 @@ export const HolidayCalender = () => {
 
           <TableContainer>
             <Table>
-              <TableHead sx={{ backgroundColor: "#4F7942", marginTop: "10px" }}>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: "bold", textAlign: "center", color: "white", fontSize: "16px" }}>From Date</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", textAlign: "center", color: "white", fontSize: "16px" }}>To Date</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", textAlign: "center", color: "white", fontSize: "16px" }}>Holiday</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", textAlign: "center", color: "white", fontSize: "16px" }}>Modules</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", textAlign: "center", color: "white", fontSize: "16px" }}>Impact</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", textAlign: "center", color: "white", fontSize: "16px" }}>Actions</TableCell>
+              <TableHead className="bg-secondary" sx={{ marginTop: "10px" }}>
+                <TableRow className="table-header">
+                  {tableHeaders.map((header) => (
+                    <TableCell key={header} className="table-cell">{header}</TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {rows.map((row, index) => (
                   <TableRow key={index}>
-                    <TableCell sx={{ textAlign: "center" }}>
+                    <TableCell style={{ textAlign: "center", paddingTop: "0px", paddingBottom: "0px" }}>
                       <DatePicker
                         value={row.from}
-                        onChange={(newValue) => handleInputChange(index, "from", newValue)}
-                        renderInput={(params) => <TextField {...params} size="small" disabled={!row.editing} />}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      <DatePicker
-                        value={row.to}
-                        onChange={(newValue) => handleInputChange(index, "to", newValue)}
-                        renderInput={(params) => <TextField {...params} size="small" disabled={!row.editing} />}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
-                      <TextField
-                        value={row.holiday}
-                        onChange={(e) => handleInputChange(index, "holiday", e.target.value)}
-                        size="small"
+                        onChange={(date) => handleInputChange(index, "from", date)}
                         disabled={!row.editing}
                       />
                     </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
+
+                    <TableCell sx={{ textAlign: "center", paddingTop: "0px", paddingBottom: "0px" }}>
+                      <TableCell style={{ textAlign: "center" }}>
+                        <DatePicker
+                          value={row.to}
+                          onChange={(date) => handleInputChange(index, "to", date)}
+                          disabled={!row.editing}
+                        />
+                      </TableCell>
+
+                    </TableCell>
+                    <TableCell style={{ textAlign: "center", paddingTop: "0px", paddingBottom: "0px" }}>
+                      <Input
+                        value={row.holiday}
+                        onChange={(e) => handleInputChange(index, "holiday", e.target.value)}
+                        placeholder="Enter holiday name"
+                        disabled={!row.editing}
+                      />
+                    </TableCell>
+                    <TableCell style={{ textAlign: "center", paddingTop: "0px", paddingBottom: "0px" }}>
                       {row.editing ? (
                         <Select
-                          multiple
+                          mode="multiple"
                           value={row.module}
-                          onChange={(e) => handleInputChange(index, "module", e.target.value)}
-                          input={<OutlinedInput />}
-                          renderValue={(selected) => (
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                              {selected.map((value) => (
-                                <Chip key={value} label={value} />
-                              ))}
-                            </Box>
-                          )}
-                          size="small"
-                          fullWidth
+                          onChange={(value) => handleInputChange(index, "module", value)}
+                          style={{ width: "100%" }}
                         >
                           {moduleOptions.map((module) => (
-                            <MenuItem key={module} value={module}>
+                            <Select.Option key={module} value={module}>
                               {module}
-                            </MenuItem>
+                            </Select.Option>
                           ))}
                         </Select>
                       ) : (
@@ -236,7 +204,8 @@ export const HolidayCalender = () => {
                         </Box>
                       )}
                     </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
+
+                    <TableCell sx={{ textAlign: "center", paddingTop: "0px", paddingBottom: "0px" }}>
                       <Box>
                         {Object.entries(row.impact).map(([module, impact]) => (
                           <Box key={module} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -248,28 +217,45 @@ export const HolidayCalender = () => {
                                 sx={{ width: "60px" }}
                               />
                             ) : (
-                              <Typography variant="body2">{impact}%</Typography>
+                              <Typography variant="body2">{impact !== undefined && impact !== null ? `${impact}%` : 'N/A'}</Typography>
                             )}
                           </Box>
                         ))}
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ textAlign: "center" }}>
+                    <TableCell style={{ textAlign: "center", display: "flex", gap: "10px" }}>
                       {row.editing ? (
                         <>
-                          <IconButton color="primary" title="save" onClick={() => saveChanges(index)}>
-                            <SaveIcon />
-                          </IconButton>
-                          <IconButton color="error" title="delete" onClick={() => deleteRow(index)}>
-                            <DeleteIcon />
-                          </IconButton>
+                          <Tooltip title="Save">
+                            <Button
+                              type="primary"
+                              shape="circle"
+                              icon={<SaveOutlined />}
+                              onClick={() => saveChanges(index)}
+                            />
+                          </Tooltip>
+                          <Tooltip title="Delete">
+                            <Button
+                              type="primary"
+                              danger
+                              shape="circle"
+                              icon={<DeleteOutlined />}
+                              onClick={() => deleteRow(index)}
+                            />
+                          </Tooltip>
                         </>
                       ) : (
-                        <IconButton color="primary" title="edit" onClick={() => toggleEdit(index)}>
-                          <EditIcon />
-                        </IconButton>
+                        <Tooltip title="Edit">
+                          <Button
+                            type="primary"
+                            shape="circle"
+                            icon={<EditOutlined />}
+                            onClick={() => toggleEdit(index)}
+                          />
+                        </Tooltip>
                       )}
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
@@ -277,14 +263,12 @@ export const HolidayCalender = () => {
           </TableContainer>
         </Box>
 
-        {/* Right: Calendars */}
         <Box
+          className="right-part"
           style={{
-            width: "400px",
-            padding: "15px",
-            backgroundColor: "#4A90E2",
-            borderRadius: "8px",
-            marginTop: "90px",
+            width: "500px",
+            padding: "10px",
+            borderRadius: "5px",
           }}
         >
           {/* Upper Calendar */}
