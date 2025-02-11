@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, 
-  TablePagination, Box, TextField, InputAdornment ,IconButton
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography,
+  TablePagination, Box, TextField, InputAdornment, IconButton, Button
 } from '@mui/material';
-// import { Search } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { ArrowBack, ArrowForward, Delete, FilterList, Search } from "@mui/icons-material";
+import { Search, FilterList, Add } from '@mui/icons-material';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 export const ModuleLibrary = () => {
   const [moduleData, setModuleData] = useState([]);
@@ -13,19 +12,19 @@ export const ModuleLibrary = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
-  const navigate = useNavigate();
-  
+  const [newMineType, setNewMineType] = useState('');
+  const [libraries, setLibraries] = useState({
+    moduleList: []
+  });
 
   useEffect(() => {
     try {
       const storedModules = localStorage.getItem('modules');
       if (storedModules) {
-        const parsedModules = JSON.parse(storedModules);
-        const flattenedModules = parsedModules.flat().filter((module: any) => 
-          module?.parentModuleCode && module?.moduleName
-        );
-        setModuleData(flattenedModules);
-        setFilteredData(flattenedModules);
+        const parsedModules = JSON.parse(storedModules).flat().filter(module => module?.parentModuleCode && module?.moduleName);
+        setModuleData(parsedModules);
+        setFilteredData(parsedModules);
+        setLibraries(prev => ({ ...prev, moduleList: parsedModules }));
       }
     } catch (error) {
       console.error('Error parsing local storage data:', error);
@@ -34,158 +33,133 @@ export const ModuleLibrary = () => {
     }
   }, []);
 
-  const handleRowClick = (module: any) => {
-    navigate(`/module/${module.moduleName.toLowerCase().replace(' ', '-')}`, {
-      state: module,
-    });
-  };
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = (event) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
-    const filtered = moduleData.filter((module) =>
-      module.moduleName.toLowerCase().includes(value) || 
-      module.parentModuleCode.toLowerCase().includes(value)
+    const filtered = moduleData.filter(module =>
+      module.moduleName.toLowerCase().includes(value) || module.parentModuleCode.toLowerCase().includes(value)
     );
     setFilteredData(filtered);
-    setPage(0); // Reset to the first page on new search
+    setPage(0);
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_, newPage) => {
     setPage(newPage);
   };
 
-  if (moduleData.length === 0) {
-    return (
-      <Box 
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}
-      >
-        <Typography variant="h6" color="textSecondary">
-          No data available
-        </Typography>
-      </Box>
-    );
-  }
+  const addMineType = () => {
+    if (newMineType && !libraries[newMineType]) {
+      setLibraries(prev => ({ ...prev, [newMineType]: [] }));
+      setNewMineType('');
+    }
+  };
 
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+  
+    const { source, destination } = result;
+    const sourceId = source.droppableId;
+    const destinationId = destination.droppableId;
+  
+    if (sourceId === destinationId) return;
+  
+    const draggedModule = libraries[sourceId][source.index];
+  
+    setLibraries((prev) => {
+      const updatedSource = [...prev[sourceId]];
+      updatedSource.splice(source.index, 1);
+  
+      const updatedDestination = [...prev[destinationId], draggedModule];
+  
+      return {
+        ...prev,
+        [sourceId]: updatedSource,
+        [destinationId]: updatedDestination,
+      };
+    });
+  };
+  
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', padding: '5px', width: '100%', height: '100vh', background: "#fff" }}>
-      
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "10px 20px",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        backgroundColor: "#f9f9f9",
-        boxShadow: "0 2px 5px rgba(0, 0, 0, 0.1)",
-      }}
-    >
-      {/* Left Section: Title */}
-      <Typography variant="h6" sx={{ fontWeight: "bold", color: "green" }}>
-        Tool Bar
-      </Typography>
-
-      {/* Middle Section: Navigation Buttons & Search Bar */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <IconButton color="primary">
-          <FilterList />
-        </IconButton>
-        <TextField
-          variant="outlined"
-          size="small"
-          placeholder="Search code, name,type, levels"
-          onChange={handleSearch}
-          sx={{ width: "300px" }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
-      </Box>
-
-      {/* Content */}
-      <Box sx={{ display: 'flex', flex: 1, gap: '0px', }}>
-        {/* Left Section: Search and Table */}
-        <Box sx={{ flex: 3, display:"flex", flexDirection: 'column' ,marginTop:"10px"}}>
-          <TableContainer component={Paper} sx={{ boxShadow: 3, borderRadius: 1, flex: 1 }}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: '#4F7942' }}>
-                  <TableCell sx={headerCellStyles}>Serial No.</TableCell>
-                  <TableCell sx={headerCellStyles}>Module Code</TableCell>
-                  <TableCell sx={headerCellStyles}>Module Name</TableCell>
-                  <TableCell sx={headerCellStyles}>Mine Type</TableCell>
-                  <TableCell sx={headerCellStyles}>Module Level</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((module, index) => (
-                  <TableRow
-                    key={index}
-                    hover
-                    onClick={() => handleRowClick(module)}
-                    sx={{
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: 'action.hover' },
-                      transition: 'background-color 0.3s ease',
-                    }}
-                  >
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell>{module.parentModuleCode}</TableCell>
-                    <TableCell>{module.moduleName}</TableCell>
-                    <TableCell>{module.mineType}</TableCell>
-                    <TableCell>{module.level}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <Box sx={{ display: 'flex', width: '100%', height: '100vh' }}>
+        <Box sx={{ flex: 3, padding: 2 }}>
+          <Typography variant="h6" color="green" sx={{ fontWeight: 'bold' }}>Tool Bar</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <IconButton color="primary"><FilterList /></IconButton>
+            <TextField
+              variant="outlined" size="small" placeholder="Search code, name, type"
+              onChange={handleSearch} sx={{ width: '300px' }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><Search /></InputAdornment> }}
+            />
+          </Box>
+          <Droppable droppableId="moduleList">
+            {(provided) => (
+              <TableContainer component={Paper} ref={provided.innerRef} {...provided.droppableProps}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#4F7942' }}>
+                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Module Code</TableCell>
+                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Module Name</TableCell>
+                      <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Mine Type</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((module, index) => (
+                      <Draggable key={module.parentModuleCode} draggableId={module.parentModuleCode} index={index}>
+                        {(provided) => (
+                          <TableRow ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                            <TableCell>{module.parentModuleCode}</TableCell>
+                            <TableCell>{module.moduleName}</TableCell>
+                            <TableCell>{module.mineType}</TableCell>
+                          </TableRow>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Droppable>
           <TablePagination
-            component="div"
-            count={filteredData.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            rowsPerPageOptions={[]} // Hide rows per page selection
-            sx={{ marginTop: '0px' }}
+            component="div" count={filteredData.length} page={page} rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage} rowsPerPageOptions={[]} sx={{ mt: 2 }}
           />
         </Box>
 
-        {/* Right Section: Image */}
-        <Box sx={{ flex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <img
-            src="Mining 3.jpg" // Replace with your image URL
-            alt="Module Library Illustration"
-            style={{
-              width: '100%',
-              height: '100%',
-              // objectFit: 'cover',
-              marginBottom:"12%",
-              marginTop:"15%",
-              maxHeight: '100%',
-              borderRadius: '2px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-              margin:"0px"
-            }}
-          />
+        <Box sx={{ flex: 3, padding: 2, borderLeft: '1px solid #ddd' }}>
+          {/* <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Create Library</Typography> */}
+          <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <TextField
+              size="small" label="Add Library/Mine Type" value={newMineType}
+              onChange={(e) => setNewMineType(e.target.value)}
+            />
+            <Button variant="contained" color="primary" onClick={addMineType} startIcon={<Add />}>Create</Button>
+          </Box>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 3 }}>Library Details</Typography>
+          {Object.keys(libraries).filter(type => type !== "moduleList").map((type) => (
+            <Droppable droppableId={type} key={type}>
+              {(provided) => (
+                <Box ref={provided.innerRef} {...provided.droppableProps} sx={{ minHeight: '100px', p: 1, border: '1px dashed gray', mt: 2 }}>
+                  <Typography variant="h6">{type}</Typography>
+                  {libraries[type].map((module, index) => (
+                    <Draggable key={module.parentModuleCode} draggableId={module.parentModuleCode} index={index}>
+                      {(provided) => (
+                        <Box ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} sx={{ p: 1, backgroundColor: '#f0f0f0', borderRadius: '4px', mb: 1 }}>
+                          {module.moduleName}
+                        </Box>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </Box>
+              )}
+            </Droppable>
+          ))}
         </Box>
       </Box>
-    </Box>
+    </DragDropContext>
   );
-};
-
-const headerCellStyles = {
-  color: 'white',
-  fontWeight: 'bold',
-  textAlign: 'left',
-  fontSize: '14px',
-  padding: '12px 15px',
 };
 
 export default ModuleLibrary;

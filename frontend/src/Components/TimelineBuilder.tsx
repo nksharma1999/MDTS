@@ -1,178 +1,172 @@
 import React, { useState } from "react";
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Checkbox,
-  MenuItem,
-  Select,
-  Typography,
-  Box,
-} from "@mui/material";
+import { Table, Checkbox, Modal, Button, Typography, DatePicker, Space, Select } from "antd";
 
-interface DataInterface {
-  id: number;
-  code: string;
-  name: string;
-  isSelected?: boolean;
-  data?: DataInterface[];
-  preRequisite?: string;
-  start?: string;
-  isModule: boolean;
-}
+const { Option } = Select;
 
-const data1: DataInterface[] = [
-  {
-    id: 1,
-    code: "CF",
-    name: "Contract Formulation",
-    isSelected: false,
-    isModule: true,
-    data: [
-      {
-        id: 11,
-        code: "CF/10",
-        name: "Declaration as H1 Bidder",
-        preRequisite: "",
-        start: "",
-        isModule: false,
-      },
-      {
-        id: 12,
-        code: "CF/20",
-        name: "Signing of CBDPA",
-        preRequisite: "CF/10",
-        start: "",
-        isModule: false,
-      },
-    ],
-  },
-  {
-    id: 7,
-    code: "FC",
-    name: "Forest Clearance",
-    isSelected: false,
-    isModule: true,
-    data: [
-      {
-        id: 14,
-        code: "FC/PR",
-        name: "Pre-requisite to FC Application",
-        isModule: true,
-        data: [
-          {
-            id: 141,
-            code: "FC/PR/10",
-            name: "Declaration as H1 Bidder",
-            preRequisite: "CF/10",
-            start: "",
-            isModule: false,
-          },
-        ],
-      },
-    ],
-  },
-];
+const activityMapping = {
+  CF: { activityCode: "FC/PR", activityName: "Pre-requisite to FC Application" },
+  BP: { activityCode: "FC-I", activityName: "FC Stage-1 Proceedings" },
+  BC: { activityCode: "FC-II", activityName: "FC Stage-2 Proceedings" },
+  DG: { activityCode: "FC/PR", activityName: "Pre-requisite to FC Application" },
+  FC: { activityCode: "FC", activityName: "Forest Clearance" },
+  TOR: { activityCode: "FC-I", activityName: "FC Stage-1 Proceedings" },
+};
 
- export const TimelineBuilder = () => {
-  const [datas, setDatas] = useState<DataInterface[]>(data1);
-  const [showActivity, setShowActivity] = useState(false);
-  const [popupData, setPopupData] = useState<DataInterface[]>([]);
+const TimeBuilder = () => {
+  const [modules, setModules] = useState([
+    { moduleCode: "CF", moduleName: "Contract Formulation", isSelected: false },
+    { moduleCode: "BP", moduleName: "DGPS Survey", isSelected: false },
+    { moduleCode: "BC", moduleName: "Geological Report", isSelected: false },
+    { moduleCode: "DG", moduleName: "Mine Plan", isSelected: false },
+    { moduleCode: "FC", moduleName: "Forest Clearance", isSelected: false },
+    { moduleCode: "TOR", moduleName: "Terms of Reference", isSelected: false },
+  ]);
 
-  const handleCheckboxChange = (selectedVal: DataInterface) => {
-    const tempActivity = selectedVal.data?.filter((item) => !item.isModule) || [];
-    setPopupData(tempActivity);
-    setShowActivity(tempActivity.length > 0);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState([]);
+  const [selectedProject, setSelectedProject] = useState("Project A");
+  const [selectedMineType, setSelectedMineType] = useState("Open-Cast");
 
-    const updatedData = datas.map((item) =>
-      item.code === selectedVal.code ? { ...item, isSelected: !item.isSelected } : item
+  // Handle checkbox change
+  const handleCheckboxChange = (module) => {
+    const updatedModules = modules.map((m) =>
+      m.moduleCode === module.moduleCode ? { ...m, isSelected: !m.isSelected } : m
     );
+    setModules(updatedModules);
 
-    setDatas(updatedData);
+    if (!module.isSelected) {
+      const activity = activityMapping[module.moduleCode];
+      const selectedActivityData = {
+        moduleCode: activity.activityCode,
+        moduleName: activity.activityName,
+        startDate: null,
+      };
+      setSelectedActivity([selectedActivityData]);
+      setOpenDialog(true);
+    }
+  };
+
+  // Handle date change
+  const handleDateChange = (date, dateString, activity) => {
+    const updatedActivity = selectedActivity.map((act) =>
+      act.moduleCode === activity.moduleCode ? { ...act, startDate: dateString } : act
+    );
+    setSelectedActivity(updatedActivity);
+  };
+
+  // Close dialog
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
   };
 
   return (
-    <Box sx={{ padding: "16px", backgroundColor: "#f4f6f8", minHeight: "100vh" ,width:"70%"}}>
-      {/* Header */}
-      <Box sx={{ backgroundColor: "#4F7942", padding: "16px", borderRadius: "8px", color: "white", marginBottom: "16px" }}>
-        <Typography variant="h5" align="center">
-          Timeline Builder
-        </Typography>
-      </Box>
+    <div style={{ padding: "20px" }}>
+      <Typography.Title level={4}>TimeBuilder</Typography.Title>
 
-      {/* Dropdown */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", marginBottom: "16px" }}>
-        <Select defaultValue="" displayEmpty variant="outlined" sx={{ width: "200px" }}>
-          <MenuItem value="" disabled>
-            Select Project
-          </MenuItem>
-          <MenuItem value="testing">testing</MenuItem>
-          <MenuItem value="testing1">testing1</MenuItem>
-        </Select>
-      </Box>
+      {/* Select Project and Type of Mine */}
+      <div style={{ marginBottom: "20px" }}>
+        <Space size="large">
+          <div>
+            <Typography.Text>Select Project:</Typography.Text>
+            <Select
+              style={{ width: 200, marginLeft: "10px" }}
+              value={selectedProject}
+              onChange={(value) => setSelectedProject(value)}
+            >
+              <Option value="Project A">Project A</Option>
+              <Option value="Project B">Project B</Option>
+              <Option value="Project C">Project C</Option>
+            </Select>
+          </div>
+          <div>
+            <Typography.Text>Type of Mine:</Typography.Text>
+            <Select
+              style={{ width: 200, marginLeft: "10px" }}
+              value={selectedMineType}
+              onChange={(value) => setSelectedMineType(value)}
+            >
+              <Option value="Open-Cast">Open-Cast</Option>
+              <Option value="Underground">Underground</Option>
+              <Option value="Mixed">Mixed</Option>
+            </Select>
+          </div>
+        </Space>
+      </div>
 
-      {/* Table */}
-      <Box sx={{ backgroundColor: "white", borderRadius: "8px", boxShadow: 2, padding: "16px" }}>
-        {/* <Typography variant="h6" sx={{ marginBottom: "16px" }}>
-          Modules
-        </Typography> */}
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Module Code</TableCell>
-              <TableCell>Module Name</TableCell>
-              <TableCell align="center">Select</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {datas.map((val) => (
-              <TableRow key={val.id}>
-                <TableCell>{val.code}</TableCell>
-                <TableCell>{val.name}</TableCell>
-                <TableCell align="center">
-                  <Checkbox
-                    checked={val.isSelected}
-                    onChange={() => handleCheckboxChange(val)}
-                    color="primary"
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Box>
+      {/* Module Table */}
+      <Table
+        dataSource={modules}
+        rowKey="moduleCode"
+        pagination={false}
+        columns={[
+          {
+            title: "Module Code",
+            dataIndex: "moduleCode",
+            key: "moduleCode",
+          },
+          {
+            title: "Module Name",
+            dataIndex: "moduleName",
+            key: "moduleName",
+          },
+          {
+            title: "Select",
+            key: "select",
+            render: (_, record) => (
+              <Checkbox
+                checked={record.isSelected}
+                onChange={() => handleCheckboxChange(record)}
+              />
+            ),
+          },
+        ]}
+      />
 
-      {/* Activity Modal */}
-      <Dialog open={showActivity} onClose={() => setShowActivity(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Activities</DialogTitle>
-        <DialogContent>
-          {popupData.length > 0 ? (
-            <ul>
-              {popupData.map((activity) => (
-                <li key={activity.id}>
-                  <Typography>{activity.name}</Typography>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Typography>No activities available.</Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowActivity(false)} variant="contained" color="primary">
+      {/* Dialog for Activities */}
+      <Modal
+        title="Activities"
+        visible={openDialog}
+        onCancel={handleCloseDialog}
+        footer={[
+          <Button key="close" type="primary" onClick={handleCloseDialog}>
             Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+          </Button>,
+        ]}
+      >
+        <Table
+          dataSource={selectedActivity}
+          rowKey="moduleCode"
+          pagination={false}
+          columns={[
+            {
+              title: "Activity Code",
+              dataIndex: "moduleCode",
+              key: "moduleCode",
+            },
+            {
+              title: "Activity Name",
+              dataIndex: "moduleName",
+              key: "moduleName",
+            },
+            {
+              title: "Start Date",
+              key: "startDate",
+              render: (_, record) => (
+                <Space>
+                  <DatePicker
+                    placeholder="Select Date"
+                    onChange={(date, dateString) =>
+                      handleDateChange(date, dateString, record)
+                    }
+                  />
+                </Space>
+              ),
+            },
+          ]}
+        />
+      </Modal>
+    </div>
   );
 };
 
-export default TimelineBuilder;
+export default TimeBuilder;
