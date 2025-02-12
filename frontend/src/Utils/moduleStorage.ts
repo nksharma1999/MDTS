@@ -6,7 +6,6 @@ const MINE_TYPE_KEY = "mineTypes";
 const DOCUMENTS_KEY = " documents";
 
 // Get all modules from local storage
-// Flatten nested arrays from local storage
 export const getModules = () => {
   const savedModules = localStorage.getItem(MODULE_KEY);
   const modules = savedModules ? JSON.parse(savedModules) : [];
@@ -16,12 +15,11 @@ export const getModules = () => {
 const flattenModules = (modules: any) => {
   return modules.reduce((acc: any, item: any) => {
     if (Array.isArray(item)) {
-      return acc.concat(flattenModules(item)); // Handle nested arrays
+      return acc.concat(flattenModules(item));
     }
-    return acc.concat(item); // Handle single-level items
+    return acc.concat(item);
   }, []);
 };
-
 
 // Save the entire module list to local storage
 export const saveModules = (modules: any) => {
@@ -38,8 +36,6 @@ export const addModule = (newModule: any) => {
 export const updateModule = (newModule: any) => {
   console.log('New Module:', newModule);
   let modules = getModules();
-
-  // Find the index of the module to be updated
   const moduleIndex = modules.findIndex(
     (mod: any) =>
       mod.parentModuleCode === newModule.parentModuleCode &&
@@ -113,8 +109,8 @@ export const getOrderedModuleNames = () => {
 
   // Extract valid module names from savedModules
   const moduleNames = modules
-    .map((module) => module?.moduleName) // Ensure `moduleName` exists
-    .filter((name) => name); // Remove undefined or falsy values
+    .map((module: any) => module?.moduleName) // Ensure `moduleName` exists
+    .filter((name: any) => name); // Remove undefined or falsy values
 
   // Sort module names based on predefined sequence first
   const orderedModules = moduleSequence.filter((name) =>
@@ -123,18 +119,14 @@ export const getOrderedModuleNames = () => {
 
   // Add remaining modules not in the predefined sequence, sorted alphabetically
   const otherModules = moduleNames
-    .filter((name) => !moduleSequence.includes(name))
-    .sort((a, b) => a.localeCompare(b));
+    .filter((name: any) => !moduleSequence.includes(name))
+    .sort((a: any, b: any) => a.localeCompare(b));
 
   // Combine both lists
   return [...orderedModules, ...otherModules];
 };
 
-
-
-
 //Form data related code.....
-
 export const saveFormDataToListInLocalStorage = (formData: any) => {
   const formDatas = loadFormDataListFromLocalStorage();
 
@@ -148,16 +140,13 @@ export const saveFormDataToListInLocalStorage = (formData: any) => {
   localStorage.setItem(FORM_DATA, JSON.stringify(formDatas));
 };
 
-
-
 export const loadFormDataListFromLocalStorage = () => {
   const storedData = localStorage.getItem(FORM_DATA);
   if (storedData) {
-    return JSON.parse(storedData); // Returns the list of form data
+    return JSON.parse(storedData);
   }
   return [];
 };
-
 
 export const clearFormDataListInLocalStorage = () => {
   localStorage.removeItem(FORM_DATA);
@@ -165,7 +154,6 @@ export const clearFormDataListInLocalStorage = () => {
 
 export const isDuplicateProjectName = (projectName: string) => {
   const existingData = loadFormDataListFromLocalStorage();
-  // Check for duplicate project name
   return existingData.some(
     (data: any) => data.projectName.toLowerCase() === projectName.toLowerCase()
   );
@@ -183,8 +171,6 @@ export const getFormDataByProjectName = (projectName: string) => {
 
 const getNewProjectId = () => {
   const allFormData = loadFormDataListFromLocalStorage();
-
-  // Find the maximum project_id, defaulting to 0 if the list is empty
   const maxProjectId = allFormData.reduce((maxId: number, data: any) => {
     return data.project_id > maxId ? data.project_id : maxId;
   }, 0);
@@ -192,41 +178,31 @@ const getNewProjectId = () => {
   return maxProjectId + 1;
 };
 
-
-//       Mine Type.....
-
 export const getAllMineType = () => {
   const savedModules = localStorage.getItem(MINE_TYPE_KEY);
-
-  // Check if savedModules is null or undefined
   if (savedModules === null || savedModules === 'undefined') {
     console.warn("mineTypes is not available or is 'undefined' in localStorage.");
-    return []; // Return an empty array if no valid data exists
+    return [];
   }
-
   let modules = [];
   try {
-    // Parse the saved data
     modules = JSON.parse(savedModules);
     if (!Array.isArray(modules)) {
-      // Fallback if the data is not an array
       console.warn("Parsed mineTypes is not an array. Returning empty array.");
       modules = [];
     }
   } catch (error) {
     console.error("Error parsing mine types from localStorage:", error);
-    modules = []; // Fallback to an empty array if parsing fails
+    modules = [];
   }
 
   return modules;
 };
 
-
 export const updateMineType = (mineTypes: any) => {
-  // Check if mineTypes is undefined or null and set it to a default value (e.g., [])
   if (mineTypes === undefined || mineTypes === null) {
     console.warn("mineTypes is undefined or null. Setting to default empty array.");
-    mineTypes = []; // Default to an empty array or any valid data structure
+    mineTypes = [];
   }
 
   try {
@@ -237,16 +213,11 @@ export const updateMineType = (mineTypes: any) => {
   }
 };
 
-
-
-//    Documents ........
-
-
 export const getAllDocuments = () => {
   const savedDocuments = localStorage.getItem(DOCUMENTS_KEY);
   if (savedDocuments === null || savedDocuments === "undefined") {
     console.warn("Documents are not available or are 'undefined' in localStorage.");
-    return []; // Return an empty array if no valid data exists
+    return [];
   }
   return savedDocuments ? JSON.parse(savedDocuments) : [];
 };
@@ -254,25 +225,23 @@ export const getAllDocuments = () => {
 export const saveDocument = (document: any) => {
   if (!document || typeof document !== "object") {
     console.error("Invalid document object provided.");
-    return false; 
+    return false;
   }
-
   const existingDocuments = getAllDocuments();
   existingDocuments.push(document);
-
   try {
     localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
-    return true; 
+    return true;
   } catch (error) {
     console.error("Error saving documents to localStorage:", error);
-    return false; 
+    return false;
   }
 };
 
-export const updateDocument = (id: Number, document: any) => {
+export const updateDocument = (_id: Number, document: any) => {
   if (!document || typeof document !== "object") {
     console.error("Invalid document object provided.");
-    return false; 
+    return false;
   }
 
   const existingDocuments = getAllDocuments();
@@ -280,33 +249,27 @@ export const updateDocument = (id: Number, document: any) => {
 
   try {
     localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
-    return true; 
+    return true;
   } catch (error) {
     console.error("Error saving documents to localStorage:", error);
-    return false; 
+    return false;
   }
 };
-
 
 // Delete a document from localStorage based on its index
 export const deleteDocument = (index: number) => {
   const existingDocuments = getAllDocuments();
-  
   if (index < 0 || index >= existingDocuments.length) {
     console.error("Invalid document index.");
-    return false; // Return false if the index is out of bounds
+    return false;
   }
-
-  // Remove the document from the array
   existingDocuments.splice(index, 1);
-
   try {
-    // Save the updated documents list back to localStorage
     localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
     return true;
   } catch (error) {
     console.error("Error deleting document from localStorage:", error);
-    return false; 
+    return false;
   }
 };
 

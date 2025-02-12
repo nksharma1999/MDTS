@@ -1,0 +1,40 @@
+.button-container {
+    display: flex;
+    gap: 20px;
+}
+
+.google-btn {
+    border-color: #DB4437;
+    color: #DB4437;
+    border-radius: 8px;
+    text-transform: none;
+}
+
+.google-btn:hover {
+    background-color: #DB4437;
+    color: #fff;
+}
+
+.microsoft-btn {
+    border-color: #2F2F2F;
+    color: #2F2F2F;
+    border-radius: 8px;
+    text-transform: none;
+}
+
+.microsoft-btn:hover {
+    background-color: #2F2F2F;
+    color: #fff;
+}
+
+.otp-btn {
+    border-color: #FFA500;
+    color: #FFA500;
+    border-radius: 8px;
+    text-transform: none;
+}
+
+.otp-btn:hover {
+    background-color: #FFA500;
+    color: #fff;
+}

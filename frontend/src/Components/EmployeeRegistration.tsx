@@ -60,7 +60,7 @@ export const EmployeeRegistration = () => {
     } else {
       console.log("Saving new user:", formData);
     }
-    navigate("/manageuser");
+    navigate("/create/raci-alert-notification");
   };
 
   return (

@@ -24,6 +24,7 @@ a {
     flex-direction: row;
     justify-content: space-between;
     align-content: center;
+    border: none !important;
 }
 
 .number {

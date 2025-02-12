@@ -20,13 +20,7 @@ interface NavItem {
 const initialNavLinks: any = [
     { label: "Home", action: "/home" },
     { label: "About", action: "/about" },
-    {
-        label: "Projects",
-        subItems: [
-            { label: "Register New Project", action: "/create/register-new-project" },
-            { label: "Create New Module", option: "popup", name: "add_new_modal" },
-        ]
-    },
+    { label: "Projects", action: "/projects" },
     { label: "Document", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
     { label: "Data Master", action: "/data-master" },
@@ -121,7 +115,7 @@ const Navbar: React.FC = () => {
     const handleModulePlus = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
-                navigate("/module", {
+                navigate("/modules", {
                     state: {
                         moduleName: newModelName,
                         mineType: selectedOption,

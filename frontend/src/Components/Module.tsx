@@ -1,62 +1,31 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { generateTwoLetterAcronym } from "../Utils/generateTwoLetterAcronym";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useLocation } from "react-router-dom";
-import {
-    TextField,
-    Table,
-    TableHead,
-    TableRow,
-    TableCell,
-    TableBody,
-    Paper,
-    IconButton,
-    Tooltip,
-    Button,
-    Stack,
-    InputAdornment,
-    Typography
-} from "@mui/material";
-import {
-    Add,
-    Delete,
-    ArrowUpward,
-    ArrowDownward,
-    Save,
-    Search
-} from "@mui/icons-material";
+import { TextField, Table, TableHead, TableRow, TableCell, TableBody, Paper, IconButton, Tooltip, Button, Stack, InputAdornment, Typography } from "@mui/material";
+import { Add, Delete, ArrowUpward, ArrowDownward, Search } from "@mui/icons-material";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import PersonIcon from "@mui/icons-material/Person";
 import { useNavigate } from 'react-router-dom';
-import {
-    addModule,
-    isDuplicateModuleName,
-    isDuplicateModuleCode
-} from '../Utils/moduleStorage';
+import { addModule } from '../Utils/moduleStorage';
 import CreateNotification from "./CreateNotification";
 import UserRolesPage from './AssignRACI';
 
 const Module = () => {
-    const [existingAcronyms, setExistingAcronyms] = useState([
-        "FC",
-        "BP",
-        "AM",
-        "IM",
-    ]);
+    const [existingAcronyms, _setExistingAcronyms] = useState(["FC", "BP", "AM", "IM",]);
     const location = useLocation();
     const { moduleName, mineType, moduleCode } = location.state || {};
-    const [openModal, setOpenModal] = useState(false);
-    const [moduleData, setModuleData] = useState({
+    const [openModal, setOpenModal] = useState<any>(false);
+    const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: moduleCode ? moduleCode : generateTwoLetterAcronym(moduleName, existingAcronyms), // Initialize from nav bar else keep empty
-        moduleName: moduleName, // Ensure moduleName is defined or passed as props/state
+        moduleName: moduleName,
         level: 'L1',
         mineType: mineType,
         activities: []
     });
-    const [selectedRow, setSelectedRow] = useState(null);
+    const [selectedRow, setSelectedRow] = useState<any>(null);
     const navigate = useNavigate();
-    const [openPopup, setOpenPopup] = useState(false);
     const [open, setOpen] = useState(false);
 
     const handleSaveModuleAndActivity = () => {
@@ -68,7 +37,7 @@ const Module = () => {
             console.error("Error while saving modules:", error);
             window.alert("Failed to save modules. Check the console for details.");
         }
-        navigate('/ModuleLibrary');
+        navigate('/create/module-library');
     };
 
     const addActivity = () => {
@@ -79,10 +48,10 @@ const Module = () => {
         const newLevel = isModuleSelected ? "L2" : selectedRow.level;
 
         // Find all activities at the same level
-        const sameLevelActivities = moduleData.activities.filter(a => a.level === newLevel);
+        const sameLevelActivities = moduleData.activities.filter((a: any) => a.level === newLevel);
 
         // Find the index of the selectedRow in the list
-        const selectedIndex = sameLevelActivities.findIndex(a => a.code === selectedRow.code);
+        // const selectedIndex = sameLevelActivities.findIndex((a:any) => a.code === selectedRow.code);
 
         // Determine the new activity number
         const lastActivity = sameLevelActivities.length > 0 ? sameLevelActivities[sameLevelActivities.length - 1] : null;
@@ -110,10 +79,10 @@ const Module = () => {
         };
 
         // Reorder and update existing activities
-        const updatedActivities = [];
+        const updatedActivities: any = [];
         let inserted = false;
 
-        moduleData.activities.forEach(activity => {
+        moduleData.activities.forEach((activity: any) => {
             if (activity.code === selectedRow.code) {
                 updatedActivities.push(activity);
                 updatedActivities.push(newActivity);
@@ -134,7 +103,7 @@ const Module = () => {
         }
 
         // Update state
-        setModuleData(prev => ({
+        setModuleData((prev: any) => ({
             ...prev,
             activities: updatedActivities
         }));
@@ -142,12 +111,10 @@ const Module = () => {
         console.log("Updated Activities:", updatedActivities);
     };
 
-
-
     const deleteActivity = () => {
         if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
 
-        setModuleData(prev => {
+        setModuleData((prev: any) => {
             let activities = [...prev.activities];
 
             // Step 1: Find all children of the selected activity
@@ -187,11 +154,10 @@ const Module = () => {
         setSelectedRow(null);
     };
 
-
     const increaseLevel = () => {
         if (!selectedRow || selectedRow.level === "L1") return;
 
-        setModuleData((prev) => {
+        setModuleData((prev: any) => {
             let activities = [...prev.activities];
             //Find the index of selected activity
             let activityIndex = activities.findIndex((a) => a.code === selectedRow.code);
@@ -276,7 +242,7 @@ const Module = () => {
         });
     };
 
-    const removeLastSegment = (code) => {
+    const removeLastSegment = (code: any) => {
         let parts = code.split('/');
         if (parts.length > 1) {
             parts.pop();
@@ -287,7 +253,7 @@ const Module = () => {
     const decreaseLevel = () => {
         if (!selectedRow || selectedRow.level === "L1" || selectedRow.level === "L2") return; // L1 cannot be decreased
 
-        setModuleData((prev) => {
+        setModuleData((prev: any) => {
             let activities = [...prev.activities];
             let activityIndex = activities.findIndex((a) => a.code === selectedRow.code);
             if (activityIndex === -1) return prev;
@@ -358,24 +324,21 @@ const Module = () => {
         });
     };
 
-    const handleEdit = (field, value) => {
-        setModuleData((prev) => ({ ...prev, [field]: value }));
+    const handleEdit = (field: any, value: any) => {
+        setModuleData((prev: any) => ({ ...prev, [field]: value }));
     };
 
-    const handleActivityEdit = (code, field, value) => {
-        setModuleData((prev) => ({
+    const handleActivityEdit = (code: any, field: any, value: any) => {
+        setModuleData((prev: any) => ({
             ...prev,
-            activities: prev.activities.map(activity =>
+            activities: prev.activities.map((activity: any) =>
                 activity.code === code ? { ...activity, [field]: value } : activity
             ),
         }));
     };
 
-
-
     return (
         <div style={{ padding: '20px' }}>
-
             <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="h5" style={{ flexGrow: 1, color: "black", fontWeight: "bold" }}>
@@ -410,7 +373,6 @@ const Module = () => {
                         </Tooltip>
                         <button
                             title="Filter"
-                            onClick={""}
                             style={{
                                 display: "flex",
                                 alignItems: "center",
@@ -447,7 +409,7 @@ const Module = () => {
                         </Tooltip>
                         <IconButton title="Assign RACI" onClick={() => setOpenModal(true)}>
                             <PersonIcon style={{ color: "blue", fontSize: "30px" }} />
-                            <UserRolesPage open={openModal} handleClose={() => setOpenModal(false)} />
+                            <UserRolesPage open={openModal} onClose={() => setOpenModal(false)} />
                         </IconButton>
                         <IconButton title="Notifications" onClick={() => setOpen(true)}>
                             <NotificationsIcon style={{ color: "blue", fontSize: "30px" }} />
@@ -505,8 +467,8 @@ const Module = () => {
                             <TableCell>{moduleData.level}</TableCell>
                         </TableRow>
                         {moduleData.activities
-                            .sort((a, b) => a.code.localeCompare(b.code))
-                            .map((activity, index, sortedActivities) => (
+                            .sort((a: any, b: any) => a.code.localeCompare(b.code))
+                            .map((activity: any, index: any, sortedActivities: any) => (
                                 <TableRow
                                     hover
                                     key={activity.code}
@@ -543,6 +505,7 @@ const Module = () => {
                     </TableBody>
                 </Table>
             </Paper>
+
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
                 <Button
                     variant="contained"

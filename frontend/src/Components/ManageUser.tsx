@@ -1,58 +1,89 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  IconButton,
-  Tooltip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
   Switch,
-  AppBar,
+  Button,
+  IconButton,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Toolbar,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { Visibility, Edit, Delete } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { getModules } from '../Utils/moduleStorage';
-import { Archive } from "@mui/icons-material";
-import AssignmentIcon from '@mui/icons-material/Assignment';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import { getModules } from "../Utils/moduleStorage";
+import "../styles/user-management.css";
+import { Visibility, Edit, Archive, Notifications } from "@mui/icons-material";
+import Assignment from "@mui/icons-material/Assignment";
+import { Col, Input, Modal, Row } from "antd";
+interface User {
+  id: number;
+  name: string;
+  company: string;
+  project: string;
+  mobile: string;
+  email: string;
+  whatsapp: string;
+  profilePhoto: string;
+}
 
+interface Module {
+  parentModuleCode: string;
+}
 
+interface RACI {
+  responsible?: boolean;
+  accountable?: boolean;
+  consulted?: boolean;
+  informed?: boolean;
+}
 
-const ManageUser = () => {
+interface NotificationSettings {
+  email: boolean;
+  whatsapp: boolean;
+  text: boolean;
+}
+
+interface User {
+  id: number;
+  name: string;
+  company: string;
+  project: string;
+  mobile: string;
+  email: string;
+  whatsapp: string;
+  profilePhoto: string;
+}
+
+const ManageUser: React.FC = () => {
   const navigate = useNavigate();
-  const [openRACIModal, setOpenRACIModal] = useState(false);
-  const [openAlertModal, setOpenAlertModal] = useState(false);
-  const [isRACIValid, setIsRACIValid] = useState(false);
-  const [notificationSettings, setNotificationSettings] = useState({
+  const [modules, setModules] = useState<Module[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [openAlertModal, setOpenAlertModal] = useState<boolean>(false);
+  const [openRACIModal, setOpenRACIModal] = useState<boolean>(false);
+  const [isRACIValid, _setIsRACIValid] = useState<boolean>(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     email: true,
     whatsapp: true,
     text: true,
   });
-  const [selectedUserFor, setSelectedUserFor] = React.useState({
-    raci: {
-      CF: { responsible: false, accountable: false, consulted: false, informed: false },
-      BP: { responsible: false, accountable: false, consulted: false, informed: false },
-      BC: { responsible: false, accountable: false, consulted: false, informed: false },
-      DG: { responsible: false, accountable: false, consulted: false, informed: false },
-      GR: { responsible: false, accountable: false, consulted: false, informed: false },
-      MP: { responsible: false, accountable: false, consulted: false, informed: false },
-      FC: { responsible: false, accountable: false, consulted: false, informed: false },
-    },
+
+  const [selectedUserFor, setSelectedUserFor] = useState<any>({
+    raci: {},
   });
-  const [modules, setModules] = useState([{}]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [users, setUsers] = useState([
+
+  const [users, setUsers] = useState<User[]>([
     {
       id: 1,
       name: "John Doe",
@@ -61,7 +92,7 @@ const ManageUser = () => {
       mobile: "1234567890",
       email: "john@example.com",
       whatsapp: "1234567890",
-      profilePhoto: "https://via.placeholder.com/120"
+      profilePhoto: "https://via.placeholder.com/120",
     },
     {
       id: 2,
@@ -71,318 +102,254 @@ const ManageUser = () => {
       mobile: "0987654321",
       email: "jane@example.com",
       whatsapp: "0987654321",
-      profilePhoto: "https://via.placeholder.com/120"
+      profilePhoto: "https://via.placeholder.com/120",
     },
   ]);
 
   useEffect(() => {
-    const savedModules = getModules();
+    const savedModules: Module[] = getModules();
     setModules(savedModules);
   }, []);
 
-  const handleViewUser = (user: any) => {
-    // Navigate to the 'View User' page with the user details passed as state
-    navigate(`/view-user`, { state: { user: selectedUser } });
-  };
-  const handleCloseModal = () => {
-    setOpenRACIModal(false);
-    setOpenAlertModal(false); // Close both modals
-  };
-  const handleToggle = (event: any) => {
-    setNotificationSettings({
-      ...notificationSettings,
-      [event.target.name]: event.target.checked,
-    });
-  };
-
-  const handleOpenRACIModal = (user: any) => {
+  const handleRowClick = (user: User) => {
     setSelectedUser(user);
-    setOpenRACIModal(true); // Open the RACI modal when the button is clicked
   };
 
+  const handleCloseModal = () => {
+    setOpenAlertModal(false);
+    setOpenRACIModal(false);
+  };
 
+  const handleToggle = (event: ChangeEvent<HTMLInputElement>) => {
+    setNotificationSettings((prev) => ({
+      ...prev,
+      [event.target.name]: event.target.checked,
+    }));
+  };
+
+  const handleRACIChange = (event: ChangeEvent<HTMLInputElement>, moduleCode: string, type: keyof RACI) => {
+    setSelectedUserFor((prev: any) => ({
+      ...prev,
+      raci: {
+        ...prev.raci,
+        [moduleCode]: {
+          ...prev.raci[moduleCode],
+          [type]: event.target.checked,
+        },
+      },
+    }));
+  };
+
+  useEffect(() => {
+    const savedModules = getModules();
+    setModules(savedModules || []);
+  }, []);
 
   const handleEditUser = () => {
     if (selectedUser) {
-      navigate("/EmployeeRegistration", { state: { user: selectedUser, isEdit: true } });
+      navigate("/employee-registration", {
+        state: { user: selectedUser, isEdit: true },
+      });
     }
   };
 
-  // const handleDeleteUser = () => {
-  //   if (selectedUser && window.confirm("Are you sure you want to delete this user?")) {
-  //     setUsers((prevUsers) => prevUsers.filter((user) => user.id !== selectedUser.id));
-  //     setSelectedUser(null); // Reset selected user
-  //   }
-  // };
   const handleArchiveUser = () => {
     if (selectedUser && window.confirm("Are you sure you want to archive this user?")) {
-      // Logic to archive the user
       setUsers((prevUsers) =>
         prevUsers.map((user) =>
           user.id === selectedUser.id ? { ...user, archived: true } : user
         )
       );
-      setSelectedUser(null); // Reset selected user
+      setSelectedUser(null);
     }
   };
-  const handleRowClick = (user) => {
-    // console.log("Selected User:", selectedUser);
-    setSelectedUser(user);
+
+  const handleViewUser = () => {
+    setSelectedUser(selectedUser);
+    console.log(selectedUser);
+
+    setIsModalVisible(true);
   };
 
-  return (
-    <div style={styles.pageContainer}>
-      <AppBar position="static">
-        <Toolbar style={{ backgroundColor: "#607d8b" }}>
-          <Typography variant="h5" style={{ flexGrow: 1 ,color:'black'}}>
-            Tool Bar
-          </Typography>
-          <Tooltip title="View">
-          <IconButton style={{ color: "white" }} onClick={handleViewUser} disabled={!selectedUser}>
-              <Visibility />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Edit">
-          <IconButton style={{ color: "white" }} onClick={handleEditUser} disabled={!selectedUser}>
-              <Edit />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Archive">
-    <IconButton
-      style={{ color: "white" }}
-      onClick={handleArchiveUser}
-      disabled={!selectedUser}
-    >
-      <Archive /> {/* Use the Archive icon */}
-    </IconButton>
-  </Tooltip>
-  <IconButton
-          // variant="contained"
-          onClick={handleOpenRACIModal}
-          style={styles.actionButton}
-        >
-          <AssignmentIcon />
-        </IconButton>
-          <IconButton
-            // variant="contained"
-            onClick={() => setOpenAlertModal(true)}
-            style={styles.actionButton}
-          >
-             <NotificationsIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+  const handleOk = () => {
+    setIsModalVisible(false);
+    if (selectedUser) {
+      navigate(`/view-user`, { state: { user: selectedUser } });
+    }
+  };
 
-      <TableContainer component={Paper} style={styles.tableContainer}>
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
+
+  function getInitials(name?: string): string {
+    if (!name) return "";
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 1
+      ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+      : parts[0][0]?.toUpperCase() || "";
+  }
+
+
+  return (
+    <div className="page-container">
+      <div style={{ background: "none", display: "flex", justifyContent: "space-between" }} >
+        <div className="holiday-page-heading" style={{ marginLeft: "10px", marginTop: "5px" }}>
+          RACI, Alert & Notification
+        </div>
+        <Toolbar className="toolbar" style={{ paddingRight: "5px" }}>
+          <Typography variant="h6" className="toolbar-title">
+            Toolbar
+          </Typography>
+
+          <div className="toolbar-buttons">
+            {[
+              { title: "View", icon: <Visibility />, action: handleViewUser },
+              { title: "Edit", icon: <Edit />, action: handleEditUser },
+              { title: "Archive", icon: <Archive />, action: handleArchiveUser }
+            ].map(({ title, icon, action }, index) => (
+              <Tooltip key={index} title={title}>
+                <IconButton
+                  onClick={action}
+                  disabled={!selectedUser}
+                  className={`toolbar-icon ${selectedUser ? "enabled" : "disabled"}`}
+                >
+                  {icon}
+                </IconButton>
+              </Tooltip>
+            ))}
+
+            <Tooltip title="Assign RACI">
+              <IconButton disabled={!selectedUser} onClick={() => setOpenRACIModal(true)} className="toolbar-icon">
+                <Assignment />
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Alerts">
+              <IconButton disabled={!selectedUser} onClick={() => setOpenAlertModal(true)} className="toolbar-icon">
+                <Notifications />
+              </IconButton>
+            </Tooltip>
+          </div>
+        </Toolbar>
+      </div>
+
+      <TableContainer component={Paper} className="table-container">
         <Table>
           <TableHead>
-            <TableRow style={styles.tableHeader}>
-              <TableCell style={styles.headerCell}>S.No</TableCell>
-              <TableCell style={styles.headerCell}>Name</TableCell>
-              <TableCell style={styles.headerCell}>Company</TableCell>
-              <TableCell style={styles.headerCell}>Project</TableCell>
-              <TableCell style={styles.headerCell}>Mobile</TableCell>
-              <TableCell style={styles.headerCell}>Email</TableCell>
-              <TableCell style={styles.headerCell}>WhatsApp</TableCell>
+            <TableRow className="table-header">
+              <TableCell className="header-cell">S.No</TableCell>
+              <TableCell className="header-cell">Name</TableCell>
+              <TableCell className="header-cell">Company</TableCell>
+              <TableCell className="header-cell">Project</TableCell>
+              <TableCell className="header-cell">Mobile</TableCell>
+              <TableCell className="header-cell">Email</TableCell>
+              <TableCell className="header-cell">WhatsApp</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {users.map((user, index) => (
               <TableRow
                 key={user.id}
-                style={{
-                  backgroundColor: selectedUser?.id === user.id ? "#f0f0f0" : "inherit",
-                  cursor: "pointer",
-                }}
+                className={`table-row ${selectedUser?.id === user.id ? "selected-row" : ""}`}
                 onClick={() => handleRowClick(user)}
               >
-                
-                <TableCell style={styles.tableCell}>{index + 1}</TableCell>
-                <TableCell style={styles.tableCell}>{user.name}</TableCell>
-                <TableCell style={styles.tableCell}>{user.company}</TableCell>
-                <TableCell style={styles.tableCell}>{user.project}</TableCell>
-                <TableCell style={styles.tableCell}>{user.mobile}</TableCell>
-                <TableCell style={styles.tableCell}>{user.email}</TableCell>
-                <TableCell style={styles.tableCell}>{user.whatsapp}</TableCell>
+                <TableCell className="table-cell-item">{index + 1}</TableCell>
+                <TableCell className="table-cell-item">{user.name}</TableCell>
+                <TableCell className="table-cell-item">{user.company}</TableCell>
+                <TableCell className="table-cell-item">{user.project}</TableCell>
+                <TableCell className="table-cell-item">{user.mobile}</TableCell>
+                <TableCell className="table-cell-item">{user.email}</TableCell>
+                <TableCell className="table-cell-item">{user.whatsapp}</TableCell>
               </TableRow>
             ))}
           </TableBody>
-
         </Table>
       </TableContainer>
 
-      {/* Add your Dialogs here as you did before */} {/* Dialog Content */}
-      <Dialog
-        open={openAlertModal}
-        onClose={handleCloseModal}
-        PaperProps={{
-          style: {
-            position: "absolute",
-            // top: document
-            //   ?.getElementById("alertNotificationButton")
-            //   ?.getBoundingClientRect()?.bottom + 10 || "10%",
-            // left: document
-            //   ?.getElementById("alertNotificationButton")
-            //   ?.getBoundingClientRect()?.left || "10%",
-            marginRight: 0,
-            width: "300px",
-            borderRadius: "8px",
-            padding: "10px",
-            overflow: "visible",
-            top: "212.5px",
-            left: "1510.63px"
-          },
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: -10, // Adjust position above the dialog
-            right: 20, // Position the arrow towards the right
-            width: 0,
-            height: 0,
-            borderLeft: "10px solid transparent", // Make the left side transparent
-            borderRight: "10px solid transparent", // Make the right side transparent
-            borderBottom: "10px solid white", // Match with the dialog background color
-            zIndex: 1,
-          }}
-        ></div>
-
-
-        {/* Dialog Content */}
+      <Dialog open={openAlertModal} onClose={handleCloseModal} className="dialog-alert">
+        <div className="dialog-arrow"></div>
         <DialogTitle>Notification Preferences</DialogTitle>
         <DialogContent>
           <div>
             <FormControlLabel
-              control={
-                <Switch
-                  checked={notificationSettings.email}
-                  onChange={handleToggle}
-                  name="email"
-                />
-              }
+              control={<Switch checked={notificationSettings.email} onChange={handleToggle} name="email" />}
               label="Email"
             />
             <FormControlLabel
-              control={
-                <Switch
-                  checked={notificationSettings.whatsapp}
-                  onChange={handleToggle}
-                  name="whatsapp"
-                />
-              }
+              control={<Switch checked={notificationSettings.whatsapp} onChange={handleToggle} name="whatsapp" />}
               label="WhatsApp"
             />
             <FormControlLabel
-              control={
-                <Switch
-                  checked={notificationSettings.text}
-                  onChange={handleToggle}
-                  name="text"
-                />
-              }
+              control={<Switch checked={notificationSettings.text} onChange={handleToggle} name="text" />}
               label="Text"
             />
           </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal} style={{ backgroundColor:'#4A90E2' ,color:'black',}}>
+          <Button onClick={handleCloseModal} className="close-button">
             Close
           </Button>
         </DialogActions>
       </Dialog>
 
-
-
-      {/* Modal for RACI */}
-      <Dialog
-        open={openRACIModal}
-        onClose={handleCloseModal}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          style: { borderRadius: 10, overflow: "hidden" },
-        }}
-      >
-        <DialogTitle style={{ backgroundColor: "#1976d2", color: "#fff" }}>
-          RACI Module Assignments
-        </DialogTitle>
-        <DialogContent style={{ padding: "24px", backgroundColor: "#f9f9f9" }}>
+      <Dialog open={openRACIModal} onClose={handleCloseModal} maxWidth="lg" fullWidth className="dialog-raci">
+        <DialogTitle>RACI Module Assignments</DialogTitle>
+        <DialogContent>
           {selectedUser && (
             <div>
-              {/* <h4 style={styles.sectionHeader}>Module Assignments</h4> */}
-              <div style={styles.tableContainer}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead style={styles.tableHeader}>
+              <div className="table-container">
+                <table className="raci-table">
+                  <thead>
                     <tr>
-                      {/* <th style={{ ...styles.headerCell, padding: "12px" }}>Code</th>
-                      <th style={{ ...styles.headerCell, padding: "12px" }}>Module</th> */}
-                      <th style={{ ...styles.headerCell, padding: "12px" }}>Responsible</th>
-                      <th style={{ ...styles.headerCell, padding: "12px" }}>Accountable</th>
-                      <th style={{ ...styles.headerCell, padding: "12px" }}>Consulted</th>
-                      <th style={{ ...styles.headerCell, padding: "12px" }}>Informed</th>
+                      <th>Responsible</th>
+                      <th>Accountable</th>
+                      <th>Consulted</th>
+                      <th>Informed</th>
                     </tr>
                   </thead>
                   <tbody>
                     {modules.map((module) => (
                       <tr key={module.parentModuleCode}>
-                        {/* <td style={styles.tableCell}>{module.parentModuleCode}</td>
-                        <td style={styles.tableCell}>{module.moduleName}</td> */}
-                        <td style={styles.tableCell}>
+                        <td>
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={
-                                  selectedUserFor?.raci?.[module.parentModuleCode]?.responsible || false
-                                }
-                                onChange={(e) =>
-                                  handleRACIChange(e, module.parentModuleCode, "responsible")
-                                }
+                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.responsible || false}
+                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "responsible")}
                               />
                             }
                             label="Responsible"
                           />
                         </td>
-                        <td style={styles.tableCell}>
+                        <td>
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={
-                                  selectedUserFor?.raci?.[module.parentModuleCode]?.accountable || false
-                                }
-                                onChange={(e) =>
-                                  handleRACIChange(e, module.parentModuleCode, "accountable")
-                                }
+                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.accountable || false}
+                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "accountable")}
                               />
                             }
                             label="Accountable"
                           />
                         </td>
-                        <td style={styles.tableCell}>
+                        <td>
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={
-                                  selectedUser?.raci?.[module.parentModuleCode]?.consulted || false
-                                }
-                                onChange={(e) =>
-                                  handleRACIChange(e, module.parentModuleCode, "consulted")
-                                }
+                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.consulted || false}
+                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "consulted")}
                               />
                             }
                             label="Consulted"
                           />
                         </td>
-                        <td style={styles.tableCell}>
+                        <td>
                           <FormControlLabel
                             control={
                               <Switch
-                                checked={
-                                  selectedUser?.raci?.[module.parentModuleCode]?.informed || false
-                                }
-                                onChange={(e) =>
-                                  handleRACIChange(e, module.parentModuleCode, "informed")
-                                }
+                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.informed || false}
+                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "informed")}
                               />
                             }
                             label="Informed"
@@ -391,69 +358,134 @@ const ManageUser = () => {
                       </tr>
                     ))}
                   </tbody>
-
                 </table>
               </div>
             </div>
           )}
         </DialogContent>
-        <DialogActions style={{ padding: "16px", backgroundColor: "#f9f9f9" }}>
-          <Button onClick={handleCloseModal} style={{ backgroundColor:'#4A90E2' ,color:'black',}} variant="outlined">
+        <DialogActions>
+          <Button onClick={handleCloseModal} className="close-button">
             Close
           </Button>
-          <Button
-            onClick={handleCloseModal}
-            style={{ backgroundColor:'#4A90E2' ,color:'black',}}
-            variant="contained"
-            disabled={!isRACIValid}
-          >
+          <Button onClick={handleCloseModal} className="save-button" disabled={!isRACIValid}>
             Save
           </Button>
         </DialogActions>
       </Dialog>
 
+      <Modal
+        title=""
+        visible={isModalVisible}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        centered
+        className="custom-user-modal"
+        width={600}
+        footer={[""]}
+      >
+        <div className="user-info-main">
+          <div className="profile-cover bg-secondary">
+            <div className="profile-item">
+              <span>{getInitials(selectedUser?.name)}</span>
+            </div>
+          </div>
+          <div className="profile-min-details">
+            <p className="user-name">{selectedUser?.name}</p>
+            <p className="email">{selectedUser?.email}</p>
+          </div>
+
+          <div className="user-details">
+            <hr />
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Full Name</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.name}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Company</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.company}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Project</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.project}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Mobile</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.mobile}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Email</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.email}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>WhatsApp</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.whatsapp}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Registration Date</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.name}
+                />
+              </Col>
+            </Row>
+
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
-
-const styles = {
-  pageContainer: {
-    width: "100%", // Decreased width to 90% of the screen width
-    maxWidth: "1200px", // Max width set to 1200px
-    margin: "0", // Centers the page content
-    padding: "20px", // Optional padding to ensure content doesn't touch edges
-  },
-  tableContainer: {
-    width: "100%",
-    marginTop: "20px",
-  },
-  tableHeader: {
-    backgroundColor: "#4F7942",
-    textAlign: "center",
-    color: "white",
-  },
-  headerCell: {
-    fontWeight: "bold",
-    padding: "10px",
-    textAlign: "center",
-    color: "white",
-  },
-  tableCell: {
-    padding: "20px",
-    textAlign: "center",
-  },
-  actionButton: {
-    margin: "0 10px",
-    // backgroundColor: "#1976d2",
-    color: "white",
-  },
-  sectionHeader: {
-    fontSize: "20px",
-    fontWeight: "bold",
-    marginBottom: "15px",
-  },
-};
-
-
 
 export default ManageUser;
