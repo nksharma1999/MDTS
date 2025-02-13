@@ -357,15 +357,6 @@ const Module = () => {
             .join("");
     };
 
-    // const handleAddOption = () => {
-    //     if (newMineType) {
-    //         setOptions([...options, shorthandCode]);
-    //         setNewMineType("");
-    //         setShorthandCode("");
-    //         setMineTypePopupOpen(false);
-    //     }
-    // };
-
     const handleAddOption = () => {
         if (newMineType) {
             const updatedOptions = [...options, shorthandCode];
@@ -376,7 +367,6 @@ const Module = () => {
             setMineTypePopupOpen(false);
         }
     };
-
 
     const handlePopupOpen = () => setOpenPopup(true);
 
@@ -398,7 +388,7 @@ const Module = () => {
                             style={{ height: "30px" }}
                             prefix={<SearchOutlined />}
                         />
-                        <Tooltip title="Add Activity">
+                        <Tooltip title="Create New Module">
                             <Button
                                 type="primary"
                                 onClick={handlePopupOpen}

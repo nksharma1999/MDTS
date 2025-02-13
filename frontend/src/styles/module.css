@@ -88,6 +88,11 @@
 
 .add-module-button {
     outline: 1px solid #fff !important;
+    background-color: transparent !important;
+}
+
+.add-module-button:hover {
+    outline: none !important;
     background-color: #257090 !important;
 }
 
