@@ -201,16 +201,17 @@ export const EmployeeRegistration = () => {
                   </Col>
                 </Row>
 
-                <div className="button-group">
-                  <Button
-                    className="bg-secondary"
-                    icon={<ArrowRightOutlined />}
-                    onClick={handleSaveOrUpdate}
-                  >
-                    {isEdit ? "Update" : "Save"}
-                  </Button>
-                </div>
               </Form>
+              <div className="button-group">
+                <Button
+                  className="bg-secondary"
+                  icon={<ArrowRightOutlined />}
+                  onClick={handleSaveOrUpdate}
+                  style={{ float: 'right', marginRight: '10px' }}
+                >
+                  {isEdit ? "Update" : "Save"}
+                </Button>
+              </div>
 
             </div>
           </div>

@@ -14,7 +14,7 @@
 }
 
 .professional-form {
-    height: calc(100vh - 230px);
+    height: calc(100vh - 260px);
     overflow-y: auto;
     overflow-x: hidden;
 
@@ -44,6 +44,7 @@
         display: flex;
         justify-content: flex-end;
         gap: 12px;
+        float: right !important;
         margin-top: 20px;
     }
 
