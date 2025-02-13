@@ -15,7 +15,6 @@ export const RegisterNewProject: React.FC = () => {
   const [addCompanyPopupOpen, setAddCompanyPopupOpen] = useState<boolean>(false);
   const [orderedModuleNames] = useState<string[]>(getOrderedModuleNames());
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
-  const [isFinalStageCompleted, setFinalStageCompleted] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const steps = [
     { id: 1, title: "Project Parameters" },
@@ -28,7 +27,6 @@ export const RegisterNewProject: React.FC = () => {
     { id: 1, name: "Company A" },
     { id: 2, name: "Company B" }
   ]);
-
 
   const [formStepsData, setFormStepsData] = useState<any[]>(() => {
     const savedData = localStorage.getItem("projectFormData");
@@ -44,19 +42,6 @@ export const RegisterNewProject: React.FC = () => {
       setCompanyList([{ id: 1, name: "Company A" }, { id: 2, name: "Company B" }]);
     }
   }, []);
-
-  // const handleNext = () => {
-  //   if (currentStep < steps.length) {
-  //     const updatedData = Array.isArray(formStepsData) ? [...formStepsData] : [];
-  //     updatedData[currentStep - 1] = { ...formData };
-  //     setFormStepsData(updatedData);
-  //     localStorage.setItem("projectFormData", JSON.stringify(updatedData));
-  //     setCurrentStep(currentStep + 1);
-  //     setFormData(updatedData[currentStep] || {});
-  //   }
-  //   console.log(formData);
-
-  // };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
@@ -113,7 +98,6 @@ export const RegisterNewProject: React.FC = () => {
   const handleRowChange = (value: string, key: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: value ? "" : "Required" }));
-    setFinalStageCompleted(true);
   };
 
   const requiredFields: { [key: number]: string[] } = {
@@ -123,32 +107,17 @@ export const RegisterNewProject: React.FC = () => {
     4: orderedModuleNames.map((moduleName) => moduleName.replace(/\s+/g, "").toLowerCase())
   };
 
-  // const validateFields = (step: number): boolean => {
-  //   let newErrors: { [key: string]: string } = {};
-  //   requiredFields[step].forEach((field) => {
-  //     if (!formData[field] || formData[field]?.trim() === "") {
-  //       newErrors[field] = "This field is required.";
-  //     }
-  //   });
-
-  //   setErrors(newErrors);
-  //   return Object.keys(newErrors).length === 0;
-  // };
-
   const validateFields = (step: number): boolean => {
     let newErrors: { [key: string]: string } = {};
-
     requiredFields[step].forEach((field) => {
       const fieldValue = formData[field];
       if (fieldValue === undefined || fieldValue === null || (typeof fieldValue === 'string' && fieldValue.trim() === "") || (typeof fieldValue === 'number' && isNaN(fieldValue))) {
         newErrors[field] = "This field is required.";
       }
     });
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -169,200 +138,6 @@ export const RegisterNewProject: React.FC = () => {
       setFormData(updatedData[currentStep] || {});
     }
   };
-
-  // const renderStepForm = () => {
-  //   switch (currentStep) {
-  //     case 1:
-  //       return (
-  //         <Form layout="horizontal">
-  //           <Row gutter={[16, 16]}>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Company Name" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <div style={{ display: 'flex', gap: "10px" }}>
-  //                   <Select
-  //                     value={formData.companyName || ""}
-  //                     onChange={(value) => handleChange("companyName", value)}
-  //                   >
-  //                     {companyList.map((company) => (
-  //                       <Select.Option key={company.id} value={company.name}>
-  //                         {company.name}
-  //                       </Select.Option>
-  //                     ))}
-  //                   </Select>
-  //                   <Button type="dashed" icon={<PlusOutlined />} onClick={() => setAddCompanyPopupOpen(true)}></Button>
-  //                 </div>
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Project Name" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.projectName || ""} onChange={(e) => handleChange("projectName", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Mineral" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Select value={formData.mineral || ""} onChange={(value) => handleChange("mineral", value)}>
-  //                   <Select.Option value="Coal">Coal</Select.Option>
-  //                   <Select.Option value="Iron">Iron</Select.Option>
-  //                 </Select>
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Type of Mine" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Select value={formData.typeOfMine || ""} onChange={(value) => handleChange("typeOfMine", value)}>
-  //                   <Select.Option value="Open Cast">Open Cast</Select.Option>
-  //                   <Select.Option value="Underground">Underground</Select.Option>
-  //                 </Select>
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Reserve" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.reserve || ""} onChange={(e) => handleChange("reserve", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Net Geological Reserve (Mn T)" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.netGeologicalReserve || ""} onChange={(e) => handleChange("netGeologicalReserve", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Extractable Reserve (Mn T)" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.extractableReserve || ""} onChange={(e) => handleChange("extractableReserve", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Grade (in case of Coal)" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Select value={formData.grade || ""} onChange={(value) => handleChange("grade", value)}>
-  //                   <Select.Option value="Grade A">Grade A</Select.Option>
-  //                   <Select.Option value="Grade B">Grade B</Select.Option>
-  //                 </Select>
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Strip Ratio (Cum / T)" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.stripRatio || ""} onChange={(e) => handleChange("stripRatio", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Peak Capacity (MTPA)" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.peakCapacity || ""} onChange={(e) => handleChange("peakCapacity", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Mine Life (years)" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.mineLife || ""} onChange={(e) => handleChange("mineLife", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Total Coal Block Area (Ha)" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.totalCoalBlockArea || ""} onChange={(e) => handleChange("totalCoalBlockArea", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //           </Row>
-  //         </Form>
-  //       );
-  //     case 2:
-  //       return (
-  //         <Form layout="horizontal">
-  //           <Row gutter={[16, 16]}>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="State" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.state || ""} onChange={(e) => handleChange("state", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="District" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.district || ""} onChange={(e) => handleChange("district", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Nearest Town" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.nearestTown || ""} onChange={(e) => handleChange("nearestTown", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Nearest Airport" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.nearestAirport || ""} onChange={(e) => handleChange("nearestAirport", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Nearest Railway Station" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.nearestRailwayStation || ""} onChange={(e) => handleChange("nearestRailwayStation", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //           </Row>
-  //         </Form>
-  //       );
-  //     case 3:
-  //       return (
-  //         <Form layout="horizontal">
-  //           <Row gutter={[16, 16]}>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Mine Owner" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input value={formData.mineOwner || ""} onChange={(e) => handleChange("mineOwner", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Date of H1 Bidder" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <DatePicker style={{ width: "100%" }} value={formData.dateOfH1Bidder || null} onChange={(date) => handleChange("dateOfH1Bidder", date)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="CBDPA Date" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <DatePicker style={{ width: "100%" }} value={formData.cbdpaDate || null} onChange={(date) => handleChange("cbdpaDate", date)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="Vesting Order Date" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <DatePicker style={{ width: "100%" }} value={formData.vestingOrderDate || null} onChange={(date) => handleChange("vestingOrderDate", date)} />
-  //               </Form.Item>
-  //             </Col>
-  //             <Col span={24}>
-  //               <Form.Item colon={false} label="PBG Amount" labelAlign="left" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-  //                 <Input type="number" value={formData.pbgAmount || ""} onChange={(e) => handleChange("pbgAmount", e.target.value)} />
-  //               </Form.Item>
-  //             </Col>
-  //           </Row>
-  //         </Form>
-  //       );
-  //     case 4:
-  //       return (
-  //         <Form layout="horizontal">
-  //           <div>
-  //             <div className="module-list">
-  //               {orderedModuleNames.map((moduleName) => {
-  //                 const key = moduleName.replace(/\s+/g, "").toLowerCase();
-  //                 return (
-  //                   <Row key={key} className="module-item" gutter={16} align="middle">
-  //                     <Col span={6}>
-  //                       <label className="module-label" htmlFor={key}>
-  //                         {moduleName}
-  //                       </label>
-  //                     </Col>
-  //                     <Col span={18} style={{ marginBottom: "10px" }}>
-  //                       <Select
-  //                         className={`custom-select ${errors[key] ? "error" : ""}`}
-  //                         id={key}
-  //                         value={formData[key] || undefined}
-  //                         onChange={(value) => handleRowChange(value, key)}
-  //                         style={{ width: "100%" }}
-  //                         placeholder={`Select ${moduleName}`}
-  //                       >
-  //                         <Option value="Yes">Yes</Option>
-  //                         <Option value="No">No</Option>
-  //                       </Select>
-  //                       {errors[key] && <div className="error-text">{errors[key]}</div>}
-  //                     </Col>
-  //                   </Row>
-  //                 );
-  //               })}
-  //             </div>
-  //           </div>
-  //         </Form>
-  //       );
-  //     default:
-  //       return null;
-  //   }
-  // };
 
   const renderStepForm = () => {
     switch (currentStep) {
@@ -573,7 +348,6 @@ export const RegisterNewProject: React.FC = () => {
     }
   };
 
-
   return (
     <div className="main-container-div">
       <div className="form-container-item-div">
@@ -594,7 +368,7 @@ export const RegisterNewProject: React.FC = () => {
               {steps.map((step, index) => (
                 <li
                   key={step.id}
-                  className={`step ${((currentStep > index + 1) || (isFinalStageCompleted && index == steps.length - 1))
+                  className={`step ${((currentStep > index + 1))
                     ? "completed"
                     : currentStep === index + 1
                       ? "active"

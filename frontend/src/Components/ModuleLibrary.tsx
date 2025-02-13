@@ -97,7 +97,7 @@ const ModuleLibrary = () => {
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="page-heading">
+      <div className="page-heading-module-library">
         <span>Module Library</span>
       </div>
       <div className="headings">
@@ -197,9 +197,6 @@ const ModuleLibrary = () => {
         </div>
 
         <div className="create-library-section">
-          {/* <Typography.Title level={5} style={{ fontWeight: "bold", marginBottom: "16px" }}>
-            Module Library
-          </Typography.Title> */}
           <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
             <Input
               size="small"
@@ -261,7 +258,7 @@ const ModuleLibrary = () => {
 
         <div className="library-details">
           <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
-            <Select size="small" value={libraryType} onChange={(value) => { setLibraryType(value); setNewLibraryType(""); }} style={{ width: "100%" }}>
+            <Select size="small" value={libraryType} onChange={(value) => { setLibraryType(value); setNewLibraryType(""); }} style={{ width: "100%", height: "26px", fontSize: "12px" }}>
               <Option value="project">Project Based</Option>
               <Option value="custom">Custom</Option>
             </Select>
