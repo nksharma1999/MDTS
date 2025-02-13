@@ -1,0 +1,41 @@
+.button-container {
+    display: flex;
+    gap: 20px;
+}
+
+.google-btn {
+    border-color: #DB4437 !important;
+    color: #DB4437 !important;
+    border-radius: 8px !important;
+    text-transform: none !important;
+}
+
+.google-btn:hover {
+    background-color: #DB4437 !important;
+    color: #fff !important;
+}
+
+.microsoft-btn {
+    border-color: #2F2F2F !important;
+    color: #2F2F2F !important;
+    border-radius: 8px !important;
+    color: #fff;
+    text-transform: none !important;
+}
+
+.otp-btn {
+    border-color: #FFA500 !important;
+    color: #FFA500 !important;
+    border-radius: 8px !important;
+    text-transform: none !important;
+}
+
+.otp-btn:hover {
+    background-color: #FFA500 !important;
+    color: #fff !important;
+}
+
+.microsoft-btn:hover {
+    background-color: #2F2F2F !important;
+    color: #fff !important;
+}

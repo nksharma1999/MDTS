@@ -1,4 +1,5 @@
 import React from "react";
+import "../styles/sign-in.css"
 import { Box, Button, Container, TextField, Typography, Paper, Card, CardMedia, Grid } from "@mui/material";
 const images = [
     "../public/images/auths/m5.jpg",
@@ -37,7 +38,7 @@ const SignIn: React.FC = () => {
                 }}
             >
                 <Box sx={{ flex: 0.4, p: 4, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    <Typography variant="h4" fontWeight="bold" color="#fff" sx={{ marginBottom: 5, fontSize: "30px" }}>
+                    <Typography variant="h4" fontWeight="bold" color="#fff" sx={{ marginBottom: 4, fontSize: "30px" }}>
                         Mine Development Tracking System
                     </Typography>
                     <Typography variant="h5" fontWeight="normal" color="#fff" sx={{ marginBottom: 2 }}>
@@ -111,25 +112,18 @@ const SignIn: React.FC = () => {
                         </Box>
                     </Box>
 
-                    <Typography align="center" color="#fff" sx={{ my: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Typography align="center" color="#fff" sx={{ my: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Box sx={{ flex: 1, borderBottom: '1px solid #fff', marginRight: 2 }} />
                         OR
                         <Box sx={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 2 }} />
                     </Typography>
 
-                    <Button
-                        variant="contained"
-                        color="secondary"
-                        fullWidth
-                        sx={{
-                            backgroundColor: "#333",
-                            ":hover": { backgroundColor: "#444" },
-                            color: "#fff",
-                            borderRadius: "8px"
-                        }}
-                    >
-                        Login with Google
-                    </Button>
+                    <div className="button-container">
+                        <Button variant="outlined" fullWidth className="google-btn">Google</Button>
+                        <Button variant="outlined" fullWidth className="microsoft-btn">Microsoft</Button>
+                        <Button variant="outlined" fullWidth className="otp-btn">OTP</Button>
+                    </div>
+
                 </Box>
 
                 <Box

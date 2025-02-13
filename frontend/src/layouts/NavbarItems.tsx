@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Layout, Menu, Dropdown, Button, Modal, Input, Select, Typography, Divider } from "antd";
+import { Menu, Dropdown, Button, Modal, Input, Select, Typography, Divider } from "antd";
 import { DownOutlined, PlusOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 import eventBus from "../Utils/EventEmitter";
-
-const { Header } = Layout;
 const { Title } = Typography;
 const { Option } = Select;
 interface NavItem {
@@ -28,7 +26,8 @@ const initialNavLinks: any = [
         label: "Create",
         subItems: [
             { label: "Register New Project", action: "/create/register-new-project" },
-            { label: "Create New Module", option: "popup", name: "add_new_modal" },
+            { label: "Modules", action: "/modules" },
+            // { label: "Create New Module", option: "popup", name: "add_new_modal" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
             { label: "Non-working Days", action: "/create/non-working-days" },
             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
@@ -115,7 +114,7 @@ const Navbar: React.FC = () => {
     const handleModulePlus = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
-                navigate("/module", {
+                navigate("/modules", {
                     state: {
                         moduleName: newModelName,
                         mineType: selectedOption,
@@ -151,8 +150,8 @@ const Navbar: React.FC = () => {
     };
     return (
         <>
-            <Header className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", paddingRight: "15px" }}>
-                <Title level={3} style={{ color: "white", flexGrow: 1 }}>MDTS</Title>
+            <div className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", padding: "15px" }}>
+                <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
                 {navLinks.map((link, index) => (
                     <div key={index} style={{ margin: "0 5px" }}>
                         {link.subItems ? (
@@ -167,7 +166,7 @@ const Navbar: React.FC = () => {
                             >
                                 <Dropdown
                                     overlay={
-                                        <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]}>
+                                        <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                             {link.subItems.map((subItem, _subIndex) => (
                                                 <Menu.Item
                                                     key={subItem.label}
@@ -205,8 +204,7 @@ const Navbar: React.FC = () => {
                     </Button>
                 </div>
 
-
-            </Header>
+            </div>
 
             <Modal
                 title="Create New Module"

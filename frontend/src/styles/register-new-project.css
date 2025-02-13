@@ -1,6 +1,14 @@
 .main-container-div {
+    display: flex;
+    border-radius: 5px;
+    justify-content: space-between;
+}
+
+.form-container-item-div {
     margin: 8px;
     width: 99%;
+    position: relative;
+    border: none !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 }
 
@@ -19,7 +27,9 @@
 .progress-bars {
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
+    padding: 10px 0px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 100;
 
     @media (max-width: 1024px) {
         width: 100%;
@@ -41,7 +51,8 @@
         padding: 0px 10px 0px 10px !important;
         margin: 0;
         display: flex;
-        justify-content: space-between;
+        justify-content: start;
+        gap: 1px;
 
         @media (max-width: 768px) {
             flex-direction: row;
@@ -56,8 +67,11 @@
     .step {
         display: flex;
         align-items: center;
-        margin-bottom: 40px;
         position: relative;
+        margin-bottom: 0px !important;
+        padding: 10px;
+        color: #fff !important;
+        font-weight: 600;
 
         @media (max-width: 768px) {
             flex-direction: column;
@@ -88,38 +102,9 @@
         background: #257180;
     }
 
-    .step.completed .circle,
-    .step.active .circle {
-        background: #257180;
-        color: #fff;
-    }
-
-    .step.active .circle {
-        background: #414344;
-    }
-
-    .circle {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: #d6d6d6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: bold;
-        position: relative;
-        z-index: 1;
-
-        @media (max-width: 768px) {
-            margin-right: 0;
-            margin-bottom: 5px;
-        }
-    }
-
     .step-title {
         font-size: 14px;
-        color: #6c757d;
+        color: grey;
         margin-left: 10px;
 
         @media (max-width: 768px) {
@@ -129,19 +114,35 @@
         }
     }
 
-    .step.completed .step-title,
-    .step.active .step-title {
-        color: #000;
+    .step.completed {
+        background-color: #257180;
+        border: none !important;
+
+        .step-title {
+            color: #fff;
+        }
+    }
+
+    .step.active {
+        color: #000 !important;
+        border-bottom: 5px solid #257180;
+
+        .step-title {
+            color: #000;
+        }
     }
 }
 
 .form-container {
-    padding: 10px;
+    padding: 5px 10px 10px 10px;
+    height: calc(100vh - 315px);
     overflow-y: auto;
     background: #fff;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
 
     @media (max-width: 1024px) {
-        width: 65%;
+        width: 100%;
         padding: 30px;
     }
 
@@ -153,23 +154,25 @@
 }
 
 .form-header {
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 16px;
     margin-bottom: 20px;
 
     @media (max-width: 768px) {
-        font-size: 20px;
+        font-size: 16px;
     }
 }
 
 .form-group {
+    margin-top: 15px;
     margin-bottom: 20px;
+    flex-grow: 1;
 
     label {
         display: block;
         margin-bottom: 5px;
         font-size: 16px;
         color: #333;
+        font-weight: 400px;
 
         @media (max-width: 768px) {
             font-size: 14px;
@@ -189,9 +192,15 @@
     }
 }
 
+.saparation-line {
+    margin: 4.5px 0px;
+}
+
 .form-buttons {
     display: flex;
     justify-content: space-between;
+    margin-top: auto;
+    padding: 0px 10px;
 
     @media (max-width: 768px) {
         flex-direction: column;
@@ -229,24 +238,50 @@
     }
 }
 
-.main-container-div {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid grey;
-}
-
 .page-heading-main {
     width: 100%;
-    padding: 5px 10px;
-    background-color: #257180;
-    color: #fff;
+    padding: 5px 10px 5px 10px;
+    color: #000;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
 }
 
 .page-heading {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 16px;
+    color: #fff;
+    font-weight: 400;
 }
 
 .hr-line {
     margin: 0px 0px 10px 0px;
+}
+
+.header {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.custom-table .table-header {
+    background-color: #257180;
+    font-weight: bold;
+}
+
+.custom-table .table-header:hover {
+    background-color: #257180 !important;
+}
+
+
+.custom-select {
+    width: 100%;
+}
+
+.error {
+    border: 1px solid red;
+}
+
+.error-text {
+    color: red;
+    font-size: 12px;
+    margin-top: 5px;
 }
