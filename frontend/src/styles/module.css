@@ -1,0 +1,150 @@
+.module-main {
+    margin: 8px;
+    width: 98.8%;
+}
+
+.module-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px !important;
+    color: #fff !important;
+    background-color: #257180 !important;
+    border-radius: 4px;
+}
+
+.module-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.modules-items {
+    border: 1px solid grey;
+    height: calc(100vh - 220px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-top: 5px;
+    border-radius: 4px;
+}
+
+.toolbar-container {
+    margin: 8px 0px 8px 8px;
+    padding: 10px;
+    background-color: #ffffff;
+    border: 1px solid grey;
+    border-right: 0px;
+    width: fit-content;
+    float: right;
+    border-top-left-radius: 25px;
+    border-bottom-left-radius: 25px;
+}
+
+.toolbar-title {
+    flex-grow: 1;
+    color: black;
+    font-weight: bold;
+    margin-right: 50px;
+    border-right: 1px solid grey;
+    font-size: 20px;
+
+    span {
+        padding: 0px 10px !important;
+        padding-right: 20px;
+        color: gray;
+    }
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-button {
+    padding: 8px;
+    font-size: 22px;
+    transition: all 0.3s ease;
+}
+
+.icon-button.orange {
+    color: orange;
+}
+
+.icon-button.red {
+    color: red;
+}
+
+.icon-button.blue {
+    color: blue;
+}
+
+.icon-button:hover {
+    opacity: 0.8;
+}
+
+.search-input {
+    width: 300px;
+}
+
+.add-module-button {
+    outline: 1px solid #fff !important;
+    background-color: #257090 !important;
+}
+
+.add-button {
+    outline: 1px solid #fff;
+    background-color: #257090 !important;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+.save-button-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.save-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    font-size: 18px;
+    background-color: #257180;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+}
+
+.save-button:hover {
+    background-color: #257090 !important;
+}
+
+.save-button-icon {
+    font-size: 18px;
+}
+
+
+
+
+.custom-table {
+    width: 100%;
+    overflow-y: auto;
+}
+
+.custom-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background-color: #258790 !important;
+}
+
+.custom-header th {
+    padding: 8px !important;
+    font-weight: bold !important;
+    color: white !important;
+}

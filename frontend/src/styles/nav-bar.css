@@ -29,7 +29,7 @@
     cursor: pointer;
     text-decoration: none;
     color: white;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     font-size: 16px !important;
     transition: all 0.3s ease-in-out;
     background-color: transparent !important;
@@ -101,7 +101,7 @@
 }
 
 .signin-btn {
-    outline: 2px solid #fff !important;
+    outline: 1px solid #fff !important;
     background-color: transparent !important;
     color: white;
     border: none !important;
