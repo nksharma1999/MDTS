@@ -27,7 +27,6 @@ export const RegisterNewProject: React.FC = () => {
     { id: 1, name: "Company A" },
     { id: 2, name: "Company B" }
   ]);
-
   const [formStepsData, setFormStepsData] = useState<any[]>(() => {
     const savedData = localStorage.getItem("projectFormData");
     return savedData ? JSON.parse(savedData) : [];
@@ -35,6 +34,7 @@ export const RegisterNewProject: React.FC = () => {
 
   useEffect(() => {
     setFormData({});
+    clearFormData();
     const storedList = localStorage.getItem('companyList');
     if (storedList) {
       setCompanyList(JSON.parse(storedList));
@@ -79,8 +79,19 @@ export const RegisterNewProject: React.FC = () => {
   const handleSubmit = () => {
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
-    localStorage.setItem("projectFormData", JSON.stringify(finalData));
-    const projectName = finalData[0]?.projectName;
+    const storedProjects = JSON.parse(localStorage.getItem("projects") || "[]");
+    const newProject = {
+      id: storedProjects.length + 1,
+      projectParameters: finalData[0] || {},
+      locations: finalData[1] || {},
+      contractualDetails: finalData[2] || {},
+      initialStatus: finalData[3] || {},
+    };
+
+    const updatedProjects = [...storedProjects, newProject];
+    localStorage.setItem("projects", JSON.stringify(updatedProjects));
+
+    const projectName = newProject.projectParameters?.projectName;
     eventBus.emit('newProjectAdded', projectName);
 
     notification.success({
@@ -93,6 +104,7 @@ export const RegisterNewProject: React.FC = () => {
     setFormData({});
     setCurrentStep(1);
     setIsModalVisible(false);
+    clearFormData();
   };
 
   const handleRowChange = (value: string, key: string) => {
@@ -133,10 +145,44 @@ export const RegisterNewProject: React.FC = () => {
       const updatedData = Array.isArray(formStepsData) ? [...formStepsData] : [];
       updatedData[currentStep - 1] = { ...formData };
       setFormStepsData(updatedData);
-      localStorage.setItem("projectFormData", JSON.stringify(updatedData));
+      // localStorage.setItem("projectFormData", JSON.stringify({ updatedData }));
       setCurrentStep(currentStep + 1);
       setFormData(updatedData[currentStep] || {});
     }
+  };
+
+  const clearFormData = () => {
+    setFormData({
+      companyName: "",
+      projectName: "",
+      reserve: "",
+      netGeologicalReserve: "",
+      extractableReserve: "",
+      stripRatio: "",
+      peakCapacity: "",
+      mineLife: "",
+      totalCoalBlockArea: "",
+      mineral: "",
+      typeOfMine: "",
+      grade: "",
+      state: "",
+      district: "",
+      nearestTown: "",
+      nearestAirport: "",
+      nearestRailwayStation: "",
+      mineOwner: "",
+      dateOfH1Bidder: null,
+      cbdpaDate: null,
+      vestingOrderDate: null,
+      pbgAmount: "",
+      ...orderedModuleNames.reduce((acc: any, moduleName: any) => {
+        const key = moduleName.replace(/\s+/g, "").toLowerCase();
+        acc[key] = undefined;
+        return acc;
+      }, {}),
+    });
+
+    setErrors({});
   };
 
   const renderStepForm = () => {

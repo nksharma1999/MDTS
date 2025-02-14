@@ -8,6 +8,7 @@ import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons';
 const { Option } = Select;
+import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
 
 const Module = () => {
     const { state } = useLocation();
@@ -344,9 +345,13 @@ const Module = () => {
     }
 
     useEffect(() => {
-        const storedOptions = localStorage.getItem('options');
-        if (storedOptions) {
-            setOptions(JSON.parse(storedOptions));
+        try {
+            const storedOptions = getAllMineTypes();
+            if (storedOptions.length > 0) {
+                setOptions(storedOptions);
+            }
+        } catch (error) {
+            console.error("Error fetching mine types:", error);
         }
     }, []);
 
@@ -357,10 +362,10 @@ const Module = () => {
             .join("");
     };
 
-    const handleAddOption = () => {
+    const handleAddNewMineType = () => {
         if (newMineType) {
             const updatedOptions = [...options, shorthandCode];
-            localStorage.setItem('options', JSON.stringify(updatedOptions));
+            addNewMineType(updatedOptions)
             setOptions(updatedOptions);
             setNewMineType("");
             setShorthandCode("");
@@ -378,14 +383,17 @@ const Module = () => {
     return (
         <div>
             <div className="module-main">
-                <div className="module-header">
-                    <span className="module-title">Modules</span>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: "20px" }}>
+
+                <div className="top-item" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
+                    <div className="module-title">
+                        <span className="">Modules</span>
+                    </div>
+                    <div className="searching-and-create" style={{ display: "flex", justifyContent: "space-between", gap: "20px", alignItems: "center" }}>
                         <Input
                             placeholder="Search modules, activities, levels"
                             size="small"
                             className="search-input"
-                            style={{ height: "30px" }}
+                            style={{ height: "30px", fontSize: "14px" }}
                             prefix={<SearchOutlined />}
                         />
                         <Tooltip title="Create New Module">
@@ -393,22 +401,19 @@ const Module = () => {
                                 type="primary"
                                 onClick={handlePopupOpen}
                                 className="add-module-button"
-                                style={{ height: "30px" }}
+                                style={{ height: "28px", fontSize: "14px" }}
                             >
                                 Create New Module
                             </Button>
                         </Tooltip>
                     </div>
-                </div>
-
-                <div className="modules-items">
                     <div className="toolbar-container">
                         <Row justify="space-between" align="middle">
-                            <Col style={{ display: "flex" }}>
+                            {/* <Col style={{ display: "flex" }}>
                                 <div className="toolbar-title">
                                     <span>Toolbar</span>
                                 </div>
-                            </Col>
+                            </Col> */}
                             <Col>
                                 <Row gutter={16}>
                                     <Col>
@@ -491,94 +496,96 @@ const Module = () => {
                             </Col>
                         </Row>
                     </div>
+                </div>
+                <div className="modules-data">
+                    <div className="modules-items">
+                        <Paper elevation={3}>
+                            <Table className="custom-table">
+                                <TableHead className="custom-header">
+                                    <TableRow sx={{ backgroundColor: '#258790' }}>
+                                        <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Code</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Module Name</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Duration (in days)</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Prerequisites</TableCell>
+                                        <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Level</TableCell>
+                                    </TableRow>
+                                </TableHead>
 
-                    <Paper elevation={3}>
-                        <Table className="custom-table">
-                            <TableHead className="custom-header">
-                                <TableRow sx={{ backgroundColor: '#258790' }}>
-                                    <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Code</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Module Name</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Duration (in days)</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Prerequisites</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Level</TableCell>
-                                </TableRow>
-                            </TableHead>
-
-                            <TableBody>
-                                <TableRow
-                                    hover
-                                    selected={selectedRow === moduleData}
-                                    onClick={() => setSelectedRow(moduleData)}
-                                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                                >
-                                    <TableCell contentEditable
-                                        suppressContentEditableWarning
-                                        onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
-                                        sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
-                                    >{moduleData.parentModuleCode}</TableCell>
-                                    <TableCell
-                                        contentEditable
-                                        suppressContentEditableWarning
-                                        onBlur={(e) => handleEdit('moduleName', e.target.innerText)}
-                                        sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
+                                <TableBody>
+                                    <TableRow
+                                        hover
+                                        selected={selectedRow === moduleData}
+                                        onClick={() => setSelectedRow(moduleData)}
+                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                     >
-                                        {moduleData.moduleName}
-                                    </TableCell>
-                                    <TableCell
-                                        contentEditable
-                                        suppressContentEditableWarning
-                                        onBlur={(e) => handleEdit('duration', e.target.innerText)}
-                                        sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
-                                    >
-                                        10
-                                    </TableCell>
-                                    <TableCell contentEditable
-                                        suppressContentEditableWarning
-                                        onBlur={(e) => handleEdit('', e.target.innerText)}
-                                        sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>-</TableCell>
-                                    <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
-                                </TableRow>
-                                {moduleData.activities
-                                    .sort((a: any, b: any) => a.code.localeCompare(b.code))
-                                    .map((activity: any, index: any, sortedActivities: any) => (
-                                        <TableRow
-                                            hover
-                                            key={activity.code}
-                                            selected={selectedRow?.code === activity.code}
-                                            onClick={() => setSelectedRow(activity)}
-                                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                        <TableCell contentEditable
+                                            suppressContentEditableWarning
+                                            onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
+                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
+                                        >{moduleData.parentModuleCode}</TableCell>
+                                        <TableCell
+                                            contentEditable
+                                            suppressContentEditableWarning
+                                            onBlur={(e) => handleEdit('moduleName', e.target.innerText)}
+                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
                                         >
-                                            <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.code}</TableCell>
-                                            <TableCell
-                                                contentEditable
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => handleActivityEdit(activity.code, 'activityName', e.target.innerText)}
-                                                sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
+                                            {moduleData.moduleName}
+                                        </TableCell>
+                                        <TableCell
+                                            contentEditable
+                                            suppressContentEditableWarning
+                                            onBlur={(e) => handleEdit('duration', e.target.innerText)}
+                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
+                                        >
+                                            10
+                                        </TableCell>
+                                        <TableCell contentEditable
+                                            suppressContentEditableWarning
+                                            onBlur={(e) => handleEdit('', e.target.innerText)}
+                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>-</TableCell>
+                                        <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
+                                    </TableRow>
+                                    {moduleData.activities
+                                        .sort((a: any, b: any) => a.code.localeCompare(b.code))
+                                        .map((activity: any, index: any, sortedActivities: any) => (
+                                            <TableRow
+                                                hover
+                                                key={activity.code}
+                                                selected={selectedRow?.code === activity.code}
+                                                onClick={() => setSelectedRow(activity)}
+                                                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                             >
-                                                {activity.activityName}
-                                            </TableCell>
-                                            <TableCell
-                                                contentEditable
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
-                                                sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
-                                            >
-                                                {activity.duration}
-                                            </TableCell>
-                                            <TableCell contentEditable
-                                                suppressContentEditableWarning
-                                                onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
-                                                sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>
-                                                {(index === 0 && activity.level === 'L2') ? null : (sortedActivities[index - 1]?.code || "-")}
-                                            </TableCell>
-                                            <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.level}</TableCell>
-                                        </TableRow>
-                                    ))}
-                            </TableBody>
+                                                <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.code}</TableCell>
+                                                <TableCell
+                                                    contentEditable
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => handleActivityEdit(activity.code, 'activityName', e.target.innerText)}
+                                                    sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
+                                                >
+                                                    {activity.activityName}
+                                                </TableCell>
+                                                <TableCell
+                                                    contentEditable
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
+                                                    sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
+                                                >
+                                                    {activity.duration}
+                                                </TableCell>
+                                                <TableCell contentEditable
+                                                    suppressContentEditableWarning
+                                                    onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
+                                                    sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>
+                                                    {(index === 0 && activity.level === 'L2') ? null : (sortedActivities[index - 1]?.code || "-")}
+                                                </TableCell>
+                                                <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.level}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                </TableBody>
 
-                        </Table>
-                    </Paper>
-
+                            </Table>
+                        </Paper>
+                    </div>
                     <div className="save-button-container">
                         <Button type="primary" className="save-button" onClick={handleSaveModuleAndActivity}>
                             Save <ArrowRightOutlined className="save-button-icon" />
@@ -630,7 +637,7 @@ const Module = () => {
                     title="Add Mine Type"
                     open={mineTypePopupOpen}
                     onCancel={() => setMineTypePopupOpen(false)}
-                    onOk={handleAddOption}
+                    onOk={handleAddNewMineType}
                     okButtonProps={{ className: "bg-secondary" }}
                     cancelButtonProps={{ className: "bg-tertiary" }}
                     maskClosable={false}

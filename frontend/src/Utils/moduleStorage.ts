@@ -273,7 +273,33 @@ export const deleteDocument = (index: number) => {
   }
 };
 
+export const addNewMineType = (mineTypes: any): void => {
+  try {
+    if (!mineTypes || typeof mineTypes !== "object") {
+      throw new Error("Invalid data: mineTypes must be an object or array");
+    }
+    localStorage.setItem("mineTypes", JSON.stringify(mineTypes));
+  } catch (error) {
+    console.error("Error saving mine types:", error);
+  }
+};
 
+export const getAllMineTypes = (): any[] => {
+  try {
+    const storedOptions = localStorage.getItem("mineTypes");
+    if (!storedOptions) return [];
 
+    const parsedOptions = JSON.parse(storedOptions);
+    if (!Array.isArray(parsedOptions)) {
+      console.warn("Stored mine types data is not an array. Resetting.");
+      return [];
+    }
+
+    return parsedOptions;
+  } catch (error) {
+    console.error("Error retrieving mine types:", error);
+    return [];
+  }
+};
 
 
