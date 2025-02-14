@@ -117,6 +117,7 @@ const Projects = () => {
                 <section className="project-info">
                     <div className="info-item">
                         <h4>Project Parameters</h4>
+                        <hr style={{ margin: "0px 0px 10px 0px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
                                 <Col span={24}>
@@ -175,6 +176,7 @@ const Projects = () => {
 
                     <div className="info-item">
                         <h4>Location Details</h4>
+                        <hr style={{ margin: "0px 0px 10px 0px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
                                 <Col span={24}>
@@ -208,6 +210,7 @@ const Projects = () => {
 
                     <div className="info-item">
                         <h4>Contractual Details</h4>
+                        <hr style={{ margin: "0px 0px 10px 0px", height: "1.5px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
                                 <Col span={24}>
@@ -241,6 +244,7 @@ const Projects = () => {
 
                     <div className="info-item">
                         <h4>Initial Status</h4>
+                        <hr style={{ margin: "0px 0px 10px 0px", height: "1.5px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
                                 <Col span={24}>
