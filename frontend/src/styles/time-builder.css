@@ -1,12 +1,14 @@
-.main-item-container {
-    margin: 0px 8px 8px 8px;
+.main-item-container {}
+
+.time-builder-page {
     border-radius: 4px;
-    border-top-left-radius: 10px;
+    margin: 8px;
+    width: 99%;
     outline: 1px solid #ddd !important;
 }
 
 .timeline-items {
-    height: calc(100vh - 305px);
+    height: calc(100vh - 315px);
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -26,9 +28,7 @@
 
 .timeline-steps {
     margin: 0px 8px 8px 8px;
-    outline: 1px solid #ddd;
     padding-top: 10px !important;
-    padding-bottom: 10px !important;
     padding: 0px 10px;
     border-radius: 4px;
 }
