@@ -4,7 +4,7 @@ import { Input, Select, Button, Form, Upload, DatePicker, Row, Col } from "antd"
 import { UploadOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import moment from "moment";
 import "../styles/employee-registration.css"
-import ImageContainer from "./ImageContainer";
+import ImageContainer from "../components/ImageContainer";
 interface EmployeeData {
   name: string;
   company: string;
