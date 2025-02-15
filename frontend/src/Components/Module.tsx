@@ -586,6 +586,7 @@ const Module = () => {
                             </Table>
                         </Paper>
                     </div>
+                    <hr />
                     <div className="save-button-container">
                         <Button type="primary" className="save-button" onClick={handleSaveModuleAndActivity}>
                             Save <ArrowRightOutlined className="save-button-icon" />

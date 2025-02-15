@@ -161,9 +161,9 @@ const Navbar: React.FC = () => {
                     <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                         <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Login</Link>
                     </Button>
-                    <Button className="signin-btn" style={{ marginLeft: "20px" }}>
+                    {/* <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                         <Link to="/employee-registration" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Registration</Link>
-                    </Button>
+                    </Button> */}
                 </div>
 
             </div>

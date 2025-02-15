@@ -110,3 +110,7 @@ body::-webkit-scrollbar {
     font-weight: bold;
     background-color: #258790;
 }
+
+hr {
+    margin: 0 !important;
+}

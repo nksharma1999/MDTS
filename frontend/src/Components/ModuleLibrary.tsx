@@ -101,9 +101,9 @@ const ModuleLibrary = () => {
         <span>Module Library</span>
       </div>
       <div className="headings">
-        <div className="heading-one">Modules</div>
-        <div className="heading-two">Libraries</div>
-        <div className="heading-three">Create Libraries</div>
+        <div className="heading-one"><span>Modules</span></div>
+        <div className="heading-two"><span>Libraries</span></div>
+        <div className="heading-three"><span>Create Libraries</span></div>
       </div>
       <Box className="main-section">
         <div className="module-list-page">

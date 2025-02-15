@@ -270,6 +270,7 @@ const TimeBuilder = () => {
               )}
 
             </div>
+            <hr />
             <div className={`action-buttons ${currentStep === 0 ? "float-right" : ""}`}>
               {currentStep > 0 && (
                 <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">Previous</Button>

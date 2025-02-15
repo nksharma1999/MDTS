@@ -65,13 +65,12 @@ export const EmployeeRegistration = () => {
 
   return (
     <>
-      <div className="main-container-div">
+      <div className="main-container-div-items">
         <div className="employee-registration">
+          <div className="card-header bg-secondary">
+            {isEdit ? "Edit Employee Details" : "Employee Registration"}
+          </div>
           <div className="card">
-            <div className="card-header bg-secondary">
-              {isEdit ? "Edit Employee Details" : "Employee Registration"}
-            </div>
-
             <div className="card-body">
               <Form className="professional-form">
                 <Row gutter={[16, 16]} className="form-row" align="middle">
@@ -200,14 +199,14 @@ export const EmployeeRegistration = () => {
                     )}
                   </Col>
                 </Row>
-
               </Form>
+              <hr />
               <div className="button-group">
                 <Button
-                  className="bg-secondary"
+                  className="bg-secondary save-btn"
                   icon={<ArrowRightOutlined />}
                   onClick={handleSaveOrUpdate}
-                  style={{ float: 'right', marginRight: '10px' }}
+                  style={{ float: 'right' }}
                 >
                   {isEdit ? "Update" : "Save"}
                 </Button>

@@ -1,5 +1,3 @@
-
-import { motion } from "framer-motion";
 import "../styles/register-new-project.css";
 import { useEffect, useState } from "react";
 import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification } from "antd";
@@ -395,65 +393,64 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   return (
-    <div className="main-container-div">
-      <div className="form-container-item-div">
-        <div className="page-heading-main bg-secondary">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-          >
+    <>
+      <div className="main-container-div">
+        <div>
+          <div className="page-heading-main bg-secondary">
             <span className="page-heading">
               Register New Project
             </span>
-          </motion.div>
-        </div>
-        <div>
-          <div className="progress-bars">
-            <ul>
-              {steps.map((step, index) => (
-                <li
-                  key={step.id}
-                  className={`step ${((currentStep > index + 1))
-                    ? "completed"
-                    : currentStep === index + 1
-                      ? "active"
-                      : ""
-                    }`}
+          </div>
+          <div className="form-container-item-div">
+            <div className="form-items">
+              <div className="progress-bars">
+                <ul>
+                  {steps.map((step, index) => (
+                    <li
+                      key={step.id}
+                      className={`step ${((currentStep > index + 1))
+                        ? "completed"
+                        : currentStep === index + 1
+                          ? "active"
+                          : ""
+                        }`}
+                    >
+                      <span className="step-title">{step.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="form-container">
+                <form>
+                  <div className="form-group">{renderStepForm()}</div>
+                </form>
+              </div>
+              <hr className="saparation-line" />
+              <div className="form-buttons">
+                <Button
+                  variant="outlined"
+                  onClick={handlePrevious}
+                  className="bg-tertiary text-white"
+                  disabled={currentStep === 1}
                 >
-                  <span className="step-title">{step.title}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="form-container">
-            <form>
-              <div className="form-group">{renderStepForm()}</div>
-            </form>
-          </div>
-          <hr className="saparation-line" />
-          <div className="form-buttons">
-            <Button
-              variant="outlined"
-              onClick={handlePrevious}
-              className="bg-tertiary text-white"
-              disabled={currentStep === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              className="bg-secondary text-white"
-              onClick={currentStep === steps.length ? showConfirmationModal : handleNext}
-            >
-              {currentStep === steps.length ? "Submit" : "Next"}
-            </Button>
+                  Previous
+                </Button>
+                <Button
+                  className="bg-secondary text-white"
+                  onClick={currentStep === steps.length ? showConfirmationModal : handleNext}
+                >
+                  {currentStep === steps.length ? "Submit" : "Next"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-      <div>
-        <ImageContainer imageUrl="/images/auths/m5.jpg" />
-      </div>
 
+        <div>
+          <ImageContainer imageUrl="/images/auths/m5.jpg" />
+        </div>
+
+      </div>
       <Modal
         title="Confirm Submission"
         open={isModalVisible}
@@ -489,7 +486,6 @@ export const RegisterNewProject: React.FC = () => {
           style={{ marginBottom: "10px" }}
         />
       </Modal>
-
-    </div>
+    </>
   );
 };

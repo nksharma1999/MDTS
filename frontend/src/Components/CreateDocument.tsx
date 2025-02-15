@@ -106,116 +106,120 @@ const CreateDocument: React.FC = () => {
           <div className="card-header bg-secondary create-doc-heading">
             <p style={{ margin: "0px", padding: "0px" }}>Create Document</p>
           </div>
-          <div className="left-create-document-item">
-            <Form.Item
-              label={<span style={{ textAlign: "left" }}> Document Name </span>}
-              name="documentName"
-              rules={[{ required: true, message: "Document Name is required" }]}
-              labelAlign="left"
-              colon={false}
-            >
-              <Input
-                placeholder="Document Name"
-                value={documentName}
-                style={{ marginBottom: "15px" }}
-                onChange={(e) => setDocumentName(e.target.value)}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={<span style={{ textAlign: "left" }}> Description </span>}
-              name="description"
-              rules={[{ required: true, message: "Description is required" }]}
-              labelAlign="left"
-              colon={false}
-            >
-              <TextArea
-                rows={4}
-                placeholder="Description"
-                value={description}
-                style={{ marginBottom: "15px" }}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label={<span style={{ textAlign: "left" }}> Select Milestone </span>}
-              name="milestone"
-              rules={[{ required: true, message: "Milestone is required" }]}
-              labelAlign="left"
-              colon={false}
-            >
-              <Select
-                placeholder="Select Milestone"
-                value={milestone}
-                onChange={setMilestone}
-                style={{ marginBottom: "15px" }}
+          <div className="main-create-doc-container">
+            <div className="left-create-document-item">
+              <Form.Item
+                label={<span style={{ textAlign: "left" }}> Document Name </span>}
+                name="documentName"
+                rules={[{ required: true, message: "Document Name is required" }]}
+                labelAlign="left"
+                colon={false}
               >
-                {milestones.map((option, index) => (
-                  <Option key={index} value={option.moduleName}>
-                    {option.moduleName}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
+                <Input
+                  placeholder="Document Name"
+                  value={documentName}
+                  style={{ marginBottom: "15px" }}
+                  onChange={(e) => setDocumentName(e.target.value)}
+                />
+              </Form.Item>
 
-            <Form.Item
-              label={<span style={{ textAlign: "left" }}> Upload Files </span>}
-              name="files"
-              // rules={[{ required: files.length === 0, message: "Please upload at least one file" }]}
-              labelAlign="left"
-              colon={false}
-            >
-              <div
-                {...getRootProps()}
-                style={{
-                  border: "2px dashed #d9d9d9",
-                  padding: 16,
-                  textAlign: "center",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  marginBottom: "30px",
-                  background: isDragActive ? "#f0f8ff" : "#fafafa",
-                }}
+              <Form.Item
+                label={<span style={{ textAlign: "left" }}> Description </span>}
+                name="description"
+                rules={[{ required: true, message: "Description is required" }]}
+                labelAlign="left"
+                colon={false}
               >
-                <input {...getInputProps()} />
-                <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
-                <Text style={{ display: "block", marginTop: 8 }}>
-                  {isDragActive
-                    ? "Drop the files here..."
-                    : "Drag and drop files here, or click to select files"}
-                </Text>
-              </div>
-            </Form.Item>
+                <TextArea
+                  rows={4}
+                  placeholder="Description"
+                  value={description}
+                  style={{ marginBottom: "15px" }}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </Form.Item>
 
-            {files.length > 0 && (
-              <List
-                dataSource={files}
-                renderItem={(file, index) => (
-                  <List.Item
-                    actions={[
-                      <CloseCircleOutlined
-                        key="remove"
-                        onClick={() => handleRemoveFile(index)}
-                        style={{ color: "#888" }}
-                      />,
-                    ]}
-                  >
-                    <Text>{file.name}</Text>
-                  </List.Item>
-                )}
-              />
-            )}
+              <Form.Item
+                label={<span style={{ textAlign: "left" }}> Select Milestone </span>}
+                name="milestone"
+                rules={[{ required: true, message: "Milestone is required" }]}
+                labelAlign="left"
+                colon={false}
+              >
+                <Select
+                  placeholder="Select Milestone"
+                  value={milestone}
+                  onChange={setMilestone}
+                  style={{ marginBottom: "15px" }}
+                >
+                  {milestones.map((option, index) => (
+                    <Option key={index} value={option.moduleName}>
+                      {option.moduleName}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
 
+              <Form.Item
+                label={<span style={{ textAlign: "left" }}> Upload Files </span>}
+                name="files"
+                // rules={[{ required: files.length === 0, message: "Please upload at least one file" }]}
+                labelAlign="left"
+                colon={false}
+              >
+                <div
+                  {...getRootProps()}
+                  style={{
+                    border: "2px dashed #d9d9d9",
+                    padding: 16,
+                    textAlign: "center",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    marginBottom: "30px",
+                    background: isDragActive ? "#f0f8ff" : "#fafafa",
+                  }}
+                >
+                  <input {...getInputProps()} />
+                  <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
+                  <Text style={{ display: "block", marginTop: 8 }}>
+                    {isDragActive
+                      ? "Drop the files here..."
+                      : "Drag and drop files here, or click to select files"}
+                  </Text>
+                </div>
+              </Form.Item>
+
+              {files.length > 0 && (
+                <List
+                  dataSource={files}
+                  renderItem={(file, index) => (
+                    <List.Item
+                      actions={[
+                        <CloseCircleOutlined
+                          key="remove"
+                          onClick={() => handleRemoveFile(index)}
+                          style={{ color: "#888" }}
+                        />,
+                      ]}
+                    >
+                      <Text>{file.name}</Text>
+                    </List.Item>
+                  )}
+                />
+              )}
+
+            </div>
+            <hr />
+            <div className="action-buttons" style={{ display: "flex", justifyContent: "space-between" }}>
+              <Button onClick={handleCancel} className="bg-tertiary" style={{ width: "45%" }}>
+                Cancel
+              </Button>
+              <Button type="primary" className="bg-secondary" htmlType="submit" style={{ width: "45%" }}>
+                Save
+              </Button>
+            </div>
           </div>
-          <div className="action-buttons" style={{ display: "flex", justifyContent: "space-between" }}>
-            <Button onClick={handleCancel} className="bg-tertiary" style={{ width: "45%" }}>
-              Cancel
-            </Button>
-            <Button type="primary" className="bg-secondary" htmlType="submit" style={{ width: "45%" }}>
-              Save
-            </Button>
-          </div>
+
         </div>
         <div className="right-images">
           <ImageContainer imageUrl="/images/auths/m5.jpg" />
