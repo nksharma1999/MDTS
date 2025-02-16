@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Collapse } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 const { Option } = Select;
 const { Step } = Steps;
+const { Panel } = Collapse;
 import { ColumnsType } from 'antd/es/table';
 import "../styles/time-builder.css";
-import ImageContainer from "./ImageContainer";
+import ImageContainer from "../components/ImageContainer";
 
 interface Activity {
   code: string;
@@ -44,19 +45,13 @@ const modulesData = [
     ]
   },
   {
-    code: "DG", name: "DGPS Survey, Land Schedule and Cadestral Map", activities: [
-
-    ]
+    code: "DG", name: "DGPS Survey, Land Schedule and Cadestral Map", activities: []
   },
   {
-    code: "GR", name: "Geological Report", activities: [
-
-    ]
+    code: "GR", name: "Geological Report", activities: []
   },
   {
-    code: "FC", name: "Forest Clearance", activities: [
-
-    ]
+    code: "FC", name: "Forest Clearance", activities: []
   }
 ];
 
@@ -189,6 +184,7 @@ const TimeBuilder = () => {
 
     return baseColumns;
   };
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -260,13 +256,19 @@ const TimeBuilder = () => {
                   </Droppable>
                 </DragDropContext>
               ) : (
-                <Table
-                  columns={getColumnsForStep(currentStep)}
-                  dataSource={activitiesData}
-                  pagination={false}
-                  bordered
-                  sticky
-                />
+                <Collapse accordion>
+                  {sequencedModules.map(module => (
+                    <Panel header={`${module.code} - ${module.name}`} key={module.code}>
+                      <Table
+                        columns={getColumnsForStep(currentStep)}
+                        dataSource={module.activities}
+                        pagination={false}
+                        bordered
+                        sticky
+                      />
+                    </Panel>
+                  ))}
+                </Collapse>
               )}
 
             </div>

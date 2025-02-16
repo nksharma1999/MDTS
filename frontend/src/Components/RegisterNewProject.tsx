@@ -4,7 +4,7 @@ import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification 
 import "../styles/register-new-project.css";
 import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
-import ImageContainer from "./ImageContainer";
+import ImageContainer from "../components/ImageContainer";
 import { getOrderedModuleNames } from "../Utils/moduleStorage";
 const { Option } = Select;
 export const RegisterNewProject: React.FC = () => {
