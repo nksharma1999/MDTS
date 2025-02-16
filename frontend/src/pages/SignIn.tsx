@@ -18,13 +18,9 @@ const SignIn: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const dummyUsers = [
-        { id: 1, email: "admin1@simpro.in", password: "Admin@123", role: "Administrator", company: "Coal India Limited", name: "Admin 1" },
-        { id: 2, email: "admin2@simpro.com", password: "Admin@234", role: "Administrator", company: "Vedanta Resources", name: "Admin 2" },
-        { id: 3, email: "admin3@simpro.com", password: "Admin@345", role: "Administrator", company: "Hindustan Zinc Limited", name: "Admin 3" },
-        { id: 4, email: "test1@simpro.co.in", password: "Test@123", role: "Mining Engineer", company: "NMDC Limited", name: "Test User 1" },
-        { id: 5, email: "test2@simpro.com", password: "Test@234", role: "Geologist", company: "Adani Mining", name: "Test User 2" }
+        { id: 1, email: "admin@simpro.in", password: "admin", role: "Administrator", company: "Coal India Limited", name: "Admin" },
+        { id: 4, email: "test@simpro.in", password: "test", role: "Mining Engineer", company: "NMDC Limited", name: "Test" }
     ];
-
 
     const handleLogin = () => {
         const user = dummyUsers.find(user => user.email === email && user.password === password);

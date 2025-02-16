@@ -23,6 +23,14 @@ const Module = () => {
     const parentModuleCode = moduleCode
         ? moduleCode
         : generateTwoLetterAcronym(moduleName, existingAcronyms);
+    const [openPopup, setOpenPopup] = useState<boolean>(false);
+    const [newModelName, setNewModelName] = useState<string>("");
+    const [selectedOption, setSelectedOption] = useState<string>("");
+    const [options, setOptions] = useState<string[]>([]);
+    const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
+    const [newMineType, setNewMineType] = useState<string>("");
+    const [shorthandCode, setShorthandCode] = useState<string>("");
+    const [moduleCodeName, setModuleCodeName] = useState<string>("");
 
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
@@ -31,6 +39,17 @@ const Module = () => {
         mineType: mineType,
         activities: []
     });
+
+    useEffect(() => {
+        try {
+            const storedOptions = getAllMineTypes();
+            if (storedOptions.length > 0) {
+                setOptions(storedOptions);
+            }
+        } catch (error) {
+            console.error("Error fetching mine types:", error);
+        }
+    }, []);
 
     const handleSaveModuleAndActivity = () => {
         try {
@@ -313,15 +332,8 @@ const Module = () => {
         }));
     };
 
-    const [openPopup, setOpenPopup] = useState<boolean>(false);
-    const [newModelName, setNewModelName] = useState<string>("");
-    const [selectedOption, setSelectedOption] = useState<string>("");
-    const [options, setOptions] = useState<string[]>([]);
-    const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
-    const [newMineType, setNewMineType] = useState<string>("");
-    const [shorthandCode, setShorthandCode] = useState<string>("");
-    const [moduleCodeName, setModuleCodeName] = useState<string>("");
     const handlePopupClose = () => setOpenPopup(false);
+
     const handleModulePlus = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
@@ -343,17 +355,6 @@ const Module = () => {
             console.error("Module Added Error:", { newModelName, selectedOption, moduleCode });
         }
     }
-
-    useEffect(() => {
-        try {
-            const storedOptions = getAllMineTypes();
-            if (storedOptions.length > 0) {
-                setOptions(storedOptions);
-            }
-        } catch (error) {
-            console.error("Error fetching mine types:", error);
-        }
-    }, []);
 
     const generateShorthand = (input: string): string => {
         return input
@@ -409,11 +410,6 @@ const Module = () => {
                     </div>
                     <div className="toolbar-container">
                         <Row justify="space-between" align="middle">
-                            {/* <Col style={{ display: "flex" }}>
-                                <div className="toolbar-title">
-                                    <span>Toolbar</span>
-                                </div>
-                            </Col> */}
                             <Col>
                                 <Row gutter={16}>
                                     <Col>

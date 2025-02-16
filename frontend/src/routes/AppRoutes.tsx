@@ -28,6 +28,7 @@ import { EmployeeRegistration } from "../components/EmployeeRegistration";
 import Module from "../components/Module";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoutes";
+import Profile from "../pages/profile";
 
 const AppRoutes = () => {
     return (
@@ -41,6 +42,7 @@ const AppRoutes = () => {
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />
+                    <Route path="/profile" element={<Profile />} />
                     <Route path="/create/status-update" element={<ModuleBuilder />} />
                     <Route path="/CreateModule" element={<CreateModule />} />
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
@@ -58,7 +60,7 @@ const AppRoutes = () => {
                     <Route path="/create/timeline-builder" element={<TimelineBuilder />} />
                     <Route path="/data-master" element={<DataMaster />} />
                     <Route path="/about" element={<About />} />
-                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/projects-details" element={<Projects />} />
                     <Route path="/modules" element={<Module />} />
                     <Route path="/knowledge-center" element={<KnowledgeCenter />} />
                     <Route path="/document" element={<Document />} />

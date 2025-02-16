@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification } from "antd";
 import "../styles/register-new-project.css";
 import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import eventBus from "../Utils/EventEmitter";
 import ImageContainer from "../components/ImageContainer";
 import { getOrderedModuleNames } from "../Utils/moduleStorage";
 const { Option } = Select;
@@ -100,10 +99,6 @@ export const RegisterNewProject: React.FC = () => {
 
     const updatedProjects = [...storedProjects, newProject];
     localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
-
-    const projectName = newProject.projectParameters?.projectName;
-    eventBus.emit('newProjectAdded', projectName);
-
     notification.success({
       message: "Project Created Successfully",
       description: "All form data has been saved and cleared.",

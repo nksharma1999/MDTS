@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, Dropdown, Button, Typography, Divider, Modal } from "antd";
 import { DownOutlined, UserOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
-import eventBus from "../Utils/EventEmitter";
 const { Title } = Typography;
 interface NavItem {
     label: string;
@@ -18,7 +17,7 @@ interface NavItem {
 const initialNavLinks: any = [
     { label: "Home", action: "/home" },
     { label: "About", action: "/about" },
-    { label: "Projects", action: "/projects", view: true },
+    { label: "Projects", action: "/projects-details" },
     { label: "Document", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
     { label: "Data Master", action: "/data-master" },
@@ -27,7 +26,6 @@ const initialNavLinks: any = [
         subItems: [
             { label: "Register New Project", action: "/create/register-new-project" },
             { label: "Modules", action: "/modules" },
-            // { label: "Create New Module", option: "popup", name: "add_new_modal" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
             { label: "Non-working Days", action: "/create/non-working-days" },
             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
@@ -50,34 +48,9 @@ const Navbar: React.FC = () => {
     const [navLinks, setNavLinks] = useState<NavItem[]>(initialNavLinks);
     const [user, setUser] = useState<{ name: string } | null>(null);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-    useEffect(() => {
-        eventBus.on<string>("newProjectAdded", (projectName) => {
-            setNavLinks((prevNavLinks) => {
-                const updatedNavLinks = prevNavLinks.map((navLink) => {
-                    if (navLink.label === "Projects") {
-                        const newProject: NavItem = {
-                            label: projectName,
-                            action: `/projects`,
-                            view: true,
-                        };
-                        return {
-                            ...navLink,
-                            subItems: navLink.subItems ? [...navLink.subItems, newProject] : [newProject]
-                        };
-                    }
-                    return navLink;
-                });
-                localStorage.setItem('navLinks', JSON.stringify(updatedNavLinks));
-                return updatedNavLinks;
-            });
-        });
-
-        return () => {
-            eventBus.remove("newProjectAdded");
-            console.log("Event listener removed");
-        };
-    }, []);
-
+    const handlePopupOpen = (name: string) => setOpenPopup(name);
+    const isActive = (action: string) => location.pathname.startsWith(action);
+    const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
     const showLogoutModal = () => {
         setIsLogoutModalVisible(true);
     };
@@ -99,10 +72,6 @@ const Navbar: React.FC = () => {
         setIsLogoutModalVisible(false);
         navigate("/sign-in");
     };
-
-    const handlePopupOpen = (name: string) => setOpenPopup(name);
-    const isActive = (action: string) => location.pathname.startsWith(action);
-    const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
 
     const handleDropdownSelect = (menuLabel: string, subItem: any) => {
         setSelectedDropdownKeys((prev) => ({
@@ -127,13 +96,24 @@ const Navbar: React.FC = () => {
         }
     };
 
+    const handleMenuClick = ({ key }: { key: string }) => {
+        if (key === "/profile") {
+            navigate("/profile");
+        } else if (key === "logout") {
+            showLogoutModal();
+        }
+    };
+
     const profileMenu = (
-        <Menu>
-            <Menu.Item key="logout" onClick={showLogoutModal}>
-                Logout
-            </Menu.Item>
+        <Menu
+            onClick={handleMenuClick}
+            selectedKeys={[location.pathname]}
+        >
+            <Menu.Item key="/profile">Profile</Menu.Item>
+            <Menu.Item key="logout">Logout</Menu.Item>
         </Menu>
     );
+
     return (
         <>
             <div className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", padding: "15px" }}>
@@ -171,7 +151,7 @@ const Navbar: React.FC = () => {
                             </div>
                         ) : (
                             <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
-                                <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"}>{link.label}</Link>
+                                <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
                             </Button>
 
                         )}
@@ -183,8 +163,8 @@ const Navbar: React.FC = () => {
                 <div className="">
                     {user ? (
                         <Dropdown overlay={profileMenu}>
-                            <Button className="signin-btn" style={{ marginLeft: "20px" }} type="text">
-                                <UserOutlined /> <DownOutlined />
+                            <Button style={{ marginLeft: "20px" }} className="bg-tertiary" type="text">
+                                <UserOutlined />{user.name}<DownOutlined />
                             </Button>
                         </Dropdown>
                     ) : (
