@@ -1,10 +1,52 @@
 .project-container {
-    margin: 8px;
-    height: calc(100vh - 240px);
-    overflow-y: scroll;
-    overflow-x: hidden;
+    height: calc(100vh - 165px);
+    display: flex;
+}
+
+.all-project-details {
+    width: 20%;
+    height: 100%;
+    padding: 10px;
+    background: #f0f0f0;
     outline: 1px solid #ddd;
+    overflow-y: auto;
+    overflow-x: hidden;
     border-radius: 4px;
+    margin: 8px;
+
+    p {
+        font-size: 16px !important;
+        font-weight: normal !important;
+    }
+
+    & p:hover {
+        text-decoration: underline;
+    }
+}
+
+
+.project-info {
+    width: 50%;
+    height: 100%;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    outline: 1px solid #ddd;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: 4px;
+    margin: 8px;
+}
+
+.heading {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.search {
+    margin: 5px 0px;
+    margin-bottom: 15px;
 }
 
 .project-title {
@@ -27,25 +69,23 @@
     border-radius: 4px;
 }
 
-.project-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    padding: 10px;
-}
-
 .info-item {
     background-color: #f9f9f9;
     border-radius: 8px;
-    padding: 15px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    form {
+        padding: 10px;
+    }
 }
 
-.info-item h4 {
-    font-size: 1.25rem;
+.info-item p {
+    font-size: 16px;
     font-weight: bold;
-    color: #258790;
-    margin-bottom: 10px;
+    background-color: #258790;
+    color: #fff;
+    padding: 5px 10px;
+    margin: 0px !important;
 }
 
 .info-item div {
@@ -62,8 +102,14 @@
 }
 
 @media (max-width: 768px) {
+    .project-container {
+        flex-direction: column;
+    }
+
+    .all-project-details,
     .project-info {
-        grid-template-columns: 1fr;
+        width: 100%;
+        height: auto;
     }
 }
 

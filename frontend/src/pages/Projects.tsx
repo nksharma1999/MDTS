@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Form, Input, Row, Col } from 'antd';
-import { useLocation } from "react-router-dom";
+import { Form, Input, Row, Col, Button } from 'antd';
+import { Link, useLocation } from "react-router-dom";
+import ImageContainer from "../components/ImageContainer";
+import { SearchOutlined } from "@mui/icons-material";
+import { RobotOutlined } from "@ant-design/icons";
 interface LocationDetails {
     state: string;
     district: string;
@@ -59,32 +62,30 @@ interface ProjectData {
 const Projects = () => {
     const location = useLocation();
     const projectData: any = location.state as ProjectData | undefined;
+    const [allProjects, setAllProjects] = useState<any>(null);
     const [projectDetails, setProjectDetails] = useState<ProjectData | null>(null);
 
     useEffect(() => {
         if (!projectData?.view) return;
         try {
             const projectNameToFind = projectData.projectName;
-            const storedData = localStorage.getItem("projects");
+            const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+            const userId = loggedInUser.id;
+            const userProjectsKey = `projects_${userId}`;
+            const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+            setAllProjects(storedData);
+            console.log(storedData);
             if (!storedData) {
                 console.warn("No data found in localStorage.");
                 return;
             }
 
-            let parsedData: ProjectData[];
-            try {
-                parsedData = JSON.parse(storedData);
-            } catch (error) {
-                console.error("Error parsing localStorage data:", error);
-                return;
-            }
-
-            if (!Array.isArray(parsedData)) {
+            if (!Array.isArray(storedData)) {
                 console.error("Invalid data format: Expected an array.");
                 return;
             }
 
-            const filteredProject = parsedData.find(
+            const filteredProject = storedData.find(
                 (project) => project.projectParameters.projectName === projectNameToFind
             );
 
@@ -105,18 +106,49 @@ const Projects = () => {
     }
 
     const { projectParameters, locations, contractualDetails, initialStatus } = projectDetails;
+    const handleProjectClick = (projectName: string) => {
+        console.log("Clicked project:", projectName);
+    };
+
+    const handleSearch = (_event: any) => {
+        console.log("searching");
+
+    };
 
     return (
         <>
-            <div className="project-header">
-                <span className="project-title">{projectParameters.projectName}</span>
-                <span className="project-sub-title">{projectParameters.companyName}</span>
-            </div>
-
             <div className="project-container">
+                <div className="all-project-details">
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <div className="heading">Projects</div>
+                        <div>
+                            <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
+                                <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="search">
+                        <Input
+                            size="small"
+                            placeholder="Find the projects..."
+                            onChange={handleSearch}
+                            prefix={<SearchOutlined />}
+                            style={{ height: "26px", fontSize: "12px" }}
+                        />
+                    </div>
+                    {allProjects.map((project: any) => (
+                        <p
+                            key={project.id}
+                            style={{ cursor: "pointer", marginBottom: "8px" }}
+                            onClick={() => handleProjectClick(project.projectParameters.projectName)}
+                        >
+                            {project.projectParameters.projectName}
+                        </p>
+                    ))}
+                </div>
                 <section className="project-info">
                     <div className="info-item">
-                        <h4>Project Parameters</h4>
+                        <p>Project Parameters</p>
                         <hr style={{ margin: "0px 0px 10px 0px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
@@ -175,7 +207,7 @@ const Projects = () => {
                     </div>
 
                     <div className="info-item">
-                        <h4>Location Details</h4>
+                        <p>Location Details</p>
                         <hr style={{ margin: "0px 0px 10px 0px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
@@ -209,7 +241,7 @@ const Projects = () => {
                     </div>
 
                     <div className="info-item">
-                        <h4>Contractual Details</h4>
+                        <p>Contractual Details</p>
                         <hr style={{ margin: "0px 0px 10px 0px", height: "1.5px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
@@ -243,7 +275,7 @@ const Projects = () => {
                     </div>
 
                     <div className="info-item">
-                        <h4>Initial Status</h4>
+                        <p>Initial Status</p>
                         <hr style={{ margin: "0px 0px 10px 0px", height: "1.5px" }} />
                         <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
                             <Row gutter={16}>
@@ -261,6 +293,9 @@ const Projects = () => {
                         </Form>
                     </div>
                 </section>
+                <div className="image-container">
+                    <ImageContainer imageUrl="/images/auths/m5.jpg" />
+                </div>
             </div>
         </>
     );

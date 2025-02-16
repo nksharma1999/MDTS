@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Typography, Divider } from "antd";
-import { DownOutlined } from "@ant-design/icons";
+import { Menu, Dropdown, Button, Typography, Divider, Modal } from "antd";
+import { DownOutlined, UserOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 import eventBus from "../Utils/EventEmitter";
 const { Title } = Typography;
@@ -48,7 +48,8 @@ const Navbar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [navLinks, setNavLinks] = useState<NavItem[]>(initialNavLinks);
-
+    const [user, setUser] = useState<{ name: string } | null>(null);
+    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     useEffect(() => {
         eventBus.on<string>("newProjectAdded", (projectName) => {
             setNavLinks((prevNavLinks) => {
@@ -77,12 +78,27 @@ const Navbar: React.FC = () => {
         };
     }, []);
 
+    const showLogoutModal = () => {
+        setIsLogoutModalVisible(true);
+    };
+
     useEffect(() => {
         const storedNavLinks = localStorage.getItem('navLinks');
         if (storedNavLinks) {
             setNavLinks(JSON.parse(storedNavLinks));
         }
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
     }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("user");
+        setUser(null);
+        setIsLogoutModalVisible(false);
+        navigate("/sign-in");
+    };
 
     const handlePopupOpen = (name: string) => setOpenPopup(name);
     const isActive = (action: string) => location.pathname.startsWith(action);
@@ -110,6 +126,14 @@ const Navbar: React.FC = () => {
             }
         }
     };
+
+    const profileMenu = (
+        <Menu>
+            <Menu.Item key="logout" onClick={showLogoutModal}>
+                Logout
+            </Menu.Item>
+        </Menu>
+    );
     return (
         <>
             <div className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", padding: "15px" }}>
@@ -156,17 +180,41 @@ const Navbar: React.FC = () => {
                         )}
                     </div>
                 ))}
-
                 <div className="">
+                    {user ? (
+                        <Dropdown overlay={profileMenu}>
+                            <Button className="signin-btn" style={{ marginLeft: "20px" }} type="text">
+                                <UserOutlined /> <DownOutlined />
+                            </Button>
+                        </Dropdown>
+                    ) : (
+                        <Button className="signin-btn" style={{ marginLeft: "20px" }}>
+                            <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>
+                        </Button>
+                    )}
+                </div>
+
+                {/* <div className="">
                     <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                         <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Login</Link>
                     </Button>
-                    {/* <Button className="signin-btn" style={{ marginLeft: "20px" }}>
+                    <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                         <Link to="/employee-registration" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Registration</Link>
-                    </Button> */}
-                </div>
+                    </Button>
+                </div> */}
 
             </div>
+            <Modal
+                title="Confirm Logout"
+                visible={isLogoutModalVisible}
+                onOk={handleLogout}
+                onCancel={() => setIsLogoutModalVisible(false)}
+                okText="Logout"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
+            >
+                <p>Are you sure you want to logout?</p>
+            </Modal>
         </>
     );
 };

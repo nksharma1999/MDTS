@@ -75,9 +75,21 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   const handleSubmit = () => {
+    const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+    if (!loggedInUser.id) {
+      notification.error({
+        message: "Error",
+        description: "No logged-in user found.",
+        duration: 3,
+      });
+      return;
+    }
+    const userId = loggedInUser.id;
+    const userProjectsKey = `projects_${userId}`;
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
-    const storedProjects = JSON.parse(localStorage.getItem("projects") || "[]");
+    const storedProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
     const newProject = {
       id: storedProjects.length + 1,
       projectParameters: finalData[0] || {},
@@ -87,7 +99,7 @@ export const RegisterNewProject: React.FC = () => {
     };
 
     const updatedProjects = [...storedProjects, newProject];
-    localStorage.setItem("projects", JSON.stringify(updatedProjects));
+    localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
 
     const projectName = newProject.projectParameters?.projectName;
     eventBus.emit('newProjectAdded', projectName);
