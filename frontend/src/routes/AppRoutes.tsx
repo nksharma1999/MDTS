@@ -1,7 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Register from "../pages/Registration";
 import Dashboard from "../pages/dashboard";
-import LandingPage from "../pages/LandingPage";
 import SignIn from "../pages/SignIn";
 import CreateDocument from "../components/CreateDocument";
 import { CreateModule } from "../components/CreateModule";
@@ -27,6 +26,8 @@ import DataMaster from "../pages/DataMaster";
 import NotFound from "../pages/NotFound";
 import { EmployeeRegistration } from "../components/EmployeeRegistration";
 import Module from "../components/Module";
+import MainLayout from "../layouts/MainLayout";
+import ProtectedRoute from "./ProtectedRoutes";
 
 const AppRoutes = () => {
     return (
@@ -35,7 +36,7 @@ const AppRoutes = () => {
                 <Route path="/" element={<Navigate to="/home" replace />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/register" element={<Register />} />
-                <Route element={<LandingPage />}>
+                <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                     <Route path="/home" element={<Dashboard />} />
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
@@ -63,6 +64,7 @@ const AppRoutes = () => {
                     <Route path="/document" element={<Document />} />
                     <Route path="*" element={<Navigate to="/not-found" replace />} />
                 </Route>
+
             </Routes>
         </Router>
     );

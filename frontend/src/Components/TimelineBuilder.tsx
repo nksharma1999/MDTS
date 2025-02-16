@@ -1,171 +1,293 @@
-import React, { useState } from "react";
-import { Table, Checkbox, Modal, Button, Typography, DatePicker, Space, Select } from "antd";
-
+import { useState } from "react";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Collapse } from "antd";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 const { Option } = Select;
+const { Step } = Steps;
+const { Panel } = Collapse;
+import { ColumnsType } from 'antd/es/table';
+import "../styles/time-builder.css";
+import ImageContainer from "../components/ImageContainer";
 
-const activityMapping = {
-  CF: { activityCode: "FC/PR", activityName: "Pre-requisite to FC Application" },
-  BP: { activityCode: "FC-I", activityName: "FC Stage-1 Proceedings" },
-  BC: { activityCode: "FC-II", activityName: "FC Stage-2 Proceedings" },
-  DG: { activityCode: "FC/PR", activityName: "Pre-requisite to FC Application" },
-  FC: { activityCode: "FC", activityName: "Forest Clearance" },
-  TOR: { activityCode: "FC-I", activityName: "FC Stage-1 Proceedings" },
-};
+interface Activity {
+  code: string;
+  activity: string;
+  prerequisite: string;
+  slack: string;
+  start: string | null;
+}
+
+interface Module {
+  code: string;
+  name: string;
+  activities: Activity[];
+}
+
+const modulesData = [
+  {
+    code: "CF", name: "Contract Formulation", activities: [
+      { code: "FC/PR/CA/010", activity: "Issuance of SO to Land Aggregators", prerequisite: "", slack: "", start: "" },
+      { code: "FC/PR/CA/020", activity: "Issuance of SO to an advocate for legal due diligence", prerequisite: "", slack: "", start: "" },
+      { code: "FC/PR/CA/040", activity: "Identification of land and collection of P2 Documents", prerequisite: "FC/PR/CA/010", slack: "", start: "" },
+    ]
+  },
+  {
+    code: "BP", name: "Bugetary Plan", activities: [
+      { code: "BP/010", activity: "Preparation of NFA for interim budget", prerequisite: "", slack: "", start: "" },
+      { code: "BP/020", activity: "Approval of Interim Budget", prerequisite: "", slack: "", start: "" },
+      { code: "BP/030", activity: "Preparation of DPR", prerequisite: "", slack: "", start: "" },
+    ]
+  },
+  {
+    code: "BC", name: "Boundary Coordinate Certification by CMPDI", activities: [
+      { code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
+      { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },
+      { code: "BC/030", activity: "Receipt of Certified Boundary Coordinates by CMPDI", prerequisite: "", slack: "", start: "" },
+    ]
+  },
+  {
+    code: "DG", name: "DGPS Survey, Land Schedule and Cadestral Map", activities: []
+  },
+  {
+    code: "GR", name: "Geological Report", activities: []
+  },
+  {
+    code: "FC", name: "Forest Clearance", activities: []
+  }
+];
 
 const TimeBuilder = () => {
-  const [modules, setModules] = useState([
-    { moduleCode: "CF", moduleName: "Contract Formulation", isSelected: false },
-    { moduleCode: "BP", moduleName: "DGPS Survey", isSelected: false },
-    { moduleCode: "BC", moduleName: "Geological Report", isSelected: false },
-    { moduleCode: "DG", moduleName: "Mine Plan", isSelected: false },
-    { moduleCode: "FC", moduleName: "Forest Clearance", isSelected: false },
-    { moduleCode: "TOR", moduleName: "Terms of Reference", isSelected: false },
-  ]);
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [sequencedModules, setSequencedModules] = useState<Module[]>(modulesData);
+  const [activitiesData, setActivitiesData] = useState<Activity[]>(modulesData.flatMap(module => module.activities));
 
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState([]);
-  const [selectedProject, setSelectedProject] = useState("Project A");
-  const [selectedMineType, setSelectedMineType] = useState("Open-Cast");
-
-  // Handle checkbox change
-  const handleCheckboxChange = (module) => {
-    const updatedModules = modules.map((m) =>
-      m.moduleCode === module.moduleCode ? { ...m, isSelected: !m.isSelected } : m
-    );
-    setModules(updatedModules);
-
-    if (!module.isSelected) {
-      const activity = activityMapping[module.moduleCode];
-      const selectedActivityData = {
-        moduleCode: activity.activityCode,
-        moduleName: activity.activityName,
-        startDate: null,
-      };
-      setSelectedActivity([selectedActivityData]);
-      setOpenDialog(true);
+  const handleNext = () => {
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      window.location.href = "/create/status-update";
     }
   };
 
-  // Handle date change
-  const handleDateChange = (date, dateString, activity) => {
-    const updatedActivity = selectedActivity.map((act) =>
-      act.moduleCode === activity.moduleCode ? { ...act, startDate: dateString } : act
-    );
-    setSelectedActivity(updatedActivity);
+  const handlePrev = () => {
+    setCurrentStep(currentStep - 1);
   };
 
-  // Close dialog
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  const handleActivitySelection = (activityCode: any, isChecked: any) => {
+    if (isChecked) {
+      setSelectedActivities([...selectedActivities, activityCode]);
+    } else {
+      setSelectedActivities(selectedActivities.filter((code: any) => code !== activityCode));
+    }
+  };
+
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(sequencedModules);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setSequencedModules(items);
+  };
+
+  const handleSlackChange = (code: any, value: any) => {
+    const updatedActivities = activitiesData.map((activity: any) =>
+      activity.code === code ? { ...activity, slack: value } : activity
+    );
+    setActivitiesData(updatedActivities);
+  };
+
+  const handleStartDateChange = (code: any, date: any) => {
+    const updatedActivities = activitiesData.map((activity: any) =>
+      activity.code === code ? { ...activity, start: date } : activity
+    );
+    setActivitiesData(updatedActivities);
+  };
+
+  const getColumnsForStep = (step: any) => {
+    if (step === 0) {
+      return [
+        { title: 'Module Code', dataIndex: 'code', key: 'code' },
+        { title: 'Module Name', dataIndex: 'name', key: 'name' },
+      ];
+    }
+
+    const baseColumns: ColumnsType<any> = [
+      { title: 'Activity', dataIndex: 'activity', key: 'activity', width: "50%" },
+    ];
+
+    if (step === 1) {
+      baseColumns.push({
+        title: 'Finalize',
+        key: 'finalize',
+        align: "center",
+        render: (_: any, record: any) => (
+          <Checkbox
+            checked={selectedActivities.includes(record.code)}
+            onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
+            disabled={step !== currentStep}
+          />
+        ),
+      });
+    }
+
+    if (step >= 2) {
+      baseColumns.push({
+        title: 'Prerequisite',
+        key: 'prerequisite',
+        render: (_: any, record) => (
+          <Input
+            placeholder="Prerequisite"
+            value={record.prerequisite}
+            onChange={(e) => {
+              const updatedActivities = activitiesData.map(activity =>
+                activity.code === record.code ? { ...activity, prerequisite: e.target.value } : activity
+              );
+              setActivitiesData(updatedActivities);
+            }}
+            disabled={step !== currentStep}
+          />
+        ),
+      });
+    }
+
+    if (step >= 3) {
+      baseColumns.push({
+        title: 'Slack',
+        key: 'slack',
+        render: (_: any, record) => (
+          <Input
+            placeholder="Slack"
+            value={record.slack}
+            onChange={(e) => handleSlackChange(record.code, e.target.value)}
+            disabled={step !== currentStep}
+          />
+        ),
+      });
+    }
+
+    if (step >= 4) {
+      baseColumns.push({
+        title: 'Start Date',
+        key: 'start',
+        render: (_, record) => (
+          <DatePicker
+            placeholder="Start Date"
+            value={record.start}
+            onChange={(date) => handleStartDateChange(record.code, date)}
+            disabled={step !== currentStep}
+          />
+        ),
+      });
+    }
+
+    return baseColumns;
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <Typography.Title level={4}>TimeBuilder</Typography.Title>
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ width: "100%" }} className="time-builder-page">
+          <div className="title-and-filter">
+            <div className="heading">
+              <span>Time Builder</span>
+            </div>
+            <div className="filters">
+              {currentStep === 0 && (
+                <>
+                  <Select placeholder="Select Project" style={{ width: 200 }}>
+                    <Option value="proj1">Project 1</Option>
+                    <Option value="proj2">Project 2</Option>
+                  </Select>
+                  <Select placeholder="Select Library" style={{ width: 200 }}>
+                    <Option value="lib1">Library 1</Option>
+                    <Option value="lib2">Library 2</Option>
+                  </Select>
+                  <Input value="Mine Type Auto-filled" disabled style={{ width: 200 }} />
+                </>
+              )}
+            </div>
+          </div>
+          <hr style={{ margin: 0 }} />
+          <div className="timeline-steps">
+            <Steps current={currentStep}>
+              <Step title="Sequencing" />
+              <Step title="Finalize Activities" />
+              <Step title="Prerequisites" />
+              <Step title="Slack" />
+              <Step title="Start Date" />
+            </Steps>
+          </div>
 
-      {/* Select Project and Type of Mine */}
-      <div style={{ marginBottom: "20px" }}>
-        <Space size="large">
-          <div>
-            <Typography.Text>Select Project:</Typography.Text>
-            <Select
-              style={{ width: 200, marginLeft: "10px" }}
-              value={selectedProject}
-              onChange={(value) => setSelectedProject(value)}
+          <div className="main-item-container">
+            <div
+              className="timeline-items"
+              style={{ padding: currentStep > 0 ? "0px" : "10px" }}
             >
-              <Option value="Project A">Project A</Option>
-              <Option value="Project B">Project B</Option>
-              <Option value="Project C">Project C</Option>
-            </Select>
+              {currentStep === 0 ? (
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="modules">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef}>
+                        {sequencedModules.map((module, index) => (
+                          <Draggable key={module.code} draggableId={module.code} index={index}>
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                style={{
+                                  padding: "10px",
+                                  margin: "8px 0",
+                                  backgroundColor: "#f0f0f0",
+                                  borderRadius: "4px",
+                                  ...provided.draggableProps.style,
+                                }}
+                              >
+                                <strong>{module.code}</strong> - {module.name}
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              ) : (
+                <Collapse accordion>
+                  {sequencedModules.map(module => (
+                    <Panel header={`${module.code} - ${module.name}`} key={module.code}>
+                      <Table
+                        columns={getColumnsForStep(currentStep)}
+                        dataSource={module.activities}
+                        pagination={false}
+                        bordered
+                        sticky
+                      />
+                    </Panel>
+                  ))}
+                </Collapse>
+              )}
+
+            </div>
+            <hr />
+            <div className={`action-buttons ${currentStep === 0 ? "float-right" : ""}`}>
+              {currentStep > 0 && (
+                <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">Previous</Button>
+              )}
+              <Button className="bg-secondary" onClick={handleNext} type="primary" size="small">
+                {currentStep === 4 ? 'Submit' : 'Next'}
+              </Button>
+            </div>
           </div>
-          <div>
-            <Typography.Text>Type of Mine:</Typography.Text>
-            <Select
-              style={{ width: 200, marginLeft: "10px" }}
-              value={selectedMineType}
-              onChange={(value) => setSelectedMineType(value)}
-            >
-              <Option value="Open-Cast">Open-Cast</Option>
-              <Option value="Underground">Underground</Option>
-              <Option value="Mixed">Mixed</Option>
-            </Select>
-          </div>
-        </Space>
+        </div>
+        <div>
+          <ImageContainer imageUrl="/images/auths/m5.jpg" />
+        </div>
       </div>
-
-      {/* Module Table */}
-      <Table
-        dataSource={modules}
-        rowKey="moduleCode"
-        pagination={false}
-        columns={[
-          {
-            title: "Module Code",
-            dataIndex: "moduleCode",
-            key: "moduleCode",
-          },
-          {
-            title: "Module Name",
-            dataIndex: "moduleName",
-            key: "moduleName",
-          },
-          {
-            title: "Select",
-            key: "select",
-            render: (_, record) => (
-              <Checkbox
-                checked={record.isSelected}
-                onChange={() => handleCheckboxChange(record)}
-              />
-            ),
-          },
-        ]}
-      />
-
-      {/* Dialog for Activities */}
-      <Modal
-        title="Activities"
-        visible={openDialog}
-        onCancel={handleCloseDialog}
-        footer={[
-          <Button key="close" type="primary" onClick={handleCloseDialog}>
-            Close
-          </Button>,
-        ]}
-      >
-        <Table
-          dataSource={selectedActivity}
-          rowKey="moduleCode"
-          pagination={false}
-          columns={[
-            {
-              title: "Activity Code",
-              dataIndex: "moduleCode",
-              key: "moduleCode",
-            },
-            {
-              title: "Activity Name",
-              dataIndex: "moduleName",
-              key: "moduleName",
-            },
-            {
-              title: "Start Date",
-              key: "startDate",
-              render: (_, record) => (
-                <Space>
-                  <DatePicker
-                    placeholder="Select Date"
-                    onChange={(date, dateString) =>
-                      handleDateChange(date, dateString, record)
-                    }
-                  />
-                </Space>
-              ),
-            },
-          ]}
-        />
-      </Modal>
-    </div>
+    </>
   );
 };
 

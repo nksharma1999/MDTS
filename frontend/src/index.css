@@ -100,3 +100,17 @@
 body::-webkit-scrollbar {
     width: 6px;
 }
+
+.top-heading {
+    font-size: 18px;
+    margin: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+    background-color: #258790;
+}
+
+hr {
+    margin: 0 !important;
+}

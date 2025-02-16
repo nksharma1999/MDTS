@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Modal, Input, Select, Typography, Divider } from "antd";
-import { DownOutlined, PlusOutlined } from "@ant-design/icons";
+import { Menu, Dropdown, Button, Typography, Divider, Modal } from "antd";
+import { DownOutlined, UserOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 import eventBus from "../Utils/EventEmitter";
 const { Title } = Typography;
-const { Option } = Select;
 interface NavItem {
     label: string;
     action: string;
@@ -13,12 +12,13 @@ interface NavItem {
     option?: string;
     name?: string;
     isNull?: boolean;
+    view?: boolean;
 }
 
 const initialNavLinks: any = [
     { label: "Home", action: "/home" },
     { label: "About", action: "/about" },
-    { label: "Projects", action: "/projects" },
+    { label: "Projects", action: "/projects", view: true },
     { label: "Document", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
     { label: "Data Master", action: "/data-master" },
@@ -44,18 +44,12 @@ const initialNavLinks: any = [
 ];
 
 const Navbar: React.FC = () => {
-    const [openPopup, setOpenPopup] = useState<string | null>(null);
+    const [_openPopup, setOpenPopup] = useState<string | null>(null);
     const location = useLocation();
-    const [newModelName, setNewModelName] = useState<string>("");
-    const [selectedOption, setSelectedOption] = useState<string>("");
-    const [moduleCode, setModuleCode] = useState<string>("");
-    const [options, setOptions] = useState<string[]>([]);
-    const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
-    const [newMineType, setNewMineType] = useState<string>("");
-    const [shorthandCode, setShorthandCode] = useState<string>("");
     const navigate = useNavigate();
     const [navLinks, setNavLinks] = useState<NavItem[]>(initialNavLinks);
-
+    const [user, setUser] = useState<{ name: string } | null>(null);
+    const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     useEffect(() => {
         eventBus.on<string>("newProjectAdded", (projectName) => {
             setNavLinks((prevNavLinks) => {
@@ -63,7 +57,8 @@ const Navbar: React.FC = () => {
                     if (navLink.label === "Projects") {
                         const newProject: NavItem = {
                             label: projectName,
-                            action: `/projects`
+                            action: `/projects`,
+                            view: true,
                         };
                         return {
                             ...navLink,
@@ -83,56 +78,29 @@ const Navbar: React.FC = () => {
         };
     }, []);
 
+    const showLogoutModal = () => {
+        setIsLogoutModalVisible(true);
+    };
+
     useEffect(() => {
         const storedNavLinks = localStorage.getItem('navLinks');
         if (storedNavLinks) {
             setNavLinks(JSON.parse(storedNavLinks));
         }
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+            setUser(JSON.parse(storedUser));
+        }
     }, []);
 
-    const generateShorthand = (input: string): string => {
-        return input
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase())
-            .join("");
+    const handleLogout = () => {
+        localStorage.removeItem("user");
+        setUser(null);
+        setIsLogoutModalVisible(false);
+        navigate("/sign-in");
     };
-
-    const handleMineTypeChange = (value: string) => {
-        setNewMineType(value);
-        setShorthandCode(generateShorthand(value));
-    };
-
-    const handleAddOption = () => {
-        if (newMineType) {
-            setOptions([...options, shorthandCode]);
-            setNewMineType("");
-            setShorthandCode("");
-            setMineTypePopupOpen(false);
-        }
-    };
-
-    const handleModulePlus = () => {
-        if (newModelName && selectedOption) {
-            if (newModelName.trim()) {
-                navigate("/modules", {
-                    state: {
-                        moduleName: newModelName,
-                        mineType: selectedOption,
-                        moduleCode: moduleCode,
-                    },
-                });
-                setNewModelName("");
-                setSelectedOption("");
-                handlePopupClose();
-            }
-        }
-        else {
-            console.error("Module Added Error:", { newModelName, selectedOption, moduleCode });
-        }
-    }
 
     const handlePopupOpen = (name: string) => setOpenPopup(name);
-    const handlePopupClose = () => setOpenPopup(null);
     const isActive = (action: string) => location.pathname.startsWith(action);
     const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
 
@@ -145,9 +113,27 @@ const Navbar: React.FC = () => {
         if (subItem.option === "popup") {
             handlePopupOpen(subItem.name || "");
         } else {
-            navigate(subItem.action || "");
+            if (subItem.view === true) {
+                navigate(subItem.action || "", {
+                    state: {
+                        projectName: subItem.label,
+                        additionalData: subItem.label,
+                        view: subItem.view
+                    },
+                });
+            } else {
+                navigate(subItem.action || "");
+            }
         }
     };
+
+    const profileMenu = (
+        <Menu>
+            <Menu.Item key="logout" onClick={showLogoutModal}>
+                Logout
+            </Menu.Item>
+        </Menu>
+    );
     return (
         <>
             <div className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", padding: "15px" }}>
@@ -194,78 +180,41 @@ const Navbar: React.FC = () => {
                         )}
                     </div>
                 ))}
-
                 <div className="">
+                    {user ? (
+                        <Dropdown overlay={profileMenu}>
+                            <Button className="signin-btn" style={{ marginLeft: "20px" }} type="text">
+                                <UserOutlined /> <DownOutlined />
+                            </Button>
+                        </Dropdown>
+                    ) : (
+                        <Button className="signin-btn" style={{ marginLeft: "20px" }}>
+                            <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>
+                        </Button>
+                    )}
+                </div>
+
+                {/* <div className="">
                     <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                         <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Login</Link>
                     </Button>
                     <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                         <Link to="/employee-registration" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Registration</Link>
                     </Button>
-                </div>
+                </div> */}
 
             </div>
-
             <Modal
-                title="Create New Module"
-                open={openPopup === "add_new_modal"}
-                onCancel={handlePopupClose}
-                onOk={handleModulePlus}
-                okButtonProps={{ className: "bg-secondary" }}
-                cancelButtonProps={{ className: "bg-tertiary" }}
-                maskClosable={false}
-                keyboard={false}
+                title="Confirm Logout"
+                visible={isLogoutModalVisible}
+                onOk={handleLogout}
+                onCancel={() => setIsLogoutModalVisible(false)}
+                okText="Logout"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
             >
-                <Input
-                    placeholder="Module Name"
-                    value={newModelName}
-                    onChange={(e) => setNewModelName(e.target.value)}
-                    style={{ marginBottom: "10px" }}
-                />
-
-                <div style={{ display: 'flex', gap: "10px" }}>
-                    <Select
-                        style={{ width: "100%", marginBottom: "10px" }}
-                        value={selectedOption || ""}
-                        onChange={setSelectedOption}
-                        placeholder="Select mine type..."
-                    >
-                        {options.map((option, index) => (
-                            <Option key={index} value={option}>{option}</Option>
-                        ))}
-                    </Select>
-                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => setMineTypePopupOpen(true)}></Button>
-                </div>
-
-                <Input
-                    placeholder="Module Code"
-                    value={moduleCode}
-                    onChange={(e) => setModuleCode(e.target.value)}
-                    style={{ marginBottom: "10px" }}
-                />
-
+                <p>Are you sure you want to logout?</p>
             </Modal>
-
-            <Modal
-                title="Add Mine Type"
-                open={mineTypePopupOpen}
-                onCancel={() => setMineTypePopupOpen(false)}
-                onOk={handleAddOption}
-                okButtonProps={{ className: "bg-secondary" }}
-                cancelButtonProps={{ className: "bg-tertiary" }}
-                maskClosable={false}
-                keyboard={false}
-            >
-                <Input
-                    placeholder="Enter Mine Type"
-                    value={newMineType}
-                    onChange={(e) => handleMineTypeChange(e.target.value)}
-                    style={{ marginBottom: "10px" }}
-                />
-
-                <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
-            </Modal>
-
         </>
     );
 };

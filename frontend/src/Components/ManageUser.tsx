@@ -204,9 +204,9 @@ const ManageUser: React.FC = () => {
 
           <div className="toolbar-buttons">
             {[
-              { title: "View", icon: <Visibility />, action: handleViewUser },
-              { title: "Edit", icon: <Edit />, action: handleEditUser },
-              { title: "Archive", icon: <Archive />, action: handleArchiveUser }
+              { title: "View", icon: <Visibility sx={{ color: "#1976d2" }} />, action: handleViewUser },
+              { title: "Edit", icon: <Edit sx={{ color: "#2e7d32" }} />, action: handleEditUser },
+              { title: "Archive", icon: <Archive sx={{ color: "#ff9800" }} />, action: handleArchiveUser }
             ].map(({ title, icon, action }, index) => (
               <Tooltip key={index} title={title}>
                 <IconButton
@@ -220,17 +220,26 @@ const ManageUser: React.FC = () => {
             ))}
 
             <Tooltip title="Assign RACI">
-              <IconButton disabled={!selectedUser} onClick={() => setOpenRACIModal(true)} className="toolbar-icon">
-                <Assignment />
+              <IconButton
+                disabled={!selectedUser}
+                onClick={() => setOpenRACIModal(true)}
+                className="toolbar-icon"
+              >
+                <Assignment sx={{ color: "#9c27b0" }} />
               </IconButton>
             </Tooltip>
 
             <Tooltip title="Alerts">
-              <IconButton disabled={!selectedUser} onClick={() => setOpenAlertModal(true)} className="toolbar-icon">
-                <Notifications />
+              <IconButton
+                disabled={!selectedUser}
+                onClick={() => setOpenAlertModal(true)}
+                className="toolbar-icon"
+              >
+                <Notifications sx={{ color: "#d32f2f" }} />
               </IconButton>
             </Tooltip>
           </div>
+
         </Toolbar>
       </div>
 

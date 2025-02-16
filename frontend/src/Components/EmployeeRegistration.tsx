@@ -4,7 +4,7 @@ import { Input, Select, Button, Form, Upload, DatePicker, Row, Col } from "antd"
 import { UploadOutlined, ArrowRightOutlined } from "@ant-design/icons";
 import moment from "moment";
 import "../styles/employee-registration.css"
-import ImageContainer from "./ImageContainer";
+import ImageContainer from "../components/ImageContainer";
 interface EmployeeData {
   name: string;
   company: string;
@@ -65,13 +65,12 @@ export const EmployeeRegistration = () => {
 
   return (
     <>
-      <div className="main-container-div">
+      <div className="main-container-div-items">
         <div className="employee-registration">
+          <div className="card-header bg-secondary">
+            {isEdit ? "Edit Employee Details" : "Employee Registration"}
+          </div>
           <div className="card">
-            <div className="card-header bg-secondary">
-              {isEdit ? "Edit Employee Details" : "Employee Registration"}
-            </div>
-
             <div className="card-body">
               <Form className="professional-form">
                 <Row gutter={[16, 16]} className="form-row" align="middle">
@@ -200,17 +199,18 @@ export const EmployeeRegistration = () => {
                     )}
                   </Col>
                 </Row>
-
-                <div className="button-group">
-                  <Button
-                    className="bg-secondary"
-                    icon={<ArrowRightOutlined />}
-                    onClick={handleSaveOrUpdate}
-                  >
-                    {isEdit ? "Update" : "Save"}
-                  </Button>
-                </div>
               </Form>
+              <hr />
+              <div className="button-group">
+                <Button
+                  className="bg-secondary save-btn"
+                  icon={<ArrowRightOutlined />}
+                  onClick={handleSaveOrUpdate}
+                  style={{ float: 'right' }}
+                >
+                  {isEdit ? "Update" : "Save"}
+                </Button>
+              </div>
 
             </div>
           </div>

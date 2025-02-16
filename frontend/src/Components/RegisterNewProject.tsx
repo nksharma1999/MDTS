@@ -1,12 +1,10 @@
-
-import { motion } from "framer-motion";
 import "../styles/register-new-project.css";
 import { useEffect, useState } from "react";
 import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification } from "antd";
 import "../styles/register-new-project.css";
 import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
-import ImageContainer from "./ImageContainer";
+import ImageContainer from "../components/ImageContainer";
 import { getOrderedModuleNames } from "../Utils/moduleStorage";
 const { Option } = Select;
 export const RegisterNewProject: React.FC = () => {
@@ -27,7 +25,6 @@ export const RegisterNewProject: React.FC = () => {
     { id: 1, name: "Company A" },
     { id: 2, name: "Company B" }
   ]);
-
   const [formStepsData, setFormStepsData] = useState<any[]>(() => {
     const savedData = localStorage.getItem("projectFormData");
     return savedData ? JSON.parse(savedData) : [];
@@ -35,6 +32,7 @@ export const RegisterNewProject: React.FC = () => {
 
   useEffect(() => {
     setFormData({});
+    clearFormData();
     const storedList = localStorage.getItem('companyList');
     if (storedList) {
       setCompanyList(JSON.parse(storedList));
@@ -77,10 +75,33 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   const handleSubmit = () => {
+    const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+    if (!loggedInUser.id) {
+      notification.error({
+        message: "Error",
+        description: "No logged-in user found.",
+        duration: 3,
+      });
+      return;
+    }
+    const userId = loggedInUser.id;
+    const userProjectsKey = `projects_${userId}`;
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
-    localStorage.setItem("projectFormData", JSON.stringify(finalData));
-    const projectName = finalData[0]?.projectName;
+    const storedProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+    const newProject = {
+      id: storedProjects.length + 1,
+      projectParameters: finalData[0] || {},
+      locations: finalData[1] || {},
+      contractualDetails: finalData[2] || {},
+      initialStatus: finalData[3] || {},
+    };
+
+    const updatedProjects = [...storedProjects, newProject];
+    localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
+
+    const projectName = newProject.projectParameters?.projectName;
     eventBus.emit('newProjectAdded', projectName);
 
     notification.success({
@@ -93,6 +114,7 @@ export const RegisterNewProject: React.FC = () => {
     setFormData({});
     setCurrentStep(1);
     setIsModalVisible(false);
+    clearFormData();
   };
 
   const handleRowChange = (value: string, key: string) => {
@@ -133,10 +155,44 @@ export const RegisterNewProject: React.FC = () => {
       const updatedData = Array.isArray(formStepsData) ? [...formStepsData] : [];
       updatedData[currentStep - 1] = { ...formData };
       setFormStepsData(updatedData);
-      localStorage.setItem("projectFormData", JSON.stringify(updatedData));
+      // localStorage.setItem("projectFormData", JSON.stringify({ updatedData }));
       setCurrentStep(currentStep + 1);
       setFormData(updatedData[currentStep] || {});
     }
+  };
+
+  const clearFormData = () => {
+    setFormData({
+      companyName: "",
+      projectName: "",
+      reserve: "",
+      netGeologicalReserve: "",
+      extractableReserve: "",
+      stripRatio: "",
+      peakCapacity: "",
+      mineLife: "",
+      totalCoalBlockArea: "",
+      mineral: "",
+      typeOfMine: "",
+      grade: "",
+      state: "",
+      district: "",
+      nearestTown: "",
+      nearestAirport: "",
+      nearestRailwayStation: "",
+      mineOwner: "",
+      dateOfH1Bidder: null,
+      cbdpaDate: null,
+      vestingOrderDate: null,
+      pbgAmount: "",
+      ...orderedModuleNames.reduce((acc: any, moduleName: any) => {
+        const key = moduleName.replace(/\s+/g, "").toLowerCase();
+        acc[key] = undefined;
+        return acc;
+      }, {}),
+    });
+
+    setErrors({});
   };
 
   const renderStepForm = () => {
@@ -349,65 +405,64 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   return (
-    <div className="main-container-div">
-      <div className="form-container-item-div">
-        <div className="page-heading-main bg-secondary">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
-          >
+    <>
+      <div className="main-container-div">
+        <div>
+          <div className="page-heading-main bg-secondary">
             <span className="page-heading">
               Register New Project
             </span>
-          </motion.div>
-        </div>
-        <div>
-          <div className="progress-bars">
-            <ul>
-              {steps.map((step, index) => (
-                <li
-                  key={step.id}
-                  className={`step ${((currentStep > index + 1))
-                    ? "completed"
-                    : currentStep === index + 1
-                      ? "active"
-                      : ""
-                    }`}
+          </div>
+          <div className="form-container-item-div">
+            <div className="form-items">
+              <div className="progress-bars">
+                <ul>
+                  {steps.map((step, index) => (
+                    <li
+                      key={step.id}
+                      className={`step ${((currentStep > index + 1))
+                        ? "completed"
+                        : currentStep === index + 1
+                          ? "active"
+                          : ""
+                        }`}
+                    >
+                      <span className="step-title">{step.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="form-container">
+                <form>
+                  <div className="form-group">{renderStepForm()}</div>
+                </form>
+              </div>
+              <hr className="saparation-line" />
+              <div className="form-buttons">
+                <Button
+                  variant="outlined"
+                  onClick={handlePrevious}
+                  className="bg-tertiary text-white"
+                  disabled={currentStep === 1}
                 >
-                  <span className="step-title">{step.title}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="form-container">
-            <form>
-              <div className="form-group">{renderStepForm()}</div>
-            </form>
-          </div>
-          <hr className="saparation-line" />
-          <div className="form-buttons">
-            <Button
-              variant="outlined"
-              onClick={handlePrevious}
-              className="bg-tertiary text-white"
-              disabled={currentStep === 1}
-            >
-              Previous
-            </Button>
-            <Button
-              className="bg-secondary text-white"
-              onClick={currentStep === steps.length ? showConfirmationModal : handleNext}
-            >
-              {currentStep === steps.length ? "Submit" : "Next"}
-            </Button>
+                  Previous
+                </Button>
+                <Button
+                  className="bg-secondary text-white"
+                  onClick={currentStep === steps.length ? showConfirmationModal : handleNext}
+                >
+                  {currentStep === steps.length ? "Submit" : "Next"}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-      <div>
-        <ImageContainer imageUrl="/images/auths/m5.jpg" />
-      </div>
 
+        <div>
+          <ImageContainer imageUrl="/images/auths/m5.jpg" />
+        </div>
+
+      </div>
       <Modal
         title="Confirm Submission"
         open={isModalVisible}
@@ -443,7 +498,6 @@ export const RegisterNewProject: React.FC = () => {
           style={{ marginBottom: "10px" }}
         />
       </Modal>
-
-    </div>
+    </>
   );
 };
