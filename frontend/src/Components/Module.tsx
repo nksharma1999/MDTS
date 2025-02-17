@@ -9,6 +9,8 @@ import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notificati
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
+import UserRolesPage from "./AssignRACI";
+import CreateNotification from "./CreateNotification";
 
 const Module = () => {
     const { state } = useLocation();
@@ -255,37 +257,37 @@ const Module = () => {
 
     const decreaseLevel = () => {
         if (!selectedRow || selectedRow.level === "L1" || selectedRow.level === "L2") return;
-    
+
         setModuleData((prev: any) => {
             let activities = [...prev.activities];
             let activityIndex = activities.findIndex((a) => a.code === selectedRow.code);
             if (activityIndex === -1) return prev;
-    
+
             let activity = activities[activityIndex];
             let currentLevel = parseInt(activity.level.slice(1));
-    
+
             // Find the new parent activity (one level above)
             let aboveIndex = activityIndex - 1;
             let newParentCode = "";
             while (aboveIndex >= 0) {
                 let aboveActivity = activities[aboveIndex];
                 let aboveLevel = parseInt(aboveActivity.level.slice(1));
-    
+
                 if (aboveLevel < currentLevel) {
                     newParentCode = aboveActivity.code;
                     break;
                 }
                 aboveIndex--;
             }
-    
+
             if (!newParentCode) return prev;
-    
+
             // Generate the new code for the updated activity
             let splited = newParentCode.split("/");
             let newNumber = parseInt(splited[splited.length - 1]) + 10;
             let newCode = `${removeLastSegment(newParentCode)}/${newNumber}`;
             let newLevel = `L${currentLevel - 1}`;
-    
+
             // Update the current activity
             let updatedActivity = {
                 ...activity,
@@ -293,15 +295,15 @@ const Module = () => {
                 prerequisite: newParentCode,
                 level: newLevel,
             };
-    
+
             // Update the activities array
             let updatedActivities = [...activities];
             updatedActivities[activityIndex] = updatedActivity;
-    
+
             // Re-number sibling activities
             let siblings = updatedActivities.filter((a) => a.level === newLevel && a.code.startsWith(removeLastSegment(newCode)));
             siblings.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
-    
+
             let count = 10;
             siblings.forEach((sibling, index) => {
                 let newSiblingCode = `${removeLastSegment(newCode)}/${count}`;
@@ -311,7 +313,7 @@ const Module = () => {
                 }
                 count += 10;
             });
-    
+
             // Sort all activities by code to ensure correct order
             updatedActivities.sort((a, b) => {
                 let aParts = a.code.split("/").map(Number);
@@ -323,7 +325,7 @@ const Module = () => {
                 }
                 return 0;
             });
-    
+
             return { ...prev, activities: updatedActivities };
         });
     };
@@ -497,10 +499,13 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                         <Modal
-                                            visible={openModal}
+                                            title={<span style={{ fontWeight: "bold", fontSize: "20px" }}>Assign User Roles</span>}
+                                            open={openModal}
                                             onCancel={() => setOpenModal(false)}
-                                            footer={null}
+                                            footer={false}
+                                            width={"50%"}
                                         >
+                                            <UserRolesPage open={openModal} onClose={() => setOpenModal(false)} />
                                         </Modal>
                                     </Col>
                                     <Col>
@@ -512,12 +517,16 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                         <Modal
+                                            title="Notification Settings"
                                             visible={open}
                                             onCancel={() => setOpen(false)}
-                                            footer={null}
+                                            width={"70%"}
+                                            footer={false}
                                         >
+                                            <CreateNotification open={open} onClose={() => setOpen(false)} />
                                         </Modal>
                                     </Col>
+
                                 </Row>
                             </Col>
                         </Row>

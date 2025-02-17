@@ -17,14 +17,15 @@ import {
   TableRow,
   Toolbar,
   Tooltip,
-  Typography,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { getModules } from "../Utils/moduleStorage";
 import "../styles/user-management.css";
 import { Visibility, Edit, Archive, Notifications } from "@mui/icons-material";
 import Assignment from "@mui/icons-material/Assignment";
-import { Col, Input, Modal, Row } from "antd";
+import { Col, Form, Input, Modal, Row, Select, Typography, List } from "antd";
+const { Option } = Select;
+const { Text } = Typography;
 interface User {
   id: number;
   name: string;
@@ -57,11 +58,15 @@ interface User {
   id: number;
   name: string;
   company: string;
-  project: string;
+  designation?: string;
   mobile: string;
   email: string;
   whatsapp: string;
+  registeredOn?: string;
   profilePhoto: string;
+  password?: string;
+  isTempPassword?: boolean;
+  role?: string;
 }
 
 const ManageUser: React.FC = () => {
@@ -72,7 +77,8 @@ const ManageUser: React.FC = () => {
   const [openRACIModal, setOpenRACIModal] = useState<boolean>(false);
   const [isRACIValid, _setIsRACIValid] = useState<boolean>(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-
+  const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     email: true,
     whatsapp: true,
@@ -83,28 +89,24 @@ const ManageUser: React.FC = () => {
     raci: {},
   });
 
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      company: "ABC Corp",
-      project: "Project Alpha",
-      mobile: "1234567890",
-      email: "john@example.com",
-      whatsapp: "1234567890",
-      profilePhoto: "https://via.placeholder.com/120",
-    },
-    {
-      id: 2,
-      name: "Jane Doe",
-      company: "XYZ Inc",
-      project: "Project Beta",
-      mobile: "0987654321",
-      email: "jane@example.com",
-      whatsapp: "0987654321",
-      profilePhoto: "https://via.placeholder.com/120",
-    },
-  ]);
+  useEffect(() => {
+    const storedUsers = localStorage.getItem("users");
+    if (storedUsers) {
+      const parsedUsers: User[] = JSON.parse(storedUsers).map((user: any) => ({
+        id: user.id,
+        name: user.name || "N/A",
+        company: user.company || "N/A",
+        designation: user.designation || "N/A",
+        mobile: user.mobile || "N/A",
+        email: user.email,
+        whatsapp: user.whatsapp || "N/A",
+        registeredOn: user.registeredOn || "",
+        profilePhoto: user.profilePhoto || "https://via.placeholder.com/120",
+        role: user.role || "User",
+      }));
+      setUsers(parsedUsers);
+    }
+  }, []);
 
   useEffect(() => {
     const savedModules: Module[] = getModules();
@@ -190,22 +192,52 @@ const ManageUser: React.FC = () => {
       : parts[0][0]?.toUpperCase() || "";
   }
 
+  const [form] = Form.useForm();
+  const [selectedEmails, setSelectedEmails] = useState<any>([]);
+
+  const invitationSuggestions = [
+    { name: 'sudhindra rao', role: 'Founder & COO', email: 'sudhindra@simpro.co.in' },
+    { name: 'amit tiwari', role: 'Manager-Business', email: 'amit.tiwari@simpro.co.in' }
+  ];
+
+  const handleAddEmail = (email: any) => {
+    if (!selectedEmails.includes(email)) {
+      setSelectedEmails([...selectedEmails, email]);
+    }
+  };
+
+  const handleSendInvites = () => {
+    form.validateFields().then(values => {
+      console.log('Inviting:', { ...values, emails: selectedEmails });
+      setAddMemberModalVisible(false);
+    });
+  };
+
+  const handleClose = () => {
+    setAddMemberModalVisible(false);
+  };
+
 
   return (
     <div className="page-container">
-      <div style={{ background: "none", display: "flex", justifyContent: "space-between" }} >
-        <div className="holiday-page-heading" style={{ marginLeft: "10px", marginTop: "5px" }}>
-          RACI, Alert & Notification
+      <div style={{ background: "none", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0px" }} >
+        <div className="" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="holiday-page-heading" style={{ marginLeft: "10px" }}>
+            RACI, Alert & Notification
+          </div>
+          <div className="searching-and-create" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Tooltip title="Create New Module">
+              <Button style={{ height: "28px", fontSize: "14px", textTransform: "none" }} onClick={() => { setAddMemberModalVisible(true) }} className="add-member-button bg-secondary">
+                Add Member
+              </Button>
+            </Tooltip>
+          </div>
         </div>
         <Toolbar className="toolbar" style={{ paddingRight: "5px" }}>
-          <Typography variant="h6" className="toolbar-title">
-            Toolbar
-          </Typography>
-
           <div className="toolbar-buttons">
             {[
               { title: "View", icon: <Visibility sx={{ color: "#1976d2" }} />, action: handleViewUser },
-              { title: "Edit", icon: <Edit sx={{ color: "#2e7d32" }} />, action: handleEditUser },
+              // { title: "Edit", icon: <Edit sx={{ color: "#2e7d32" }} />, action: handleEditUser },
               { title: "Archive", icon: <Archive sx={{ color: "#ff9800" }} />, action: handleArchiveUser }
             ].map(({ title, icon, action }, index) => (
               <Tooltip key={index} title={title}>
@@ -243,6 +275,8 @@ const ManageUser: React.FC = () => {
         </Toolbar>
       </div>
 
+      <hr style={{ marginTop: "5px" }} />
+
       <TableContainer component={Paper} className="table-container">
         <Table>
           <TableHead>
@@ -250,7 +284,8 @@ const ManageUser: React.FC = () => {
               <TableCell className="header-cell">S.No</TableCell>
               <TableCell className="header-cell">Name</TableCell>
               <TableCell className="header-cell">Company</TableCell>
-              <TableCell className="header-cell">Project</TableCell>
+              <TableCell className="header-cell">Designation</TableCell>
+              <TableCell className="header-cell">Role</TableCell>
               <TableCell className="header-cell">Mobile</TableCell>
               <TableCell className="header-cell">Email</TableCell>
               <TableCell className="header-cell">WhatsApp</TableCell>
@@ -266,7 +301,8 @@ const ManageUser: React.FC = () => {
                 <TableCell className="table-cell-item">{index + 1}</TableCell>
                 <TableCell className="table-cell-item">{user.name}</TableCell>
                 <TableCell className="table-cell-item">{user.company}</TableCell>
-                <TableCell className="table-cell-item">{user.project}</TableCell>
+                <TableCell className="table-cell-item">{user.designation}</TableCell>
+                <TableCell className="table-cell-item">{user.role}</TableCell>
                 <TableCell className="table-cell-item">{user.mobile}</TableCell>
                 <TableCell className="table-cell-item">{user.email}</TableCell>
                 <TableCell className="table-cell-item">{user.whatsapp}</TableCell>
@@ -389,7 +425,7 @@ const ManageUser: React.FC = () => {
         onCancel={handleCancel}
         centered
         className="custom-user-modal"
-        width={600}
+        width={800}
         footer={[""]}
       >
         <div className="user-info-main">
@@ -398,13 +434,11 @@ const ManageUser: React.FC = () => {
               <span>{getInitials(selectedUser?.name)}</span>
             </div>
           </div>
-          <div className="profile-min-details">
+          {/* <div className="profile-min-details">
             <p className="user-name">{selectedUser?.name}</p>
             <p className="email">{selectedUser?.email}</p>
-          </div>
-
+          </div> */}
           <div className="user-details">
-            <hr />
             <Row gutter={[16, 16]} className="form-row" align="middle">
               <Col span={6} style={{ textAlign: 'left' }}>
                 <label>Full Name</label>
@@ -431,13 +465,25 @@ const ManageUser: React.FC = () => {
             </Row>
             <Row gutter={[16, 16]} className="form-row" align="middle">
               <Col span={6} style={{ textAlign: 'left' }}>
-                <label>Project</label>
+                <label>Designation</label>
               </Col>
               <Col span={18}>
                 <Input
                   disabled
                   style={{ marginBottom: "10px" }}
-                  value={selectedUser?.project}
+                  value={selectedUser?.designation}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Role</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.role}
                 />
               </Col>
             </Row>
@@ -485,13 +531,70 @@ const ManageUser: React.FC = () => {
                 <Input
                   disabled
                   style={{ marginBottom: "10px" }}
-                  value={selectedUser?.name}
+                  value={selectedUser?.registeredOn}
                 />
               </Col>
             </Row>
 
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        visible={addMemberModalVisible}
+        onCancel={handleClose}
+        onOk={handleSendInvites}
+        okText="Send Invites"
+        okButtonProps={{ className: "bg-secondary" }}
+        cancelButtonProps={{ className: "bg-tertiary" }}
+        closable={false}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+          <Text strong style={{ fontSize: "16px" }}>Invite your Team</Text>
+          <Button
+            size="small"
+            className="bg-secondary"
+            sx={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
+            onClick={() => navigate("/employee-registration")}
+          >
+            Create Member Manually
+          </Button>
+        </div>
+        <Text>Empower everyone to get more deals done—faster.</Text>
+        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+          <Form.Item
+            name="permissionProfile"
+            label="Set permission profile"
+            rules={[{ required: true, message: 'Please select a permission profile!' }]}
+          >
+            <Select placeholder="Select...">
+              <Option value="admin">Admin</Option>
+              <Option value="manager">Manager</Option>
+              <Option value="employee">Employee</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="emails" label="Add multiple email addresses">
+            <Input placeholder="Enter email addresse" />
+          </Form.Item>
+        </Form>
+
+        {/* <div style={{ marginTop: 24 }}>
+          <Text strong>Invitation Suggestions</Text>
+          <List
+            dataSource={invitationSuggestions}
+            renderItem={item => (
+              <List.Item
+                actions={[<Button onClick={() => handleAddEmail(item.email)}>Add</Button>]}
+              >
+                <List.Item.Meta
+                  title={item.name}
+                  description={`${item.role} | ${item.email}`}
+                />
+              </List.Item>
+            )}
+          />
+        </div> */}
       </Modal>
     </div>
   );

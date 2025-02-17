@@ -28,7 +28,7 @@ import { EmployeeRegistration } from "../components/EmployeeRegistration";
 import Module from "../components/Module";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoutes";
-import Profile from "../pages/profile";
+import Profile from "../pages/Profile";
 
 const AppRoutes = () => {
     return (
