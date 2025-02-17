@@ -5,7 +5,7 @@ import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/ma
 import { useNavigate } from 'react-router-dom';
 import { addModule } from '../Utils/moduleStorage';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification } from 'antd';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
@@ -14,8 +14,8 @@ const Module = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const existingAcronyms = useState(["FC", "BP", "AM", "IM"])[0];
-    const moduleName = state?.moduleName ?? "Default Module";
-    const mineType = state?.mineType ?? "Default Type";
+    const moduleName = state?.moduleName ?? "";
+    const mineType = state?.mineType ?? "";
     const moduleCode = state?.moduleCode ?? null;
     const [openModal, setOpenModal] = useState<boolean>(false);
     const [selectedRow, setSelectedRow] = useState<any>(null);
@@ -35,8 +35,9 @@ const Module = () => {
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
         moduleName: moduleName,
-        level: "L1",
+        level: "",
         mineType: mineType,
+        duration: '',
         activities: []
     });
 
@@ -82,6 +83,7 @@ const Module = () => {
         const newNumber = isModuleSelected
             ? (lastNumber ? lastNumber + 10 : 10)
             : parseInt(selectedRow.code.split('/').pop()) + 10;
+        console.log("newNumber : ", newNumber);
 
         const newCode = isModuleSelected
             ? `${moduleData.parentModuleCode}/${newNumber}`
@@ -92,7 +94,7 @@ const Module = () => {
         const newActivity = {
             code: newCode,
             activityName: "New Activity " + timestamp,
-            duration: 10,
+            duration: 0,
             prerequisite: isModuleSelected ? "-" : selectedRow.code,
             level: newLevel
         };
@@ -253,68 +255,75 @@ const Module = () => {
 
     const decreaseLevel = () => {
         if (!selectedRow || selectedRow.level === "L1" || selectedRow.level === "L2") return;
-
+    
         setModuleData((prev: any) => {
             let activities = [...prev.activities];
             let activityIndex = activities.findIndex((a) => a.code === selectedRow.code);
             if (activityIndex === -1) return prev;
-
+    
             let activity = activities[activityIndex];
             let currentLevel = parseInt(activity.level.slice(1));
-
+    
+            // Find the new parent activity (one level above)
             let aboveIndex = activityIndex - 1;
             let newParentCode = "";
             while (aboveIndex >= 0) {
                 let aboveActivity = activities[aboveIndex];
                 let aboveLevel = parseInt(aboveActivity.level.slice(1));
-
+    
                 if (aboveLevel < currentLevel) {
                     newParentCode = aboveActivity.code;
                     break;
                 }
                 aboveIndex--;
             }
-
+    
             if (!newParentCode) return prev;
-
+    
+            // Generate the new code for the updated activity
             let splited = newParentCode.split("/");
             let newNumber = parseInt(splited[splited.length - 1]) + 10;
             let newCode = `${removeLastSegment(newParentCode)}/${newNumber}`;
             let newLevel = `L${currentLevel - 1}`;
-
+    
+            // Update the current activity
             let updatedActivity = {
                 ...activity,
                 code: newCode,
                 prerequisite: newParentCode,
                 level: newLevel,
             };
-
+    
+            // Update the activities array
             let updatedActivities = [...activities];
             updatedActivities[activityIndex] = updatedActivity;
-            console.log("updatedActivities : ", updatedActivities);
-
-            console.log("Selected row: ", selectedRow);
-            let startRow = activityIndex + 1;
-            let lastSiblingCode = newCode;
-            while (activities.length > startRow) {
-                newNumber += 10;
-                let siblingNumber = 10;
-                let tempActivity = activities[startRow];
-                if (tempActivity.level === selectedRow.level) {
-                    tempActivity.code = `${newCode}/${siblingNumber}`;
-                    siblingNumber += 10;
-                } else if (newLevel === activities[startRow].level) {
-                    tempActivity.code = `${removeLastSegment(newCode)}/${newNumber}`;
-                    newNumber += 10;
-                } else {
-                    break;
+    
+            // Re-number sibling activities
+            let siblings = updatedActivities.filter((a) => a.level === newLevel && a.code.startsWith(removeLastSegment(newCode)));
+            siblings.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
+    
+            let count = 10;
+            siblings.forEach((sibling, index) => {
+                let newSiblingCode = `${removeLastSegment(newCode)}/${count}`;
+                sibling.code = newSiblingCode;
+                if (index > 0) {
+                    sibling.prerequisite = siblings[index - 1].code;
                 }
-                tempActivity.prerequisite = lastSiblingCode;
-                activities[startRow] = tempActivity;
-                lastSiblingCode = tempActivity.code;
-                startRow++;
-            }
-
+                count += 10;
+            });
+    
+            // Sort all activities by code to ensure correct order
+            updatedActivities.sort((a, b) => {
+                let aParts = a.code.split("/").map(Number);
+                let bParts = b.code.split("/").map(Number);
+                for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+                    let aPart = aParts[i] || 0;
+                    let bPart = bParts[i] || 0;
+                    if (aPart !== bPart) return aPart - bPart;
+                }
+                return 0;
+            });
+    
             return { ...prev, activities: updatedActivities };
         });
     };
@@ -380,6 +389,27 @@ const Module = () => {
         setNewMineType(value);
         setShorthandCode(generateShorthand(value));
     };
+
+    // Function to get all prerequisites (excluding the current activity)
+    const getAllPrerequisites = () => {
+        return moduleData.activities
+            .filter((activity: any) => activity.level !== "L1") // Exclude the current activity
+            .map((activity: any) => activity.code); // Return only the activity codes
+    };
+
+    // Handle changes to the prerequisite dropdown
+    const handlePrerequisiteChange = (activityCode, value) => {
+        const updatedActivities = moduleData.activities.map(activity =>
+            activity.code === activityCode ? { ...activity, prerequisite: value } : activity
+        );
+        setModuleData(prev => ({ ...prev, activities: updatedActivities }));
+    };
+
+    // Filter options based on user input
+    const filterPrerequisites = (inputValue: string, option: any) => {
+        return option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1;
+    };
+
 
     return (
         <div>
@@ -532,13 +562,12 @@ const Module = () => {
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('duration', e.target.innerText)}
                                             sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
-                                        >
-                                            10
+                                        >{moduleData.duration}
                                         </TableCell>
                                         <TableCell contentEditable
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('', e.target.innerText)}
-                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>-</TableCell>
+                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}></TableCell>
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
                                     {moduleData.activities
@@ -568,12 +597,17 @@ const Module = () => {
                                                 >
                                                     {activity.duration}
                                                 </TableCell>
-                                                <TableCell contentEditable
-                                                    suppressContentEditableWarning
-                                                    onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
-                                                    sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>
-                                                    {(index === 0 && activity.level === 'L2') ? null : (sortedActivities[index - 1]?.code || "-")}
+                                                <TableCell sx={{ padding: '10px' }}>
+                                                    <AutoComplete
+                                                        value={activity.prerequisite || (index === 0 && activity.level === 'L2' ? "" : (sortedActivities[index - 1]?.code || ""))}
+                                                        options={getAllPrerequisites().map((code: string) => ({ value: code }))}
+                                                        onChange={(value) => handlePrerequisiteChange(activity.code, value)}
+                                                        filterOption={filterPrerequisites}
+                                                        placeholder="Select Prerequisite"
+                                                        style={{ width: '100%' }}
+                                                    />
                                                 </TableCell>
+
                                                 <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.level}</TableCell>
                                             </TableRow>
                                         ))}
@@ -582,7 +616,6 @@ const Module = () => {
                             </Table>
                         </Paper>
                     </div>
-                    <hr />
                     <div className="save-button-container">
                         <Button type="primary" className="save-button" onClick={handleSaveModuleAndActivity}>
                             Save <ArrowRightOutlined className="save-button-icon" />
