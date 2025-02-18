@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "../styles/profile.css";
-import { Form, Input, Button, Row, Col, Select, DatePicker, Upload, message } from "antd";
-import { ArrowRightOutlined, UploadOutlined } from "@ant-design/icons";
+import { Form, Input, Button, Row, Col, Select, DatePicker, message, Modal } from "antd";
+import { ArrowRightOutlined } from "@ant-design/icons";
 import moment from "moment";
 import ManageUser from "../components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
@@ -77,26 +77,6 @@ const Profile = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handlePhotoUpload = (info: any) => {
-        const file = info.file;
-
-        if (!file) {
-            console.error("File upload error: No file selected");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (e.target?.result) {
-                const base64Image = e.target.result as string;
-                setFormData({ ...formData, profilePhoto: base64Image });
-                localStorage.setItem("profilePhoto", base64Image); // Save to localStorage
-            }
-        };
-        reader.readAsDataURL(file);
-    };
-
-
     const handleSave = () => {
         const users = JSON.parse(localStorage.getItem("users") || "[]");
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -136,7 +116,27 @@ const Profile = () => {
         reader.readAsDataURL(file);
     };
 
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [form] = Form.useForm();
 
+    // Open Modal
+    const showModal = () => {
+        setIsModalOpen(true);
+    };
+
+    // Close Modal
+    const handleCancel = () => {
+        setIsModalOpen(false);
+        form.resetFields(); // Reset form fields on close
+    };
+
+    // Handle Submit
+    const handleSubmit = (values: any) => {
+        console.log("Password Change Data:", values);
+        message.success("Password changed successfully!");
+        setIsModalOpen(false);
+        form.resetFields();
+    };
 
     const renderContent = () => {
         switch (selectedTab) {
@@ -152,7 +152,7 @@ const Profile = () => {
                             <div className="profile-cover bg-secondary">
                                 <div className="profile-item">
                                     <div className="profile-image-container">
-                                        <img src={image || "https://via.placeholder.com/100"} alt="Upload Photo" className="profile-image" />
+                                        <img src={image || "https://via.placeholder.com/100"} alt={getInitials()} className="profile-image" />
                                         <div className="overlay">
                                             <label htmlFor="file-input" className="upload-icon">
                                                 <CameraOutlined className="upload-icon" />
@@ -168,7 +168,9 @@ const Profile = () => {
                                     </div>
                                 </div>
                             </div>
-
+                            <div className="change-password-container">
+                                <a onClick={showModal}>Change Password</a>
+                            </div>
                             <Form className="eployee-professional-form">
                                 <Row gutter={[16, 16]} className="form-row" align="middle">
                                     <Col span={6} style={{ textAlign: "left" }}>
@@ -341,48 +343,119 @@ const Profile = () => {
     };
 
     return (
-        <div className="main-profile">
-            <div className="sidebar-menu">
-                <div className="basic-info">
-                    <div>
-                        <img
-                            src="../public/images/logos/user-profile.png"
-                            alt="Logo"
-                            className="profile-image"
-                        />
+        <>
+            <div className="main-profile">
+                <div className="sidebar-menu">
+                    <div className="basic-info">
+                        <div>
+                            <img
+                                src="../public/images/logos/user-profile.png"
+                                alt="Logo"
+                                className="profile-image"
+                            />
+                        </div>
+                        <div className="details">
+                            <p>{formData?.name || ""}</p>
+                        </div>
                     </div>
-                    <div className="details">
-                        <p>{formData?.name || ""}</p>
-                    </div>
+
+                    {['Profile Information', 'Team Members'].map((tab) => {
+                        if (tab === 'Team Members' && formData.role !== 'Admin') {
+                            return null;
+                        }
+
+                        return (
+                            <div
+                                key={tab}
+                                className={`items ${selectedTab === tab ? 'active-tab' : ''}`}
+                                onClick={() => setSelectedTab(tab)}
+                            >
+                                {tab}
+                            </div>
+                        );
+                    })}
                 </div>
 
-                {['Profile Information', 'Team Members'].map((tab) => {
-                    if (tab === 'Team Members' && formData.role !== 'Admin') {
-                        return null;
-                    }
-
-                    return (
-                        <div
-                            key={tab}
-                            className={`items ${selectedTab === tab ? 'active-tab' : ''}`}
-                            onClick={() => setSelectedTab(tab)}
-                        >
-                            {tab}
+                <div style={{ marginBottom: "0px" }} className="items-details">
+                    {!isProfileCompleted() && (
+                        <div style={{ marginTop: "10px" }} className={`card-header progress-warning create-doc-heading ${isProfileCompleted() ? 'bg-secondary' : ""}`}>
+                            <p style={{ margin: "0px", padding: "0px" }}>{isProfileCompleted() ? "Manage Profile" : "Please complete registration"}</p>
                         </div>
-                    );
-                })}
+                    )}
+                    {renderContent()}
+                </div>
             </div>
 
-            <div style={{ marginBottom: "0px" }} className="items-details">
-                {!isProfileCompleted() && (
-                    <div style={{ marginTop: "10px" }} className={`card-header progress-warning create-doc-heading ${isProfileCompleted() ? 'bg-secondary' : ""}`}>
-                        <p style={{ margin: "0px", padding: "0px" }}>{isProfileCompleted() ? "Manage Profile" : "Please complete registration"}</p>
-                    </div>
-                )}
-                {renderContent()}
-            </div>
-        </div>
+            <div className="modal-container">
+                <Modal
+                    title="Change Password"
+                    open={isModalOpen}
+                    onCancel={handleCancel}
+                    footer={null}
+                    className="modal-container"
+                >
+                    <Form
+                        requiredMark={false}
+                        form={form}
+                        layout="horizontal"
+                        onFinish={handleSubmit}
+                        style={{ padding: "10px 10px 0px 10px" }}
+                        colon={false}
+                    >
+                        <Form.Item
+                            label="Old Password"
+                            name="oldPassword"
+                            labelCol={{ span: 8, style: { textAlign: "left" } }} // Left-align label
+                            wrapperCol={{ span: 16 }}
+                            rules={[{ required: true, message: "Please enter your old password!" }]}
+                        >
+                            <Input.Password placeholder="Enter old password" />
+                        </Form.Item>
 
+                        <Form.Item
+                            label="New Password"
+                            name="newPassword"
+                            labelCol={{ span: 8, style: { textAlign: "left" } }} // Left-align label
+                            wrapperCol={{ span: 16 }}
+                            rules={[
+                                { required: true, message: "Please enter a new password!" },
+                                { min: 6, message: "Password must be at least 6 characters!" }
+                            ]}
+                        >
+                            <Input.Password placeholder="Enter new password" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Confirm New Password"
+                            name="confirmNewPassword"
+                            labelCol={{ span: 8, style: { textAlign: "left" } }} // Left-align label
+                            wrapperCol={{ span: 16 }}
+                            dependencies={["newPassword"]}
+                            rules={[
+                                { required: true, message: "Please confirm your new password!" },
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        if (!value || getFieldValue("newPassword") === value) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error("Passwords do not match!"));
+                                    },
+                                }),
+                            ]}
+                        >
+                            <Input.Password placeholder="Confirm new password" />
+                        </Form.Item>
+
+                        <Form.Item style={{ display: "flex", justifyContent: "end" }}>
+                            <Button type="primary" className="bg-secondary" htmlType="submit">
+                                Save
+                            </Button>
+                        </Form.Item>
+                    </Form>
+
+                </Modal>
+            </div>
+        </>
     );
 };
 

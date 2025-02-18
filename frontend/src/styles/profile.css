@@ -12,14 +12,34 @@
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding-right: 20px;
+    padding: 5px;
     background-color: #f4f4f4;
     margin-right: 0px !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
 
     .profile-image {
-        width: 75px;
-        height: 60px;
+        width: 55px;
+        height: 55px;
+    }
+}
+
+.change-password-container {
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: end;
+    padding-top: 5px;
+    padding-right: 25px;
+
+    a {
+        color: #258790 !important;
+        cursor: pointer;
+    }
+
+    & :hover {
+        text-decoration: underline !important;
     }
 }
 
@@ -52,7 +72,7 @@
 }
 
 .eployee-professional-form {
-    margin-top: 25px;
+    margin-top: 8px;
     height: calc(100vh - 305px);
     overflow-y: auto;
     overflow-x: hidden;
@@ -170,4 +190,27 @@
 
 input[type="file"] {
     display: none;
+}
+
+.modal-container.ant-modal .ant-modal-content {
+    padding: 0px !important;
+}
+
+.modal-container .ant-modal-header {
+    background-color: #257180 !important;
+    font-weight: bold;
+    padding: 10px;
+}
+
+.modal-container.ant-modal .ant-modal-title {
+    color: #fff !important;
+}
+
+.modal-container.ant-modal .ant-modal-close {
+    top: 7px !important;
+    color: #fff !important;
+}
+
+.ant-form-horizontal .ant-form-item-control {
+    margin-bottom: 10px !important;
 }

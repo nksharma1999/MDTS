@@ -55,40 +55,6 @@ const SignInSignUp: React.FC = () => {
             message.error("Invalid Email or Password");
         }
     };
-    // const handleSignUp = () => {
-    //     if (!workEmail) {
-    //         return message.error("Please fill all required fields");
-    //     }
-
-    //     const users = JSON.parse(localStorage.getItem("users") || "[]");
-    //     const emailExists = users.some((user: any) => user.email === workEmail);
-
-    //     if (emailExists) {
-    //         return message.error("Email already registered");
-    //     }
-
-    //     const password = workEmail.slice(0, 6);
-    //     const newUser = {
-    //         id: Date.now(),
-    //         name: "",
-    //         company: "",
-    //         designation: "",
-    //         mobile: "",
-    //         email: workEmail,
-    //         whatsapp: "",
-    //         registeredOn: new Date().toISOString(),
-    //         profilePhoto: "",
-    //         password: password,
-    //         isTempPassword: true
-    //     };
-
-    //     users.push(newUser);
-    //     localStorage.setItem("users", JSON.stringify(users));
-    //     localStorage.setItem("user", JSON.stringify(newUser));
-
-    //     message.success("Sign-up successful! Invite link sent. Please verify your account.");
-    //     setTimeout(() => navigate("/profile"), 1000);
-    // };
 
     const handleSignUp = () => {
         if (!workEmail) {
@@ -104,7 +70,7 @@ const SignInSignUp: React.FC = () => {
 
         const password = workEmail.slice(0, 6);
         const newUser = {
-            id: Date.now(), // Assign a unique ID
+            id: Date.now(),
             name: "",
             company: "",
             designation: "",
@@ -115,12 +81,12 @@ const SignInSignUp: React.FC = () => {
             profilePhoto: "",
             password: password,
             isTempPassword: true,
-            role: "User" // Default role if needed
+            role: "User"
         };
 
         users.push(newUser);
         localStorage.setItem("users", JSON.stringify(users));
-        localStorage.setItem("user", JSON.stringify(newUser)); // Ensure `id` is stored inside user object
+        localStorage.setItem("user", JSON.stringify(newUser));
 
         message.success("Sign-up successful! Invite link sent. Please verify your account.");
         setTimeout(() => navigate("/profile"), 1000);
