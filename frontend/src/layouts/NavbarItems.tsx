@@ -97,6 +97,7 @@ const Navbar: React.FC = () => {
     };
 
     const handleMenuClick = ({ key }: { key: string }) => {
+        setSelectedDropdownKeys({})
         if (key === "/profile") {
             navigate("/profile");
         } else if (key === "logout") {

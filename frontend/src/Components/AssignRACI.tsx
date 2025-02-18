@@ -1,138 +1,127 @@
 import React, { useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
   Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Button,
   Checkbox,
-  ListItemText,
-  InputAdornment,
-  Chip,
-  Grid,
-  Typography,
-} from "@mui/material";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import SearchIcon from "@mui/icons-material/Search";
+} from "antd";
+import { ArrowRightOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { SelectValue } from "antd/lib/select";
 
-const UserRolesPage = ({ open, onClose }) => {
+const { Option } = Select;
+
+type UserRole = {
+  key: string;
+  role: string;
+  users: string[];
+  state: string[];
+  setState: React.Dispatch<React.SetStateAction<string[]>>;
+};
+
+const UserRolesPage: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const users = ["User 1", "User 2", "User 3", "User 4", "User 5"];
-
-  const [responsible, setResponsible] = useState([]);
-  const [accountable, setAccountable] = useState([]);
-  const [consulted, setConsulted] = useState([]);
-  const [informed, setInformed] = useState([]);
+  const [responsible, setResponsible] = useState<string[]>([]);
+  const [accountable, setAccountable] = useState<string[]>([]);
+  const [consulted, setConsulted] = useState<string[]>([]);
+  const [informed, setInformed] = useState<string[]>([]);
   const [userSearch, setUserSearch] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (event, setRole) => {
-    setRole(event.target.value);
+  const handleChange = (value: SelectValue, setRole: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setRole(value as string[]);
   };
 
   const filteredUsers = users.filter((user) =>
     user.toLowerCase().includes(userSearch.toLowerCase())
   );
+
   const handleSave = () => {
     navigate("/createmodule");
-    }
+  };
 
-    const handleCancel = () => {
-      navigate("/createmodule");
+  const columns = [
+    {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+    },
+    {
+      title: "Assigned Users",
+      dataIndex: "users",
+      key: "users",
+      render: (_users: string[], record: UserRole) => (
+        <Select
+          mode="multiple"
+          value={record.state}
+          onChange={(value) => handleChange(value, record.setState)}
+          style={{ width: "100%" }}
+          placeholder="Search users"
+          filterOption={false}
+          onSearch={(value) => setUserSearch(value)}
+        >
+          {filteredUsers.map((user) => (
+            <Option key={user} value={user}>
+              <Checkbox checked={record.state.includes(user)} /> {user}
+            </Option>
+          ))}
+        </Select>
+      ),
+    },
+  ];
 
-  }
+  const data: UserRole[] = [
+    {
+      key: "1",
+      role: "Responsible",
+      users: responsible,
+      state: responsible,
+      setState: setResponsible,
+    },
+    {
+      key: "2",
+      role: "Accountable",
+      users: accountable,
+      state: accountable,
+      setState: setAccountable,
+    },
+    {
+      key: "3",
+      role: "Consulted",
+      users: consulted,
+      state: consulted,
+      setState: setConsulted,
+    },
+    {
+      key: "4",
+      role: "Informed",
+      users: informed,
+      state: informed,
+      setState: setInformed,
+    },
+  ];
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ fontWeight: "bold",fontSize:"20px" }}>Assign User Roles</DialogTitle>
-      <DialogContent>
-        <TableContainer component={Paper} sx={{ mt: 2 }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: "#4F7942", color: "white" }}>
-                <TableCell sx={{ fontWeight: "bold", color: "white",fontSize:"16px" }}>
-                  Role
-                </TableCell>
-                <TableCell sx={{ fontWeight: "bold", color: "white",fontSize:"16px" }}>
-                  Assigned Users
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {[
-                { label: "Responsible", state: responsible, setState: setResponsible ,},
-                { label: "Accountable", state: accountable, setState: setAccountable },
-                { label: "Consulted", state: consulted, setState: setConsulted },
-                { label: "Informed", state: informed, setState: setInformed },
-              ].map(({ label, state, setState }) => (
-                <TableRow key={label} hover>
-                  <TableCell>{label}</TableCell>
-                  <TableCell>
-                    <FormControl fullWidth>
-                      <InputLabel>{""}</InputLabel>
-                      <Select
-                        multiple
-                        value={state}
-                        onChange={(e) => handleChange(e, setState)}
-                        renderValue={(selected) => (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", flexDirection: "column" ,fontSize:"16px"}}>
-                            {selected.map((value) => (
-                              <Chip key={value} label={value} sx={{ fontSize: "0.8rem", height: "24px", borderRadius: "12px", padding: "0 px", width: "100px" ,fontSize:"14px"}} />
-                            ))}
-                          </div>
-                        )}
-                      >
-                        <MenuItem>
-                          <TextField
-                            placeholder="Search users"
-                            variant="standard"
-                            fullWidth
-                            onChange={(e) => setUserSearch(e.target.value)}
-                            InputProps={{
-                              startAdornment: (
-                                <InputAdornment position="start">
-                                  <SearchIcon />
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </MenuItem>
-                        {filteredUsers.map((user, index) => (
-                          <MenuItem key={index} value={user}>
-                            <Checkbox checked={state.indexOf(user) > -1} />
-                            <ListItemText primary={user} />
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </DialogContent>
-      <DialogActions>
-        <Button variant="contained" sx={{ backgroundColor: "#ED9121", color: "black", fontSize: "16px" }} onClick={handleCancel}>
-          Cancel
-        </Button>
-        <Button variant="contained" sx={{ backgroundColor: "#ED9121", color: "black", fontSize: "16px" }} onClick={handleSave} endIcon={<ArrowForwardIcon />}>
+    <>
+      <Table
+        columns={columns}
+        dataSource={data}
+        pagination={false}
+        rowKey="key"
+        style={{ marginTop: 10 }}
+      />
+      <div style={{ marginTop: 20, textAlign: "right" }}>
+        <Button
+          type="primary"
+          style={{ fontSize: "16px" }}
+          onClick={handleSave}
+          icon={<ArrowRightOutlined />}
+          className="bg-secondary"
+        >
           Save
         </Button>
-      </DialogActions>
-    </Dialog>
+      </div>
+    </>
   );
 };
 

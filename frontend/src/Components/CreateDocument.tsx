@@ -84,7 +84,7 @@ const CreateDocument: React.FC = () => {
         message.error("Failed to save the document. Please try again.");
       }
     }
-    navigate("/documentlibrary");
+    navigate("/document");
   };
 
   const handleCancel = () => {

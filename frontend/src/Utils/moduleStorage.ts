@@ -257,21 +257,28 @@ export const updateDocument = (_id: Number, document: any) => {
 };
 
 // Delete a document from localStorage based on its index
-export const deleteDocument = (index: number) => {
+
+export const deleteDocument = (id: number): boolean => {
   const existingDocuments = getAllDocuments();
-  if (index < 0 || index >= existingDocuments.length) {
-    console.error("Invalid document index.");
+  if (!Array.isArray(existingDocuments)) {
+    console.error("Invalid document list.");
     return false;
   }
-  existingDocuments.splice(index, 1);
+  const documentExists = existingDocuments.some(doc => doc.id === id);
+  if (!documentExists) {
+    console.error("Document with the given ID does not exist.");
+    return false;
+  }
+  const updatedDocuments = existingDocuments.filter(doc => doc.id !== id);
   try {
-    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
+    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(updatedDocuments));
     return true;
   } catch (error) {
     console.error("Error deleting document from localStorage:", error);
     return false;
   }
 };
+
 
 export const addNewMineType = (mineTypes: any): void => {
   try {

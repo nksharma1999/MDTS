@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/sign-in.css";
 import { Input, Button, Typography, Row, Col, message } from "antd";
 import { Card, CardMedia } from "@mui/material";
@@ -13,28 +13,85 @@ const images = [
 
 const { Title, Text } = Typography;
 
-const SignIn: React.FC = () => {
+const SignInSignUp: React.FC = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const dummyUsers = [
-        { id: 1, email: "admin@simpro.in", password: "admin", role: "Administrator", company: "Coal India Limited", name: "Admin" },
-        { id: 4, email: "test@simpro.in", password: "test", role: "Mining Engineer", company: "NMDC Limited", name: "Test" }
-    ];
+    const [workEmail, setWorkEmail] = useState("");
+    const [isSignUp, setIsSignUp] = useState(false);
+
+    useEffect(() => {
+        const users = JSON.parse(localStorage.getItem("users") || "[]");
+        if (!users.length) {
+            localStorage.setItem("users", JSON.stringify([]));
+        }
+    }, []);
+
+    const isProfileCompleted = (user: any) => {
+        return (
+            user.name &&
+            user.company &&
+            user.mobile &&
+            user.designation &&
+            user.email &&
+            user.whatsapp &&
+            user.profilePhoto &&
+            user.password
+        );
+    };
 
     const handleLogin = () => {
-        const user = dummyUsers.find(user => user.email === email && user.password === password);
+        const users = JSON.parse(localStorage.getItem("users") || "[]");
+        const user = users.find((user: any) => user.email === email && user.password === password);
+
         if (user) {
             localStorage.setItem("user", JSON.stringify(user));
-
             message.success("Login Successful!");
+            const isProfileComplete = isProfileCompleted(user);
             setTimeout(() => {
-                navigate("/home");
+                navigate(isProfileComplete ? "/home" : "/profile");
             }, 1000);
         } else {
             message.error("Invalid Email or Password");
         }
     };
+
+    const handleSignUp = () => {
+        if (!workEmail) {
+            return message.error("Please fill all required fields");
+        }
+
+        const users = JSON.parse(localStorage.getItem("users") || "[]");
+        const emailExists = users.some((user: any) => user.email === workEmail);
+
+        if (emailExists) {
+            return message.error("Email already registered");
+        }
+
+        const password = workEmail.slice(0, 6);
+        const newUser = {
+            id: Date.now(),
+            name: "",
+            company: "",
+            designation: "",
+            mobile: "",
+            email: workEmail,
+            whatsapp: "",
+            registeredOn: new Date().toISOString(),
+            profilePhoto: "",
+            password: password,
+            isTempPassword: true,
+            role: "User"
+        };
+
+        users.push(newUser);
+        localStorage.setItem("users", JSON.stringify(users));
+        localStorage.setItem("user", JSON.stringify(newUser));
+
+        message.success("Sign-up successful! Invite link sent. Please verify your account.");
+        setTimeout(() => navigate("/profile"), 1000);
+    };
+
 
     return (
         <div
@@ -64,44 +121,87 @@ const SignIn: React.FC = () => {
                     <Title level={3} style={{ color: "#fff", marginBottom: 24, fontSize: "30px" }}>
                         Mine Development Tracking System
                     </Title>
-                    <Title level={4} style={{ color: "#fff", marginBottom: 16 }}>
-                        Sign in to your account
-                    </Title>
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <Input placeholder="Enter your email address" value={email} onChange={(e) => setEmail(e.target.value)} />
-                        <Input.Password placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    {!isSignUp ? (
+                        <>
+                            <Title level={4} style={{ color: "#fff", marginBottom: 16 }}>
+                                Sign in to your account
+                            </Title>
 
-                        <Text style={{ color: "#e0e0e0" }}>
-                            By signing in, you agree to our <span style={{ color: "#e33b28", cursor: "pointer", textDecoration: "none", transition: "text-decoration 0.3s ease", fontWeight: "bold" }}
-                                onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>Terms & Conditions</span> and
-                            <span style={{ color: "#e33b28", cursor: "pointer", textDecoration: "none", transition: "text-decoration 0.3s ease", fontWeight: "bold" }}
-                                onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}> Privacy Policy</span>
-                        </Text>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                <Input placeholder="Enter your email address" value={email} onChange={(e) => setEmail(e.target.value)} />
+                                <Input.Password placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-                        <Button type="primary" onClick={handleLogin} style={{ backgroundColor: "#e33b28", borderColor: "#c53020", borderRadius: "8px", fontWeight: "bold" }}>
-                            Login
-                        </Button>
+                                <Text style={{ color: "#e0e0e0" }}>
+                                    By signing in, you agree to our <span style={{ color: "#e33b28", cursor: "pointer", textDecoration: "none", transition: "text-decoration 0.3s ease", fontWeight: "bold" }}
+                                        onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>Terms & Conditions</span> and
+                                    <span style={{ color: "#e33b28", cursor: "pointer", textDecoration: "none", transition: "text-decoration 0.3s ease", fontWeight: "bold" }}
+                                        onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}> Privacy Policy</span>
+                                </Text>
 
-                        <Text style={{ color: "#e0e0e0", cursor: "pointer", textDecoration: "none" }}
-                            onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"}
-                            onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>
-                            Forgot Password?
-                        </Text>
-                    </div>
+                                <Button type="primary" onClick={handleLogin} style={{ backgroundColor: "#e33b28", borderColor: "#c53020", borderRadius: "8px", fontWeight: "bold" }}>
+                                    Login
+                                </Button>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
-                        <div style={{ flex: 1, borderBottom: '1px solid #fff', marginRight: 16 }} />
-                        <Text style={{ color: "#fff" }}>OR</Text>
-                        <div style={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 16 }} />
-                    </div>
+                                <Text style={{ color: "#e0e0e0", cursor: "pointer", textDecoration: "none" }}
+                                    onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"}
+                                    onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>
+                                    Forgot Password?
+                                </Text>
 
-                    <div className="button-container" style={{ marginTop: 16 }}>
-                        <Button type="default" block style={{ marginBottom: 8 }}>Google</Button>
-                        <Button type="default" block style={{ marginBottom: 8 }}>Microsoft</Button>
-                        <Button type="default" block>OTP</Button>
-                    </div>
+                                <Text style={{ color: "#e0e0e0", cursor: "pointer", textDecoration: "none" }}
+                                    onClick={() => setIsSignUp(true)}
+                                    onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"}
+                                    onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>
+                                    New here? Sign up
+                                </Text>
+                            </div>
 
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
+                                <div style={{ flex: 1, borderBottom: '1px solid #fff', marginRight: 16 }} />
+                                <Text style={{ color: "#fff" }}>OR</Text>
+                                <div style={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 16 }} />
+                            </div>
+
+                            <div className="button-container" style={{ marginTop: 16 }}>
+                                <Button type="default" block style={{ marginBottom: 8 }}>Google</Button>
+                                <Button type="default" block style={{ marginBottom: 8 }}>Microsoft</Button>
+                                <Button type="default" block>OTP</Button>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <Title level={4} style={{ color: "#fff", marginBottom: 16 }}>
+                                Sign up for an account
+                            </Title>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                <Input placeholder="Enter your work email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} />
+                                <Button type="primary" onClick={handleSignUp} style={{ backgroundColor: "#e33b28", borderColor: "#c53020", borderRadius: "8px", fontWeight: "bold" }}>
+                                    Sign Up
+                                </Button>
+
+                                <Text style={{ color: "#e0e0e0", cursor: "pointer", textDecoration: "none" }}
+                                    onClick={() => setIsSignUp(false)}
+                                    onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"}
+                                    onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>
+                                    Already have an account? Sign in
+                                </Text>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
+                                <div style={{ flex: 1, borderBottom: '1px solid #fff', marginRight: 16 }} />
+                                <Text style={{ color: "#fff" }}>OR</Text>
+                                <div style={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 16 }} />
+                            </div>
+
+                            <div className="button-container" style={{ marginTop: 16 }}>
+                                <Button type="default" block style={{ marginBottom: 8 }}>Google</Button>
+                                <Button type="default" block style={{ marginBottom: 8 }}>Microsoft</Button>
+                                <Button type="default" block>OTP</Button>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 <div
@@ -111,10 +211,6 @@ const SignIn: React.FC = () => {
                         flexDirection: "column",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        padding: 16,
-                        paddingTop: "2.2em",
-                        paddingRight: "1.5em",
-                        paddingBottom: "1em",
                         boxSizing: "border-box"
                     }}
                 >
@@ -168,4 +264,4 @@ const SignIn: React.FC = () => {
     );
 };
 
-export default SignIn;
+export default SignInSignUp;
