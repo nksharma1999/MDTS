@@ -392,22 +392,19 @@ const Module = () => {
         setShorthandCode(generateShorthand(value));
     };
 
-    // Function to get all prerequisites (excluding the current activity)
     const getAllPrerequisites = () => {
         return moduleData.activities
-            .filter((activity: any) => activity.level !== "L1") // Exclude the current activity
-            .map((activity: any) => activity.code); // Return only the activity codes
+            .filter((activity: any) => activity.level !== "L1")
+            .map((activity: any) => activity.code);
     };
 
-    // Handle changes to the prerequisite dropdown
-    const handlePrerequisiteChange = (activityCode, value) => {
-        const updatedActivities = moduleData.activities.map(activity =>
+    const handlePrerequisiteChange = (activityCode: any, value: any) => {
+        const updatedActivities = moduleData.activities.map((activity: any) =>
             activity.code === activityCode ? { ...activity, prerequisite: value } : activity
         );
-        setModuleData(prev => ({ ...prev, activities: updatedActivities }));
+        setModuleData((prev: any) => ({ ...prev, activities: updatedActivities }));
     };
 
-    // Filter options based on user input
     const filterPrerequisites = (inputValue: string, option: any) => {
         return option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1;
     };
