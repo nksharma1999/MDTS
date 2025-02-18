@@ -116,3 +116,8 @@
     font-size: 16px;
     text-transform: capitalize;
 }
+
+.custom-table-heading .ant-table-thead>tr>th {
+    padding: 5px !important;
+    border-radius: 0px !important;
+}

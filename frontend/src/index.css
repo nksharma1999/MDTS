@@ -114,3 +114,7 @@ body::-webkit-scrollbar {
 hr {
     margin: 0 !important;
 }
+
+.modal-body-item-padding {
+    padding: 10px 10px 0px 10px;
+}

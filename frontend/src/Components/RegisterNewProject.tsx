@@ -222,9 +222,9 @@ export const RegisterNewProject: React.FC = () => {
                 </Form.Item>
               </Col>
 
-              {[
+              {/* {[
                 { label: "Project Name", key: "projectName" },
-                { label: "Reserve", key: "reserve" },
+                { label: "Reserve", key: "reserve", type: "number" },
                 { label: "Net Geological Reserve (Mn T)", key: "netGeologicalReserve" },
                 { label: "Extractable Reserve (Mn T)", key: "extractableReserve" },
                 { label: "Strip Ratio (Cum / T)", key: "stripRatio" },
@@ -243,6 +243,35 @@ export const RegisterNewProject: React.FC = () => {
                     help={errors[key] ? `${label} is required` : ""}
                   >
                     <Input value={formData[key] || ""} onChange={(e) => handleChange(key, e.target.value)} />
+                  </Form.Item>
+                </Col>
+              ))} */}
+
+              {[
+                { label: "Project Name", key: "projectName", type: "text" },
+                { label: "Reserve", key: "reserve", type: "number" },
+                { label: "Net Geological Reserve (Mn T)", key: "netGeologicalReserve", type: "number" },
+                { label: "Extractable Reserve (Mn T)", key: "extractableReserve", type: "number" },
+                { label: "Strip Ratio (Cum / T)", key: "stripRatio", type: "number" },
+                { label: "Peak Capacity (MTPA)", key: "peakCapacity", type: "number" },
+                { label: "Mine Life (years)", key: "mineLife", type: "number" },
+                { label: "Total Coal Block Area (Ha)", key: "totalCoalBlockArea", type: "number" },
+              ].map(({ label, key, type }) => (
+                <Col span={24} key={key}>
+                  <Form.Item
+                    colon={false}
+                    label={label}
+                    labelAlign="left"
+                    labelCol={{ span: 6 }}
+                    wrapperCol={{ span: 18 }}
+                    validateStatus={errors[key] ? "error" : ""}
+                    help={errors[key] ? `${label} is required` : ""}
+                  >
+                    <Input
+                      type={type}
+                      value={formData[key] || ""}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                    />
                   </Form.Item>
                 </Col>
               ))}
@@ -361,19 +390,50 @@ export const RegisterNewProject: React.FC = () => {
         );
       case 4:
         return (
+          // <Form layout="horizontal" style={{ width: "100%" }}>
+          //   <div className="module-list">
+          //     {orderedModuleNames.map((moduleName) => {
+          //       const key = moduleName.replace(/\s+/g, "").toLowerCase();
+          //       return (
+          //         <Row key={key} className="module-item" gutter={[16, 16]} align="middle">
+          //           <Col span={6}>
+          //             <label className="module-label" htmlFor={key}>
+          //               {moduleName}
+          //             </label>
+          //           </Col>
+          //           <Col span={18} style={{ marginBottom: "10px" }}>
+          //             <Select
+          //               className={`custom-select ${errors[key] ? "error" : ""}`}
+          //               id={key}
+          //               value={formData[key] || undefined}
+          //               onChange={(value) => handleRowChange(value, key)}
+          //               style={{ width: "100%" }}
+          //               placeholder={`Select ${moduleName}`}
+          //             >
+          //               <Option value="Yes">Yes</Option>
+          //               <Option value="No">No</Option>
+          //             </Select>
+          //             {errors[key] && <div className="error-text">{`${moduleName} selection is required`}</div>}
+          //           </Col>
+          //         </Row>
+          //       );
+          //     })}
+          //   </div>
+          // </Form>
+
           <Form layout="horizontal">
-            <div>
-              <div className="module-list">
-                {orderedModuleNames.map((moduleName) => {
-                  const key = moduleName.replace(/\s+/g, "").toLowerCase();
-                  return (
-                    <Row key={key} className="module-item" gutter={16} align="middle">
+            <Row gutter={[16, 16]}>
+              {orderedModuleNames.map((moduleName) => {
+                const key = moduleName.replace(/\s+/g, "").toLowerCase();
+                return (
+                  <Col span={24} key={key}>
+                    <Row className="module-item" gutter={[16, 16]} align="middle">
                       <Col span={6}>
                         <label className="module-label" htmlFor={key}>
                           {moduleName}
                         </label>
                       </Col>
-                      <Col span={18} style={{ marginBottom: "10px" }}>
+                      <Col span={18}>
                         <Select
                           className={`custom-select ${errors[key] ? "error" : ""}`}
                           id={key}
@@ -388,11 +448,12 @@ export const RegisterNewProject: React.FC = () => {
                         {errors[key] && <div className="error-text">{`${moduleName} selection is required`}</div>}
                       </Col>
                     </Row>
-                  );
-                })}
-              </div>
-            </div>
+                  </Col>
+                );
+              })}
+            </Row>
           </Form>
+
         );
       default:
         return null;
@@ -469,8 +530,9 @@ export const RegisterNewProject: React.FC = () => {
         cancelButtonProps={{ className: "bg-tertiary" }}
         maskClosable={false}
         keyboard={false}
+        className="modal-container"
       >
-        <p>
+        <p className="modal-body-item-padding">
           <ExclamationCircleOutlined style={{ color: "red", marginRight: 8 }} />
           Are you sure you want to submit the form? Once submitted, all data will be cleared.
         </p>
@@ -485,13 +547,16 @@ export const RegisterNewProject: React.FC = () => {
         cancelButtonProps={{ className: "bg-tertiary" }}
         maskClosable={false}
         keyboard={false}
+        className="modal-container"
       >
-        <Input
-          placeholder="Enter Company Name"
-          value={newCompany}
-          onChange={(e) => setNewCompany(e.target.value)}
-          style={{ marginBottom: "10px" }}
-        />
+        <div className="modal-body-item-padding">
+          <Input
+            placeholder="Enter Company Name"
+            value={newCompany}
+            onChange={(e) => setNewCompany(e.target.value)}
+            style={{ marginBottom: "10px" }}
+          />
+        </div>
       </Modal>
     </>
   );

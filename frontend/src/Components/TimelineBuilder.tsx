@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Divider } from "antd";
+import { useState } from "react";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import ImageContainer from "../components/ImageContainer";
@@ -61,14 +61,14 @@ const modulesData: Module[] = [
   {
     code: "GR",
     name: "Geological Report",
-    activities: [ { code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
-      { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },],
+    activities: [{ code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
+    { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },],
   },
   {
     code: "FC",
     name: "Forest Clearance",
-    activities: [ { code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
-      { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },],
+    activities: [{ code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
+    { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },],
   },
 ];
 
@@ -100,7 +100,6 @@ const TimeBuilder = () => {
 
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
-
     const items = Array.from(sequencedModules);
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
@@ -123,7 +122,7 @@ const TimeBuilder = () => {
   };
 
   const getColumnsForStep = (step: number) => {
-    const baseColumns = [
+    const baseColumns: any = [
       { dataIndex: "activity", key: "activity", width: "50%" },
     ];
 
@@ -261,14 +260,17 @@ const TimeBuilder = () => {
               ) : (
                 <Table
                   columns={[{ title: "Module", dataIndex: "name", key: "name" }]}
+                  className="custom-table-heading"
                   dataSource={sequencedModules}
                   pagination={false}
+                  sticky
                   expandable={{
                     expandedRowRender: (module) => (
                       <Table
                         columns={getColumnsForStep(currentStep)}
                         dataSource={module.activities}
                         pagination={false}
+                        showHeader={false}
                         bordered
                         sticky
                       />

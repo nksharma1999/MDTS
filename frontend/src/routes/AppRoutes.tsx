@@ -8,7 +8,6 @@ import DocumentPage from "../components/Document";
 import DocumentLibrary from "../components/DocumentLibrary";
 import { HolidayCalender } from "../components/HolidayCalender";
 import ManageUser from "../components/ManageUser";
-import ModuleBuilder from "../components/ModuleBuilder";
 import { ModuleDetails } from "../components/ModuleDetail";
 import ModuleLibrary from "../components/ModuleLibrary";
 import NotificationLibrary from "../components/NotificationLibrary";
@@ -29,6 +28,7 @@ import Module from "../components/Module";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoutes";
 import Profile from "../pages/Profile";
+import StatusUpdate from "../components/StatusUpdate";
 
 const AppRoutes = () => {
     return (
@@ -43,7 +43,7 @@ const AppRoutes = () => {
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/create/status-update" element={<ModuleBuilder />} />
+                    <Route path="/create/status-update" element={<StatusUpdate />} />
                     <Route path="/CreateModule" element={<CreateModule />} />
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
                     <Route path="/create/non-working-days" element={<HolidayCalender />} />

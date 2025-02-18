@@ -164,10 +164,17 @@ const Navbar: React.FC = () => {
                 <div className="">
                     {user ? (
                         <Dropdown overlay={profileMenu}>
-                            <Button style={{ marginLeft: "20px" }} className="bg-tertiary" type="text">
-                                <UserOutlined />{user.name}<DownOutlined />
+                            <Button
+                                style={{ marginLeft: "20px", display: 'flex', alignItems: 'center', gap: '8px' }}
+                                className="bg-tertiary text-white"
+                                type="text"
+                            >
+                                <UserOutlined />
+                                <span style={{ fontWeight: 'bold' }}>{user.name}</span>
+                                <DownOutlined />
                             </Button>
                         </Dropdown>
+
                     ) : (
                         <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                             <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>

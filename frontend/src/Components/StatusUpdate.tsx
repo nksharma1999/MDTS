@@ -1,17 +1,9 @@
 import React, { useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-  Paper,
-  IconButton,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton,
   TextField,
-  Button,
 } from "@mui/material";
+import "../styles/status-update.css"
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SaveIcon from "@mui/icons-material/Save";
@@ -89,7 +81,7 @@ export const StatusUpdate = () => {
   const [editData, setEditData] = useState({});
   const [expandedModules, setExpandedModules] = useState([]);
 
-  const handleEdit = (moduleIndex:any, rowIndex:any) => {
+  const handleEdit = (moduleIndex: any, rowIndex: any) => {
     setEditingRow({ moduleIndex, rowIndex });
     setEditData({ ...modules[moduleIndex].activities[rowIndex] });
   };
@@ -107,17 +99,17 @@ export const StatusUpdate = () => {
     handleCancelEdit();
   };
 
-  const handleDelete = (moduleIndex:any, rowIndex:any) => {
+  const handleDelete = (moduleIndex: any, rowIndex: any) => {
     const updatedModules = [...modules];
     updatedModules[moduleIndex].activities.splice(rowIndex, 1);
     setModules(updatedModules);
   };
 
-  const handleChange = (field:any, value:any) => {
+  const handleChange = (field: any, value: any) => {
     setEditData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleModule = (moduleIndex:any) => {
+  const toggleModule = (moduleIndex: any) => {
     if (expandedModules.includes(moduleIndex)) {
       setExpandedModules(expandedModules.filter((index) => index !== moduleIndex));
     } else {
@@ -126,269 +118,264 @@ export const StatusUpdate = () => {
   };
 
   return (
-    <div style={{ padding: "20px", backgroundColor: "#fff", width: "100%" }}>
-      <Typography
-        variant="h5"
-        gutterBottom
-        style={{
-          marginBottom: "20px",
-          textAlign: "left",
-          fontWeight: "bold",
-          color: "#4F7942",
-        }}
-      >
-        Status Update
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow style={{ backgroundColor: "#4F7942", color: "white" ,width:"70%"}}>
-              <TableCell style={{ fontWeight: "bold" }}></TableCell>
-              <TableCell style={{ fontWeight: "bold" }}>Module</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {modules.map((module, moduleIndex) => (
-              <React.Fragment key={moduleIndex}>
-                <TableRow>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => toggleModule(moduleIndex)}
-                    >
-                      {expandedModules.includes(moduleIndex) ? (
-                        <RemoveIcon />
-                      ) : (
-                        <AddIcon />
-                      )}
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>{module.name}</TableCell>
+    <>
+      <div className="main-status-update">
+        <div className="status-heading">
+          <p>Status Update</p>
+        </div>
+        <div className="status-update-items">
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead className="table-header">
+                <TableRow style={{ color: "white", width: "70%" }}>
+                  <TableCell className="header-cell" style={{ fontWeight: "bold" }}></TableCell>
+                  <TableCell className="header-cell" style={{ fontWeight: "bold" }}>Module</TableCell>
                 </TableRow>
-                {expandedModules.includes(moduleIndex) && (
-                  <TableRow>
-                    <TableCell colSpan={3}>
-                      <Table>
-                        <TableHead>
-                          <TableRow style={{ backgroundColor: "#e0f7fa" }}>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Sr. No.
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Key Activities
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Duration
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Pre-requisite
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Slack
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Planned Start
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Planned Finish
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Activity Status
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Actual Start
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Actual Finish
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Actual Duration
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Remarks
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Expected Start
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Expected Finish
-                            </TableCell>
-                            <TableCell style={{ fontWeight: "bold" }}>
-                              Actions
-                            </TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {module.activities.map((activity, rowIndex) => (
-                            <TableRow key={rowIndex}>
-                              {editingRow &&
-                              editingRow.moduleIndex === moduleIndex &&
-                              editingRow.rowIndex === rowIndex ? (
-                                <>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.SrNo}
-                                      onChange={(e) =>
-                                        handleChange("SrNo", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.keyActivity}
-                                      onChange={(e) =>
-                                        handleChange("keyActivity", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.duration}
-                                      onChange={(e) =>
-                                        handleChange("duration", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.preRequisite}
-                                      onChange={(e) =>
-                                        handleChange("preRequisite", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.slack}
-                                      onChange={(e) =>
-                                        handleChange("slack", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.plannedStart}
-                                      onChange={(e) =>
-                                        handleChange("plannedStart", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.plannedFinish}
-                                      onChange={(e) =>
-                                        handleChange("plannedFinish", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.activityStatus}
-                                      onChange={(e) =>
-                                        handleChange("activityStatus", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.actualStart}
-                                      onChange={(e) =>
-                                        handleChange("actualStart", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.actualFinish}
-                                      onChange={(e) =>
-                                        handleChange("actualFinish", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.actualDuration}
-                                      onChange={(e) =>
-                                        handleChange("actualDuration", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.remarks}
-                                      onChange={(e) =>
-                                        handleChange("remarks", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.expectedStart}
-                                      onChange={(e) =>
-                                        handleChange("expectedStart", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      value={editData.expectedFinish}
-                                      onChange={(e) =>
-                                        handleChange("expectedFinish", e.target.value)
-                                      }
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <IconButton onClick={handleSaveEdit}>
-                                      <SaveIcon />
-                                    </IconButton>
-                                    <IconButton onClick={handleCancelEdit}>
-                                      <CancelIcon />
-                                    </IconButton>
-                                  </TableCell>
-                                </>
-                              ) : (
-                                <>
-                                  <TableCell>{activity.SrNo}</TableCell>
-                                  <TableCell>{activity.keyActivity}</TableCell>
-                                  <TableCell>{activity.duration}</TableCell>
-                                  <TableCell>{activity.preRequisite}</TableCell>
-                                  <TableCell>{activity.slack}</TableCell>
-                                  <TableCell>{activity.plannedStart}</TableCell>
-                                  <TableCell>{activity.plannedFinish}</TableCell>
-                                  <TableCell>{activity.activityStatus}</TableCell>
-                                  <TableCell>{activity.actualStart}</TableCell>
-                                  <TableCell>{activity.actualFinish}</TableCell>
-                                  <TableCell>{activity.actualDuration}</TableCell>
-                                  <TableCell>{activity.remarks}</TableCell>
-                                  <TableCell>{activity.expectedStart}</TableCell>
-                                  <TableCell>{activity.expectedFinish}</TableCell>
-                                  <TableCell>
-                                    <IconButton
-                                      onClick={() => handleEdit(moduleIndex, rowIndex)}
-                                    >
-                                      <EditIcon />
-                                    </IconButton>
-                                    <IconButton
-                                      onClick={() => handleDelete(moduleIndex, rowIndex)}
-                                    >
-                                      <DeleteIcon />
-                                    </IconButton>
-                                  </TableCell>
-                                </>
-                              )}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </React.Fragment>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </div>
+              </TableHead>
+              <TableBody>
+                {modules.map((module, moduleIndex) => (
+                  <React.Fragment key={moduleIndex}>
+                    <TableRow>
+                      <TableCell className="table-cell-item">
+                        <IconButton
+                          size="small"
+                          onClick={() => toggleModule(moduleIndex)}
+                        >
+                          {expandedModules.includes(moduleIndex) ? (
+                            <RemoveIcon />
+                          ) : (
+                            <AddIcon />
+                          )}
+                        </IconButton>
+                      </TableCell>
+                      <TableCell>{module.name}</TableCell>
+                    </TableRow>
+                    {expandedModules.includes(moduleIndex) && (
+                      <TableRow>
+                        <TableCell colSpan={3}>
+                          <Table>
+                            <TableHead className="table-header">
+                              <TableRow>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Sr. No.
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Key Activities
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Duration
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Pre-requisite
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Slack
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Planned Start
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Planned Finish
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Activity Status
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Actual Start
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Actual Finish
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Actual Duration
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Remarks
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Expected Start
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Expected Finish
+                                </TableCell>
+                                <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
+                                  Actions
+                                </TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {module.activities.map((activity, rowIndex) => (
+                                <TableRow key={rowIndex}>
+                                  {editingRow &&
+                                    editingRow.moduleIndex === moduleIndex &&
+                                    editingRow.rowIndex === rowIndex ? (
+                                    <>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.SrNo}
+                                          onChange={(e) =>
+                                            handleChange("SrNo", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.keyActivity}
+                                          onChange={(e) =>
+                                            handleChange("keyActivity", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.duration}
+                                          onChange={(e) =>
+                                            handleChange("duration", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.preRequisite}
+                                          onChange={(e) =>
+                                            handleChange("preRequisite", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.slack}
+                                          onChange={(e) =>
+                                            handleChange("slack", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.plannedStart}
+                                          onChange={(e) =>
+                                            handleChange("plannedStart", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.plannedFinish}
+                                          onChange={(e) =>
+                                            handleChange("plannedFinish", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.activityStatus}
+                                          onChange={(e) =>
+                                            handleChange("activityStatus", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.actualStart}
+                                          onChange={(e) =>
+                                            handleChange("actualStart", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.actualFinish}
+                                          onChange={(e) =>
+                                            handleChange("actualFinish", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.actualDuration}
+                                          onChange={(e) =>
+                                            handleChange("actualDuration", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.remarks}
+                                          onChange={(e) =>
+                                            handleChange("remarks", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.expectedStart}
+                                          onChange={(e) =>
+                                            handleChange("expectedStart", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <TextField
+                                          value={editData.expectedFinish}
+                                          onChange={(e) =>
+                                            handleChange("expectedFinish", e.target.value)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>
+                                        <IconButton onClick={handleSaveEdit}>
+                                          <SaveIcon />
+                                        </IconButton>
+                                        <IconButton onClick={handleCancelEdit}>
+                                          <CancelIcon />
+                                        </IconButton>
+                                      </TableCell>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <TableCell>{activity.SrNo}</TableCell>
+                                      <TableCell>{activity.keyActivity}</TableCell>
+                                      <TableCell>{activity.duration}</TableCell>
+                                      <TableCell>{activity.preRequisite}</TableCell>
+                                      <TableCell>{activity.slack}</TableCell>
+                                      <TableCell>{activity.plannedStart}</TableCell>
+                                      <TableCell>{activity.plannedFinish}</TableCell>
+                                      <TableCell>{activity.activityStatus}</TableCell>
+                                      <TableCell>{activity.actualStart}</TableCell>
+                                      <TableCell>{activity.actualFinish}</TableCell>
+                                      <TableCell>{activity.actualDuration}</TableCell>
+                                      <TableCell>{activity.remarks}</TableCell>
+                                      <TableCell>{activity.expectedStart}</TableCell>
+                                      <TableCell>{activity.expectedFinish}</TableCell>
+                                      <TableCell>
+                                        <IconButton
+                                          onClick={() => handleEdit(moduleIndex, rowIndex)}
+                                        >
+                                          <EditIcon />
+                                        </IconButton>
+                                        <IconButton
+                                          onClick={() => handleDelete(moduleIndex, rowIndex)}
+                                        >
+                                          <DeleteIcon />
+                                        </IconButton>
+                                      </TableCell>
+                                    </>
+                                  )}
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </div>
+      </div>
+    </>
   );
 };
 export default StatusUpdate;

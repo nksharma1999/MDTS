@@ -638,34 +638,38 @@ const Module = () => {
                     cancelButtonProps={{ className: "bg-tertiary" }}
                     maskClosable={false}
                     keyboard={false}
+                    className="modal-container"
+                    style={{ marginBottom: "10px !important" }}
                 >
-                    <Input
-                        placeholder="Module Name"
-                        value={newModelName}
-                        onChange={(e) => setNewModelName(e.target.value)}
-                        style={{ marginBottom: "10px" }}
-                    />
+                    <div className="modal-body-item-padding">
+                        <Input
+                            placeholder="Module Name"
+                            value={newModelName}
+                            onChange={(e) => setNewModelName(e.target.value)}
+                            style={{ marginBottom: "10px" }}
+                        />
 
-                    <div style={{ display: 'flex', gap: "10px" }}>
-                        <Select
-                            style={{ width: "100%", marginBottom: "10px" }}
-                            value={selectedOption || ""}
-                            onChange={setSelectedOption}
-                            placeholder="Select mine type..."
-                        >
-                            {options.map((option, index) => (
-                                <Option key={index} value={option}>{option}</Option>
-                            ))}
-                        </Select>
-                        <Button type="dashed" icon={<PlusOutlined />} onClick={() => setMineTypePopupOpen(true)}></Button>
+                        <div style={{ display: 'flex', gap: "10px" }}>
+                            <Select
+                                style={{ width: "100%", marginBottom: "10px" }}
+                                value={selectedOption || ""}
+                                onChange={setSelectedOption}
+                                placeholder="Select mine type..."
+                            >
+                                {options.map((option, index) => (
+                                    <Option key={index} value={option}>{option}</Option>
+                                ))}
+                            </Select>
+                            <Button type="dashed" icon={<PlusOutlined />} onClick={() => setMineTypePopupOpen(true)}></Button>
+                        </div>
+
+                        <Input
+                            placeholder="Module Code"
+                            value={moduleCodeName}
+                            onChange={(e) => setModuleCodeName(e.target.value)}
+                            style={{ marginBottom: "10px" }}
+                        />
                     </div>
-
-                    <Input
-                        placeholder="Module Code"
-                        value={moduleCodeName}
-                        onChange={(e) => setModuleCodeName(e.target.value)}
-                        style={{ marginBottom: "10px" }}
-                    />
 
                 </Modal>
 
@@ -678,15 +682,18 @@ const Module = () => {
                     cancelButtonProps={{ className: "bg-tertiary" }}
                     maskClosable={false}
                     keyboard={false}
+                    className="modal-container"
                 >
-                    <Input
-                        placeholder="Enter Mine Type"
-                        value={newMineType}
-                        onChange={(e) => handleMineTypeChange(e.target.value)}
-                        style={{ marginBottom: "10px" }}
-                    />
+                    <div className="modal-body-item-padding">
+                        <Input
+                            placeholder="Enter Mine Type"
+                            value={newMineType}
+                            onChange={(e) => handleMineTypeChange(e.target.value)}
+                            style={{ marginBottom: "10px" }}
+                        />
 
-                    <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
+                        <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
+                    </div>
                 </Modal>
             </div>
         </div>
