@@ -1,12 +1,11 @@
-import { useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Collapse } from "antd";
+import React, { useState } from "react";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Divider } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-const { Option } = Select;
-const { Step } = Steps;
-const { Panel } = Collapse;
-import { ColumnsType } from 'antd/es/table';
 import "../styles/time-builder.css";
 import ImageContainer from "../components/ImageContainer";
+
+const { Option } = Select;
+const { Step } = Steps;
 
 interface Activity {
   code: string;
@@ -22,47 +21,65 @@ interface Module {
   activities: Activity[];
 }
 
-const modulesData = [
+const modulesData: Module[] = [
   {
-    code: "CF", name: "Contract Formulation", activities: [
+    code: "CF",
+    name: "Contract Formulation",
+    activities: [
       { code: "FC/PR/CA/010", activity: "Issuance of SO to Land Aggregators", prerequisite: "", slack: "", start: "" },
       { code: "FC/PR/CA/020", activity: "Issuance of SO to an advocate for legal due diligence", prerequisite: "", slack: "", start: "" },
       { code: "FC/PR/CA/040", activity: "Identification of land and collection of P2 Documents", prerequisite: "FC/PR/CA/010", slack: "", start: "" },
-    ]
+    ],
   },
   {
-    code: "BP", name: "Bugetary Plan", activities: [
+    code: "BP",
+    name: "Budgetary Plan",
+    activities: [
       { code: "BP/010", activity: "Preparation of NFA for interim budget", prerequisite: "", slack: "", start: "" },
       { code: "BP/020", activity: "Approval of Interim Budget", prerequisite: "", slack: "", start: "" },
       { code: "BP/030", activity: "Preparation of DPR", prerequisite: "", slack: "", start: "" },
-    ]
+    ],
   },
   {
-    code: "BC", name: "Boundary Coordinate Certification by CMPDI", activities: [
+    code: "BC",
+    name: "Boundary Coordinate Certification by CMPDI",
+    activities: [
       { code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
       { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },
       { code: "BC/030", activity: "Receipt of Certified Boundary Coordinates by CMPDI", prerequisite: "", slack: "", start: "" },
-    ]
+    ],
   },
   {
-    code: "DG", name: "DGPS Survey, Land Schedule and Cadestral Map", activities: []
+    code: "DG",
+    name: "DGPS Survey, Land Schedule and Cadestral Map",
+    activities: [
+      { code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
+      { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },
+      { code: "BC/030", activity: "Receipt of Certified Boundary Coordinates by CMPDI", prerequisite: "", slack: "", start: "" },
+    ],
   },
   {
-    code: "GR", name: "Geological Report", activities: []
+    code: "GR",
+    name: "Geological Report",
+    activities: [ { code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
+      { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },],
   },
   {
-    code: "FC", name: "Forest Clearance", activities: []
-  }
+    code: "FC",
+    name: "Forest Clearance",
+    activities: [ { code: "BC/010", activity: "Mobilization of CMPDI to the site to ascertain boundary coordinates", prerequisite: "", slack: "", start: "" },
+      { code: "BC/020", activity: "Completion of Survey by CMPDI", prerequisite: "", slack: "", start: "" },],
+  },
 ];
 
 const TimeBuilder = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [sequencedModules, setSequencedModules] = useState<Module[]>(modulesData);
-  const [activitiesData, setActivitiesData] = useState<Activity[]>(modulesData.flatMap(module => module.activities));
+  const [activitiesData, setActivitiesData] = useState<Activity[]>(modulesData.flatMap((module) => module.activities));
 
   const handleNext = () => {
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     } else {
       window.location.href = "/create/status-update";
@@ -73,11 +90,11 @@ const TimeBuilder = () => {
     setCurrentStep(currentStep - 1);
   };
 
-  const handleActivitySelection = (activityCode: any, isChecked: any) => {
+  const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
     if (isChecked) {
       setSelectedActivities([...selectedActivities, activityCode]);
     } else {
-      setSelectedActivities(selectedActivities.filter((code: any) => code !== activityCode));
+      setSelectedActivities(selectedActivities.filter((code) => code !== activityCode));
     }
   };
 
@@ -91,42 +108,34 @@ const TimeBuilder = () => {
     setSequencedModules(items);
   };
 
-  const handleSlackChange = (code: any, value: any) => {
-    const updatedActivities = activitiesData.map((activity: any) =>
+  const handleSlackChange = (code: string, value: string) => {
+    const updatedActivities = activitiesData.map((activity) =>
       activity.code === code ? { ...activity, slack: value } : activity
     );
     setActivitiesData(updatedActivities);
   };
 
-  const handleStartDateChange = (code: any, date: any) => {
-    const updatedActivities = activitiesData.map((activity: any) =>
+  const handleStartDateChange = (code: string, date: string) => {
+    const updatedActivities = activitiesData.map((activity) =>
       activity.code === code ? { ...activity, start: date } : activity
     );
     setActivitiesData(updatedActivities);
   };
 
-  const getColumnsForStep = (step: any) => {
-    if (step === 0) {
-      return [
-        { title: 'Module Code', dataIndex: 'code', key: 'code' },
-        { title: 'Module Name', dataIndex: 'name', key: 'name' },
-      ];
-    }
-
-    const baseColumns: ColumnsType<any> = [
-      { title: 'Activity', dataIndex: 'activity', key: 'activity', width: "50%" },
+  const getColumnsForStep = (step: number) => {
+    const baseColumns = [
+      { dataIndex: "activity", key: "activity", width: "50%" },
     ];
 
-    if (step === 1) {
+    if (step >= 1) {
       baseColumns.push({
-        title: 'Finalize',
-        key: 'finalize',
+        key: "finalize",
         align: "center",
         render: (_: any, record: any) => (
           <Checkbox
             checked={selectedActivities.includes(record.code)}
             onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-            disabled={step !== currentStep}
+            disabled={step !== 1} // Only editable in Step 1
           />
         ),
       });
@@ -134,19 +143,18 @@ const TimeBuilder = () => {
 
     if (step >= 2) {
       baseColumns.push({
-        title: 'Prerequisite',
-        key: 'prerequisite',
-        render: (_: any, record) => (
+        key: "prerequisite",
+        render: (_: any, record: any) => (
           <Input
             placeholder="Prerequisite"
             value={record.prerequisite}
             onChange={(e) => {
-              const updatedActivities = activitiesData.map(activity =>
+              const updatedActivities = activitiesData.map((activity) =>
                 activity.code === record.code ? { ...activity, prerequisite: e.target.value } : activity
               );
               setActivitiesData(updatedActivities);
             }}
-            disabled={step !== currentStep}
+            disabled={step !== 2} // Only editable in Step 2
           />
         ),
       });
@@ -154,14 +162,13 @@ const TimeBuilder = () => {
 
     if (step >= 3) {
       baseColumns.push({
-        title: 'Slack',
-        key: 'slack',
-        render: (_: any, record) => (
+        key: "slack",
+        render: (_: any, record: any) => (
           <Input
             placeholder="Slack"
             value={record.slack}
             onChange={(e) => handleSlackChange(record.code, e.target.value)}
-            disabled={step !== currentStep}
+            disabled={step !== 3} // Only editable in Step 3
           />
         ),
       });
@@ -169,14 +176,13 @@ const TimeBuilder = () => {
 
     if (step >= 4) {
       baseColumns.push({
-        title: 'Start Date',
-        key: 'start',
-        render: (_, record) => (
+        key: "start",
+        render: (_: any, record: any) => (
           <DatePicker
             placeholder="Start Date"
             value={record.start}
             onChange={(date) => handleStartDateChange(record.code, date)}
-            disabled={step !== currentStep}
+            disabled={step !== 4} // Only editable in Step 4
           />
         ),
       });
@@ -221,10 +227,7 @@ const TimeBuilder = () => {
           </div>
 
           <div className="main-item-container">
-            <div
-              className="timeline-items"
-              style={{ padding: currentStep > 0 ? "0px" : "10px" }}
-            >
+            <div className="timeline-items" style={{ padding: currentStep > 0 ? "0px" : "10px" }}>
               {currentStep === 0 ? (
                 <DragDropContext onDragEnd={onDragEnd}>
                   <Droppable droppableId="modules">
@@ -256,9 +259,12 @@ const TimeBuilder = () => {
                   </Droppable>
                 </DragDropContext>
               ) : (
-                <Collapse accordion>
-                  {sequencedModules.map(module => (
-                    <Panel header={`${module.code} - ${module.name}`} key={module.code}>
+                <Table
+                  columns={[{ title: "Module", dataIndex: "name", key: "name" }]}
+                  dataSource={sequencedModules}
+                  pagination={false}
+                  expandable={{
+                    expandedRowRender: (module) => (
                       <Table
                         columns={getColumnsForStep(currentStep)}
                         dataSource={module.activities}
@@ -266,19 +272,22 @@ const TimeBuilder = () => {
                         bordered
                         sticky
                       />
-                    </Panel>
-                  ))}
-                </Collapse>
+                    ),
+                    rowExpandable: (module) => module.activities.length > 0,
+                  }}
+                  rowKey="code"
+                />
               )}
-
             </div>
             <hr />
             <div className={`action-buttons ${currentStep === 0 ? "float-right" : ""}`}>
               {currentStep > 0 && (
-                <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">Previous</Button>
+                <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">
+                  Previous
+                </Button>
               )}
               <Button className="bg-secondary" onClick={handleNext} type="primary" size="small">
-                {currentStep === 4 ? 'Submit' : 'Next'}
+                {currentStep === 5 ? "Submit" : "Next"}
               </Button>
             </div>
           </div>
