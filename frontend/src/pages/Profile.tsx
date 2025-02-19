@@ -232,7 +232,6 @@ const Profile = () => {
                                             onChange={(value) => handleSelectChange(value, "role")}
                                             placeholder="Select Role"
                                             style={{ width: "100%" }}
-                                            disabled={formData.role != 'Admin'}
                                         >
                                             <Option value="Admin">Admin</Option>
                                             <Option value="Supervisor">Supervisor</Option>
