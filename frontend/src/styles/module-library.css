@@ -19,7 +19,7 @@
 .module-list-page,
 .create-library-section,
 .library-details {
-    height: calc(100vh - 238px);
+    height: calc(100vh - 165px);
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid #ddd;

@@ -100,6 +100,19 @@
     }
 }
 
+.project-title {
+    p {
+        font-style: italic;
+        margin: 0px;
+        font-weight: bold;
+        color: #ddd;
+        padding: 0px 10px;
+        font-size: 14px;
+        position: absolute;
+        bottom: 10px;
+    }
+}
+
 .signin-btn {
     outline: 1px solid #fff !important;
     background-color: transparent !important;

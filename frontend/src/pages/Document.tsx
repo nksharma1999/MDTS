@@ -121,7 +121,6 @@ const Document: React.FC = () => {
                         bordered
                         pagination={false}
                         className="custom-table"
-                        scroll={{ y: "calc(100vh - 260px)", x: "hidden" }}
                     />
                 </div>
                 <div className="right-images">

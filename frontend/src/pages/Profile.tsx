@@ -9,6 +9,7 @@ import { CameraOutlined } from "@ant-design/icons";
 const { Option } = Select;
 
 const Profile = () => {
+
     const [formData, setFormData] = useState({
         id: "",
         name: "",
@@ -20,11 +21,27 @@ const Profile = () => {
         designation: "",
         role: "",
         email: "",
+        isTempPassword: true
     });
-
     const [selectedTab, setSelectedTab] = useState("Profile Information");
     const [image, setImage] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [form] = Form.useForm();
+
     useEffect(() => {
+        fillUsersData();
+    }, []);
+
+    useEffect(() => {
+        if (formData.id) {
+            const storedImage = formData.profilePhoto;
+            if (storedImage) {
+                setImage(storedImage);
+            }
+        }
+    }, [formData.id]);
+
+    const fillUsersData = () => {
         const userData = localStorage.getItem("user");
         if (userData) {
             const parsedData = JSON.parse(userData);
@@ -39,20 +56,12 @@ const Profile = () => {
                 registeredOn: parsedData.registeredOn || "",
                 profilePhoto: parsedData.profilePhoto || "",
                 role: parsedData.role || "",
+                isTempPassword: parsedData.isTempPassword
             });
+            form.resetFields();
         }
-    }, []);
 
-    useEffect(() => {
-        if (formData.id) {
-            const userId = formData.id;
-            const storedImage = localStorage.getItem(`profileImage_${userId}`);
-            if (storedImage) {
-                setImage(storedImage);
-            }
-        }
-    }, [formData.id]);
-
+    }
 
     const isProfileCompleted = () => {
         return (
@@ -63,7 +72,7 @@ const Profile = () => {
             formData.email &&
             formData.whatsapp &&
             formData.registeredOn &&
-            formData.role ||
+            formData.role &&
             formData.profilePhoto
         );
     };
@@ -80,13 +89,19 @@ const Profile = () => {
     const handleSave = () => {
         const users = JSON.parse(localStorage.getItem("users") || "[]");
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+        if (currentUser?.isTempPassword) {
+            setIsModalOpen(true);
+        }
+
         const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
         if (userIndex !== -1) {
             users[userIndex] = { ...users[userIndex], ...formData };
             localStorage.setItem("users", JSON.stringify(users));
         }
         localStorage.setItem("user", JSON.stringify(formData));
-        message.success("Profile information saved successfully!");
+        if (!formData.isTempPassword)
+            message.success("Profile information Updated successfully!");
     };
 
     function getInitials(name?: string): string {
@@ -110,33 +125,67 @@ const Profile = () => {
             if (e.target?.result) {
                 const base64Image = e.target.result as string;
                 setImage(base64Image);
-                localStorage.setItem(`profileImage_${formData.id}`, base64Image);
+                const users = JSON.parse(localStorage.getItem("users") || "[]");
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
+                if (userIndex !== -1) {
+                    users[userIndex] = {
+                        ...users[userIndex],
+                        profilePhoto: base64Image,
+                    };
+                    localStorage.setItem("users", JSON.stringify(users));
+                }
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({ ...currentUser, profilePhoto: base64Image, })
+                );
+
+                message.success("Profile photo updated successfully!");
+                setIsModalOpen(false);
+                setTimeout(() => {
+                    fillUsersData();
+                }, 1000)
             }
         };
         reader.readAsDataURL(file);
     };
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [form] = Form.useForm();
-
-    // Open Modal
     const showModal = () => {
         setIsModalOpen(true);
     };
 
-    // Close Modal
     const handleCancel = () => {
-        setIsModalOpen(false);
-        form.resetFields(); // Reset form fields on close
-    };
-
-    // Handle Submit
-    const handleSubmit = (values: any) => {
-        console.log("Password Change Data:", values);
-        message.success("Password changed successfully!");
         setIsModalOpen(false);
         form.resetFields();
     };
+
+    const handleSubmit = (values: any) => {
+        const users = JSON.parse(localStorage.getItem("users") || "[]");
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+        const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
+        if (userIndex !== -1) {
+            users[userIndex] = {
+                ...users[userIndex],
+                password: values.newPassword,
+                isTempPassword: false,
+            };
+            localStorage.setItem("users", JSON.stringify(users));
+        }
+
+        localStorage.setItem(
+            "user",
+            JSON.stringify({ ...currentUser, password: values.newPassword, isTempPassword: false })
+        );
+
+        message.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
+        setIsModalOpen(false);
+        setTimeout(() => {
+            fillUsersData();
+        }, 1000)
+    };
+
 
     const renderContent = () => {
         switch (selectedTab) {
@@ -171,7 +220,7 @@ const Profile = () => {
                             <div className="change-password-container">
                                 <a onClick={showModal}>Change Password</a>
                             </div>
-                            <Form className="eployee-professional-form">
+                            <Form className={`eployee-professional-form ${isProfileCompleted() ? "registration-height-without-warning" : "registration-height-with-warning"}`}>
                                 <Row gutter={[16, 16]} className="form-row" align="middle">
                                     <Col span={6} style={{ textAlign: "left" }}>
                                         <label>Name</label>
@@ -191,6 +240,14 @@ const Profile = () => {
                                         <label>Company</label>
                                     </Col>
                                     <Col span={18}>
+                                        <Input
+                                            name="company"
+                                            value={formData.company}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter Company"
+                                        />
+                                    </Col>
+                                    {/* <Col span={18}>
                                         <Select
                                             value={formData.company}
                                             onChange={(value) => handleSelectChange(value, "company")}
@@ -201,7 +258,7 @@ const Profile = () => {
                                             <Option value="Deep Earth Industries">Deep Earth Industries</Option>
                                             <Option value="Rock Minerals Ltd">Rock Minerals Ltd</Option>
                                         </Select>
-                                    </Col>
+                                    </Col> */}
                                 </Row>
 
                                 <Row gutter={[16, 16]} className="form-row" align="middle">
@@ -233,9 +290,8 @@ const Profile = () => {
                                             placeholder="Select Role"
                                             style={{ width: "100%" }}
                                         >
-                                            <Option value="Admin">Admin</Option>
-                                            <Option value="Supervisor">Supervisor</Option>
-                                            <Option value="Worker">Worker</Option>
+                                            <Option value="Editor">Editor</Option>
+                                            <Option value="Viewer">Viewer</Option>
                                         </Select>
                                     </Col>
                                 </Row>
@@ -359,7 +415,7 @@ const Profile = () => {
                     </div>
 
                     {['Profile Information', 'Team Members'].map((tab) => {
-                        if (tab === 'Team Members' && formData.role !== 'Admin') {
+                        if (tab === 'Team Members' && formData.role !== 'Editor') {
                             return null;
                         }
 
@@ -387,13 +443,13 @@ const Profile = () => {
 
             <div className="modal-container">
                 <Modal
-                    title="Change Password"
+                    title={formData.name ? "Name" : "Email"}
                     open={isModalOpen}
                     onCancel={handleCancel}
                     footer={null}
                     className="modal-container"
                 >
-                    <Form
+                    {/* <Form
                         requiredMark={false}
                         form={form}
                         layout="horizontal"
@@ -427,7 +483,68 @@ const Profile = () => {
                         <Form.Item
                             label="Confirm New Password"
                             name="confirmNewPassword"
-                            labelCol={{ span: 8, style: { textAlign: "left" } }} // Left-align label
+                            labelCol={{ span: 8, style: { textAlign: "left" } }}
+                            wrapperCol={{ span: 16 }}
+                            dependencies={["newPassword"]}
+                            rules={[
+                                { required: true, message: "Please confirm your new password!" },
+                                ({ getFieldValue }) => ({
+                                    validator(_, value) {
+                                        if (!value || getFieldValue("newPassword") === value) {
+                                            return Promise.resolve();
+                                        }
+                                        return Promise.reject(new Error("Passwords do not match!"));
+                                    },
+                                }),
+                            ]}
+                        >
+                            <Input.Password placeholder="Confirm new password" />
+                        </Form.Item>
+
+                        <Form.Item style={{ display: "flex", justifyContent: "end" }}>
+                            <Button type="primary" className="bg-secondary" htmlType="submit">
+                                Save
+                            </Button>
+                        </Form.Item>
+                    </Form> */}
+
+                    <Form
+                        requiredMark={false}
+                        form={form}
+                        layout="horizontal"
+                        onFinish={handleSubmit}
+                        style={{ padding: "10px 10px 0px 10px" }}
+                        colon={false}
+                    >
+                        {!formData?.isTempPassword && (
+                            <Form.Item
+                                label="Old Password"
+                                name="oldPassword"
+                                labelCol={{ span: 8, style: { textAlign: "left" } }}
+                                wrapperCol={{ span: 16 }}
+                                rules={[{ required: true, message: "Please enter your old password!" }]}
+                            >
+                                <Input.Password placeholder="Enter old password" />
+                            </Form.Item>
+                        )}
+                        {formData.isTempPassword}
+                        <Form.Item
+                            label="New Password"
+                            name="newPassword"
+                            labelCol={{ span: 8, style: { textAlign: "left" } }}
+                            wrapperCol={{ span: 16 }}
+                            rules={[
+                                { required: true, message: "Please enter a new password!" },
+                                { min: 6, message: "Password must be at least 6 characters!" }
+                            ]}
+                        >
+                            <Input.Password placeholder="Enter new password" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Confirm New Password"
+                            name="confirmNewPassword"
+                            labelCol={{ span: 8, style: { textAlign: "left" } }}
                             wrapperCol={{ span: 16 }}
                             dependencies={["newPassword"]}
                             rules={[
@@ -451,6 +568,7 @@ const Profile = () => {
                             </Button>
                         </Form.Item>
                     </Form>
+
 
                 </Modal>
             </div>

@@ -1,5 +1,5 @@
 .project-container {
-    height: calc(100vh - 165px);
+    height: calc(100vh - 95px);
     display: flex;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .details-paremeters {
-    height: 90%;
+    height: 93%;
     overflow-y: auto;
     display: grid;
     grid-template-columns: 1fr;

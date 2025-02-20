@@ -139,7 +139,8 @@
 
 .form-container {
     padding: 5px 10px 0px 10px;
-    height: calc(100vh - 325px);
+    /* height: calc(100vh - 325px); */
+    height: calc(100vh - 250px);
     overflow-y: auto;
     background: #fff;
 

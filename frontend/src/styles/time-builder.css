@@ -6,11 +6,28 @@
 }
 
 .timeline-items {
-    height: calc(100vh - 314px);
+    /* height: calc(100vh - 325px); */
+    height: calc(100vh - 250px);
     overflow-y: auto;
     overflow-x: hidden;
-    padding-top: 0px !important;
+    padding: 0px 10px !important;
 }
+
+.module-heading .ant-table-cell {
+    background-color: #ddd !important;
+    font-weight: bold;
+    text-align: left;
+}
+
+.table-header {
+    font-weight: bold;
+    font-size: 16px;
+    color: #004d99;
+    /* Dark blue for a professional look */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 
 .title-and-filter {
     margin: 8px 8px 0px 8px;
@@ -58,6 +75,11 @@
     position: sticky !important;
     z-index: 10;
 }
+
+.project-timeline-table .ant-table-thead>tr>th {
+    background-color: grey !important;
+}
+
 
 .ant-table-tbody>tr>td {
     background-color: #fafafa !important;
@@ -117,7 +139,7 @@
     text-transform: capitalize;
 }
 
-.custom-table-heading .ant-table-thead>tr>th {
+.custom-table-heading.ant-table-thead>tr>th {
     padding: 5px !important;
     border-radius: 0px !important;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { addMonths, format, addDays } from "date-fns";
 import {
   Table,
@@ -28,17 +28,19 @@ const moduleOptions = [
 
 export const HolidayCalender = () => {
   const [rows, setRows] = useState([
-    { from: null, to: null, holiday: "", module: [], impact: {}, editing: true },
+    {
+      from: null, to: null, holiday: "", module: [], impact: {}, editing: true
+    },
   ]);
   const [, setBaseMonth] = useState(new Date());
   const tableHeaders = ["From Date", "To Date", "Holiday", "Modules", "Impact", "Actions"];
   const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
 
-  const holidayDates = rows.filter(row => !row.editing && row.from && row.to)
-    .flatMap(row => {
-      const start = new Date(row.from);
-      const end = new Date(row.to);
+  const holidayDates = rows.filter((row: any) => !row.editing && row.from && row.to)
+    .flatMap((row: any) => {
+      const start: any = new Date(row.from);
+      const end: any = new Date(row.to);
       const dates = [];
       let current = start;
       while (current <= end) {
@@ -47,6 +49,25 @@ export const HolidayCalender = () => {
       }
       return dates;
     });
+
+  useEffect(() => {
+    const storedData = localStorage.getItem("holidayCalendarData");
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        const updatedRows = parsedData.map((row: any) => ({
+          ...row,
+          from: row.from ? dayjs(row.from) : null,
+          to: row.to ? dayjs(row.to) : null,
+        }));
+
+        setRows(updatedRows);
+      } catch (error) {
+        console.error("Error parsing localStorage data:", error);
+      }
+    }
+  }, []);
+
 
   const handleLowerCalendarNavigation = (activeStartDate: any) => {
     setBaseMonth(addMonths(activeStartDate, -1));
@@ -57,12 +78,12 @@ export const HolidayCalender = () => {
   };
 
   const handleInputChange = (index: any, field: any, value: any) => {
-    const updatedRows = [...rows];
+    const updatedRows: any = [...rows];
     updatedRows[index][field] = value;
 
     if (field === "module") {
       const moduleCount = value.length;
-      const impact = {};
+      const impact: any = {};
       if (moduleCount > 0) {
         const dividedImpact = (100 / moduleCount).toFixed(2);
         value.forEach((module: any) => {
@@ -76,7 +97,7 @@ export const HolidayCalender = () => {
   };
 
   const handleImpactChange = (index: any, module: any, value: any) => {
-    const updatedRows = [...rows];
+    const updatedRows: any = [...rows];
     updatedRows[index].impact[module] = value;
     setRows(updatedRows);
   };
@@ -144,9 +165,24 @@ export const HolidayCalender = () => {
       return;
     }
 
+    const storedData = localStorage.getItem("holidayCalendarData");
+    let existingData = storedData ? JSON.parse(storedData) : [];
+
     const updatedRows = [...rows];
     updatedRows[index].editing = false;
+
+    const existingIndex = existingData.findIndex(
+      (item: any) => item.holiday === row.holiday && item.from === row.from && item.to === row.to
+    );
+
+    if (existingIndex !== -1) {
+      existingData[existingIndex] = row;
+    } else {
+      existingData.push(row);
+    }
+
     setRows(updatedRows);
+    localStorage.setItem("holidayCalendarData", JSON.stringify(existingData));
   };
 
   const [showCalendar, setShowCalendar] = useState(true);
@@ -168,13 +204,13 @@ export const HolidayCalender = () => {
               <Button
                 className="aad-btn bg-secondary"
                 onClick={addRow}
+                style={{ padding: "0px 10px" }}
               >
                 Add New Row
               </Button>
               <Button
                 className="toggle-calendar-btn bg-tertiary"
                 onClick={toggleCalendar}
-                variant="contained"
                 color="primary"
               >
                 {showCalendar ? "Hide Calendar" : "Show Calendar"}
@@ -218,19 +254,26 @@ export const HolidayCalender = () => {
                         value={row.from}
                         onChange={(date) => handleInputChange(index, "from", date)}
                         disabled={!row.editing}
+                        disabledDate={(current: any) =>
+                          current
+                            ? current.isBefore(dayjs().startOf("day")) || (row.to && current.isAfter(dayjs(row.to)))
+                            : false
+                        }
                       />
                     </TableCell>
 
-                    <TableCell>
-                      <TableCell style={{ textAlign: "center", paddingTop: "0px !important", borderBottom: "0px" }}>
-                        <DatePicker
-                          value={row.to}
-                          onChange={(date) => handleInputChange(index, "to", date)}
-                          disabled={!row.editing}
-                          style={{ width: "100%" }}
-                        />
-                      </TableCell>
-
+                    <TableCell style={{ textAlign: "center" }}>
+                      <DatePicker
+                        value={row.to}
+                        onChange={(date) => handleInputChange(index, "to", date)}
+                        disabled={!row.editing}
+                        style={{ width: "100%" }}
+                        disabledDate={(current: any) =>
+                          current
+                            ? current.isBefore(dayjs().startOf("day")) || (row.from && current.isBefore(dayjs(row.from)))
+                            : false
+                        }
+                      />
                     </TableCell>
 
                     <TableCell style={{ textAlign: "center", paddingTop: "0px", paddingBottom: "0px" }}>

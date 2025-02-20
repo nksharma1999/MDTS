@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input, DatePicker, Select, Table, Button, Checkbox, Steps } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
-import ImageContainer from "../components/ImageContainer";
+import type { ColumnsType } from "antd/es/table";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 const { Step } = Steps;
@@ -19,6 +20,15 @@ interface Module {
   code: string;
   name: string;
   activities: Activity[];
+}
+
+interface HolidayData {
+  key: string;
+  from: string;
+  to: string;
+  holiday: string;
+  module: string[];
+  impact: Record<string, string>;
 }
 
 const modulesData: Module[] = [
@@ -72,14 +82,205 @@ const modulesData: Module[] = [
   },
 ];
 
+const initialModules = [
+  {
+    name: "Contract Formulation",
+    moduleCode: "CF",
+    activities: [
+      {
+        SrNo: "CF",
+        Code: "CF/010",
+        keyActivity: "Declaration as H1 Bidder",
+        duration: 0,
+        preRequisite: "",
+        slack: "",
+        plannedStart: "5 Mar 25",
+        plannedFinish: "5 Mar 25",
+        activityStatus: "Completed",
+        actualStart: "",
+        actualFinish: "",
+        actualDuration: "Auto",
+        remarks: "",
+        expectedStart: "",
+        expectedFinish: "Auto",
+      },
+      {
+        SrNo: "CF",
+        Code: "CF/020",
+        keyActivity: "Signing of CBPDA",
+        duration: 6,
+        preRequisite: "CF/010",
+        slack: "",
+        plannedStart: "6 Mar 25",
+        plannedFinish: "5 Apr 25",
+        activityStatus: "In progress",
+        actualStart: "",
+        actualFinish: "",
+        actualDuration: "Auto",
+        remarks: "",
+        expectedStart: "Auto",
+        expectedFinish: "Auto",
+      },
+    ],
+  },
+  {
+    name: "Budgetary Planning",
+    moduleCode: "BP",
+    activities: [
+      {
+        SrNo: "BP",
+        Code: "BP/010",
+        keyActivity: "Preparation of NFA for interim budget",
+        duration: 15,
+        preRequisite: "CF/010",
+        slack: 15,
+        plannedStart: "21 Mar 25",
+        plannedFinish: "",
+        activityStatus: "Yet to Start",
+        actualStart: "",
+        actualFinish: "",
+        actualDuration: "",
+        remarks: "",
+        expectedStart: "",
+        expectedFinish: "",
+      },
+    ],
+  },
+  {
+    name: "Budgetary Planning",
+    moduleCode: "BP",
+    activities: [
+      {
+        SrNo: "BP",
+        Code: "BP/010",
+        keyActivity: "Preparation of NFA for interim budget",
+        duration: 15,
+        preRequisite: "CF/010",
+        slack: 15,
+        plannedStart: "21 Mar 25",
+        plannedFinish: "",
+        activityStatus: "Yet to Start",
+        actualStart: "",
+        actualFinish: "",
+        actualDuration: "",
+        remarks: "",
+        expectedStart: "",
+        expectedFinish: "",
+      },
+    ],
+  },
+];
+
+const statusUpdateColumns: ColumnsType = [
+  { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
+  { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
+  { title: "Duration", dataIndex: "duration", key: "duration", width: 80, align: "center" },
+  { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
+  { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
+  { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
+  { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
+  { title: "Activity Status", dataIndex: "activityStatus", key: "activityStatus", width: 150, align: "center" },
+];
+
 const TimeBuilder = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [sequencedModules, setSequencedModules] = useState<Module[]>(modulesData);
   const [activitiesData, setActivitiesData] = useState<Activity[]>(modulesData.flatMap((module) => module.activities));
+  const [holidayData, setHolidayData] = useState<HolidayData[]>([]);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [expandedKeys, setExpandedKeys] = useState(initialModules.map((_, index) => `module-${index}`));
+  const dataSource = initialModules.map((module, moduleIndex) => ({
+    key: `module-${moduleIndex}`,
+    SrNo: module.moduleCode,
+    Code: module.moduleCode,
+    keyActivity: module.name,
+    duration: "",
+    preRequisite: "",
+    slack: "",
+    plannedStart: "",
+    plannedFinish: "",
+    activityStatus: "",
+    actualStart: "",
+    actualFinish: "",
+    actualDuration: "",
+    remarks: "",
+    expectedStart: "",
+    expectedFinish: "",
+    isModule: true,
+    children: module.activities.map((activity, actIndex) => ({
+      key: `activity-${moduleIndex}-${actIndex}`,
+      ...activity,
+      isModule: false,
+    })),
+  }));
+
+  useEffect(() => {
+    const storedData = localStorage.getItem("holidayCalendarData");
+    if (storedData) {
+      const parsedData: HolidayData[] = JSON.parse(storedData).map(
+        (item: any, index: number) => ({
+          ...item,
+          key: String(index + 1),
+        })
+      );
+
+      setHolidayData(parsedData);
+      setSelected(Object.fromEntries(parsedData.map((item) => [item.key, true])));
+    }
+  }, []);
+
+  const toggleCheckbox = (key: string) => {
+    setSelected((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const columns: ColumnsType<HolidayData> = [
+    {
+      title: "From Date",
+      dataIndex: "from",
+      key: "from",
+      render: (text) => dayjs(text).format("DD-MM-YYYY"),
+    },
+    {
+      title: "To Date",
+      dataIndex: "to",
+      key: "to",
+      align: "left",
+      render: (text) => dayjs(text).format("DD-MM-YYYY"),
+    },
+    {
+      title: "Holiday Name",
+      dataIndex: "holiday",
+      key: "holiday",
+      align: "left",
+    },
+    {
+      title: "Module Name",
+      dataIndex: "module",
+      key: "module",
+      align: "left",
+      render: (modules) => modules.join(", "),
+    },
+    {
+      title: "Impact",
+      dataIndex: "impact",
+      key: "impact",
+      align: "left",
+      render: (impact) => Object.values(impact).join(", "),
+    },
+    {
+      title: "✔",
+      key: "checkbox",
+      width: 50,
+      align: "center",
+      render: (_, record) => (
+        <Checkbox checked={selected[record.key]} onChange={() => toggleCheckbox(record.key)} />
+      ),
+    },
+  ];
 
   const handleNext = () => {
-    if (currentStep < 5) {
+    if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
     } else {
       window.location.href = "/create/status-update";
@@ -97,6 +298,10 @@ const TimeBuilder = () => {
       setSelectedActivities(selectedActivities.filter((code) => code !== activityCode));
     }
   };
+
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>(
+    modulesData.map((module) => module.code)
+  );
 
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -123,7 +328,7 @@ const TimeBuilder = () => {
 
   const getColumnsForStep = (step: number) => {
     const baseColumns: any = [
-      { dataIndex: "activity", key: "activity", width: "50%" },
+      { dataIndex: "activity", key: "activity", width: "50%", align: "left" },
     ];
 
     if (step >= 1) {
@@ -134,7 +339,7 @@ const TimeBuilder = () => {
           <Checkbox
             checked={selectedActivities.includes(record.code)}
             onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-            disabled={step !== 1} // Only editable in Step 1
+            disabled={step !== 1}
           />
         ),
       });
@@ -153,7 +358,7 @@ const TimeBuilder = () => {
               );
               setActivitiesData(updatedActivities);
             }}
-            disabled={step !== 2} // Only editable in Step 2
+            disabled={step !== 2}
           />
         ),
       });
@@ -167,7 +372,7 @@ const TimeBuilder = () => {
             placeholder="Slack"
             value={record.slack}
             onChange={(e) => handleSlackChange(record.code, e.target.value)}
-            disabled={step !== 3} // Only editable in Step 3
+            disabled={step !== 3}
           />
         ),
       });
@@ -181,7 +386,7 @@ const TimeBuilder = () => {
             placeholder="Start Date"
             value={record.start}
             onChange={(date) => handleStartDateChange(record.code, date)}
-            disabled={step !== 4} // Only editable in Step 4
+            disabled={step !== 4}
           />
         ),
       });
@@ -196,7 +401,7 @@ const TimeBuilder = () => {
         <div style={{ width: "100%" }} className="time-builder-page">
           <div className="title-and-filter">
             <div className="heading">
-              <span>Time Builder</span>
+              <span>Timeline Builder</span>
             </div>
             <div className="filters">
               {currentStep === 0 && (
@@ -222,11 +427,13 @@ const TimeBuilder = () => {
               <Step title="Prerequisites" />
               <Step title="Slack" />
               <Step title="Start Date" />
+              <Step title="Holiday" />
+              <Step title="Project Timeline" />
             </Steps>
           </div>
 
           <div className="main-item-container">
-            <div className="timeline-items" style={{ padding: currentStep > 0 ? "0px" : "10px" }}>
+            <div className="timeline-items">
               {currentStep === 0 ? (
                 <DragDropContext onDragEnd={onDragEnd}>
                   <Droppable droppableId="modules">
@@ -257,6 +464,37 @@ const TimeBuilder = () => {
                     )}
                   </Droppable>
                 </DragDropContext>
+              ) : currentStep === 5 ? (
+                <div>
+                  <Table className="project-timeline-table" dataSource={holidayData} columns={columns} pagination={false} />
+                </div>
+              ) : currentStep === 6 ? (
+                <div style={{ overflowX: "hidden" }}>
+                  <Table
+                    columns={statusUpdateColumns}
+                    dataSource={dataSource}
+                    className="project-timeline-table"
+                    pagination={false}
+                    expandable={{
+                      expandedRowRender: () => null,
+                      rowExpandable: (record) => record.children && record.children.length > 0,
+                      expandedRowKeys: expandedKeys,
+                      onExpand: (expanded, record) => {
+                        setExpandedKeys(
+                          expanded
+                            ? [...expandedKeys, record.key]
+                            : expandedKeys.filter((key) => key !== record.key)
+                        );
+                      },
+                    }}
+                    rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
+                    bordered
+                    scroll={{
+                      x: "max-content",
+                      y: "calc(100vh - 320px)",
+                    }}
+                  />
+                </div>
               ) : (
                 <Table
                   columns={[{ title: "Module", dataIndex: "name", key: "name" }]}
@@ -264,6 +502,16 @@ const TimeBuilder = () => {
                   dataSource={sequencedModules}
                   pagination={false}
                   sticky
+                  showHeader={false}
+                  rowClassName={(record) => (record.activities ? "module-heading" : "")}
+                  expandedRowKeys={expandedRowKeys}
+                  onExpand={(expanded, record) => {
+                    if (expanded) {
+                      setExpandedRowKeys([...expandedRowKeys, record.code]);
+                    } else {
+                      setExpandedRowKeys(expandedRowKeys.filter((key) => key !== record.code));
+                    }
+                  }}
                   expandable={{
                     expandedRowRender: (module) => (
                       <Table
@@ -273,10 +521,12 @@ const TimeBuilder = () => {
                         showHeader={false}
                         bordered
                         sticky
+                        style={{ marginBottom: "10px" }}
                       />
                     ),
                     rowExpandable: (module) => module.activities.length > 0,
                   }}
+                  style={{ overflowX: "hidden" }}
                   rowKey="code"
                 />
               )}
@@ -289,13 +539,10 @@ const TimeBuilder = () => {
                 </Button>
               )}
               <Button className="bg-secondary" onClick={handleNext} type="primary" size="small">
-                {currentStep === 5 ? "Submit" : "Next"}
+                {currentStep === 7 ? "Submit" : "Next"}
               </Button>
             </div>
           </div>
-        </div>
-        <div>
-          <ImageContainer imageUrl="/images/auths/m5.jpg" />
         </div>
       </div>
     </>

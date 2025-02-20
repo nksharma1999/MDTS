@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, Dropdown, Button, Typography, Divider, Modal } from "antd";
-import { DownOutlined, UserOutlined } from "@ant-design/icons";
+import { DownOutlined, LogoutOutlined, UserOutlined, UserSwitchOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 const { Title } = Typography;
 interface NavItem {
@@ -106,18 +106,33 @@ const Navbar: React.FC = () => {
     };
 
     const profileMenu = (
-        <Menu
-            onClick={handleMenuClick}
-            selectedKeys={[location.pathname]}
-        >
-            <Menu.Item key="/profile">Profile</Menu.Item>
-            <Menu.Item key="logout">Logout</Menu.Item>
+        <Menu onClick={handleMenuClick} selectedKeys={[location.pathname]}>
+            <Menu.Item key="/profile" icon={<UserSwitchOutlined />}>
+                Profile
+            </Menu.Item>
+            <Menu.Item key="logout" icon={<LogoutOutlined />}>
+                Logout
+            </Menu.Item>
         </Menu>
     );
 
     return (
         <>
-            <div className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", padding: "15px" }}>
+            <div className="navbar" style={{ background: "linear-gradient(90deg, #257180, #257180,rgb(241, 76, 76))", display: "flex", alignItems: "center", padding: "3px 10px" }}>
+                <div className="logo-sections">
+                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
+                        <img
+                            src="/images/logos/main-logo.png"
+                            alt="Logo"
+                            className="logo-image"
+                        />
+                    </Link>
+                </div>
+                <div className="project-title">
+                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
+                        <p>Mine Development Tracking System</p>
+                    </Link>
+                </div>
                 <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
                 {navLinks.map((link, index) => (
                     <div key={index} style={{ margin: "0 5px" }}>
@@ -181,16 +196,6 @@ const Navbar: React.FC = () => {
                         </Button>
                     )}
                 </div>
-
-                {/* <div className="">
-                    <Button className="signin-btn" style={{ marginLeft: "20px" }}>
-                        <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Login</Link>
-                    </Button>
-                    <Button className="signin-btn" style={{ marginLeft: "20px" }}>
-                        <Link to="/employee-registration" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Registration</Link>
-                    </Button>
-                </div> */}
-
             </div>
             <Modal
                 title="Confirm Logout"

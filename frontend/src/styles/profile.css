@@ -71,9 +71,16 @@
     margin-bottom: 8px !important;
 }
 
+.registration-height-with-warning {
+    height: calc(100vh - 290px);
+}
+
+.registration-height-without-warning {
+    height: calc(100vh - 240px);
+}
+
 .eployee-professional-form {
     margin-top: 8px;
-    height: calc(100vh - 305px);
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px;

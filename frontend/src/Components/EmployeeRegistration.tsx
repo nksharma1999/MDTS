@@ -41,9 +41,9 @@ export const EmployeeRegistration = () => {
     password: user?.password || "",
   });
 
-  const roleOptions = ["Admin", "Supervisor", "Worker"];
+  const roleOptions = ["Editor", "Viewer"];
   const companyOptions = ["Mining Corp", "Deep Earth Industries", "Rock Minerals Ltd"];
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordVisible, _setPasswordVissible] = useState(false);
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -236,7 +236,7 @@ export const EmployeeRegistration = () => {
                   </Col>
                 </Row>
 
-                <Row gutter={[16, 16]} className="form-row" align="middle">
+                {/* <Row gutter={[16, 16]} className="form-row" align="middle">
                   <Col span={6} style={{ textAlign: 'left' }}>
                     <label>Upload Photo</label>
                   </Col>
@@ -253,7 +253,7 @@ export const EmployeeRegistration = () => {
                       <img src={formData.photo} alt="Uploaded" className="uploaded-photo" />
                     )}
                   </Col>
-                </Row>
+                </Row> */}
               </Form>
               <hr />
               <div className="button-group">

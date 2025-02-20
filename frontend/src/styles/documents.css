@@ -13,7 +13,7 @@
 
 .left-create-document-item {
     padding: 10px;
-    height: calc(100vh - 260px);
+    height: calc(100vh - 188px);
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -46,7 +46,7 @@
     margin-right: 0px;
     border: 1px solid gray;
     border-radius: 4px;
-    height: calc(100vh - 168px);
+    height: calc(100vh - 95px);
     overflow-y: auto;
     overflow-x: hidden;
     padding-bottom: 0px;

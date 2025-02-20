@@ -81,7 +81,7 @@ const SignInSignUp: React.FC = () => {
             profilePhoto: "",
             password: password,
             isTempPassword: true,
-            role: "User"
+            role: "Editor"
         };
 
         users.push(newUser);

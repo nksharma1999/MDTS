@@ -2,7 +2,7 @@
     width: 98.7%;
     margin: 8px;
     outline: 1px solid #ddd;
-    height: calc(100vh - 170px);
+    height: calc(100vh - 95px);
     border-radius: 4px;
     overflow-y: scroll;
     overflow-x: hidden;
@@ -19,6 +19,39 @@
     }
 }
 
+.status-update-items {
+    margin-top: 10px;
+}
+
 .custom-table-cell {
     color: #fff !important;
+}
+
+.ant-table-tbody>tr.module-header td {
+    background-color: #ddd !important;
+}
+
+.module-header td {
+    background-color: #b0b0b0 !important;
+    font-weight: bold;
+    color: black;
+}
+
+.ant-table-thead>tr>th {
+    background-color: #258790 !important;
+    color: white !important;
+    font-size: 14px;
+    text-align: center;
+    padding: 14px;
+    white-space: nowrap;
+}
+
+.activity-row td {
+    background-color: #ffffff !important;
+    text-align: center;
+}
+
+.ant-table-tbody>tr>td {
+    padding: 12px;
+    text-align: center;
 }
