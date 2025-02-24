@@ -309,4 +309,35 @@ export const getAllMineTypes = (): any[] => {
   }
 };
 
+export const getAllLibraries = (): any[] => {
+  try {
+    const userId = JSON.parse(localStorage.getItem("user") || "{}")?.id;
+    const savedLibraries = userId && localStorage.getItem(`libraries_${userId}`);
+    const parsedLibraries = JSON.parse(savedLibraries);
+    if (!parsedLibraries) return [];
+    return parsedLibraries;
+  } catch (error) {
+    console.error("Error retrieving mine types:", error);
+    return [];
+  }
+}
+
+export const getCurrentUser = (): any => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "{}");
+  } catch (error) {
+    console.error("Error retrieving current user:", error);
+    return null;
+  }
+};
+
+export const getCurrentUserId = (): string | null => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "{}")?.id || null;
+  } catch (error) {
+    console.error("Error retrieving current user ID:", error);
+    return null;
+  }
+};
+
 

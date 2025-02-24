@@ -56,7 +56,6 @@ const Module = () => {
 
     const handleSaveModuleAndActivity = () => {
         try {
-            console.log('Inside handleSaveModuleAndActivity', moduleData)
             addModule(moduleData);
             notification.success({
                 message: "Modules saved successfully!",
@@ -85,8 +84,6 @@ const Module = () => {
         const newNumber = isModuleSelected
             ? (lastNumber ? lastNumber + 10 : 10)
             : parseInt(selectedRow.code.split('/').pop()) + 10;
-        console.log("newNumber : ", newNumber);
-
         const newCode = isModuleSelected
             ? `${moduleData.parentModuleCode}/${newNumber}`
             : `${parentCode.split('/').slice(0, -1).join('/')}/${newNumber}`;
@@ -126,8 +123,6 @@ const Module = () => {
             ...prev,
             activities: updatedActivities
         }));
-
-        console.log("Updated Activities:", updatedActivities);
     };
 
     const deleteActivity = () => {
@@ -183,7 +178,6 @@ const Module = () => {
                 aboveIndex--;
             }
 
-            console.log("Above index : ", aboveIndex)
             if (aboveIndex < 0) return prev;
             let aboveActivity = activities[aboveIndex];
 
@@ -211,19 +205,15 @@ const Module = () => {
             updatedActivities[activityIndex] = updatedActivity;
 
             let previousLevel = `L${currentLevel}`;
-            console.log("previousLevel : ", previousLevel);
             let siblings = updatedActivities.filter((a) => a.level === previousLevel && a.code !== activity.code);
-            console.log("siblings : ", siblings);
 
             if (siblings) {
                 let lastSiblingCode = aboveActivity.code;
-                console.log('lastSiblingCode : ', lastSiblingCode)
                 let lastSiblingPrefix = removeLastSegment(lastSiblingCode);
                 let count = 10;
 
                 siblings.forEach((sibling) => {
                     let newSiblingCode = `${lastSiblingPrefix}/${count}`;
-                    console.log("newSiblingCode : ", newSiblingCode);
                     sibling.code = newSiblingCode;
                     sibling.prerequisite = lastSiblingCode;
                     count += 10;
