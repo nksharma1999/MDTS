@@ -94,7 +94,7 @@ const Module = () => {
             code: newCode,
             activityName: "New Activity " + timestamp,
             duration: 0,
-            prerequisite: isModuleSelected ? "-" : selectedRow.code,
+            prerequisite: isModuleSelected ? "" : selectedRow.code,
             level: newLevel
         };
 
@@ -601,6 +601,7 @@ const Module = () => {
                                                         filterOption={filterPrerequisites}
                                                         placeholder="Select Prerequisite"
                                                         style={{ width: '100%' }}
+                                                        allowClear
                                                     />
                                                 </TableCell>
 

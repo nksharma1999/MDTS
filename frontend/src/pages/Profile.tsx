@@ -3,7 +3,7 @@ import "../styles/profile.css";
 import { Form, Input, Button, Row, Col, Select, DatePicker, message, Modal } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import moment from "moment";
-import ManageUser from "../components/ManageUser";
+import ManageUser from "../Components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
 
 const { Option } = Select;
