@@ -123,6 +123,8 @@ const Module = () => {
             ...prev,
             activities: updatedActivities
         }));
+
+        handlePrerequisite();
     };
 
     const deleteActivity = () => {
@@ -160,6 +162,7 @@ const Module = () => {
         });
 
         setSelectedRow(null);
+        handlePrerequisite();
     };
 
     const increaseLevel = () => {
@@ -235,6 +238,7 @@ const Module = () => {
 
             return { ...prev, activities: updatedActivities };
         });
+        handlePrerequisite();
     };
 
     const removeLastSegment = (code: any) => {
@@ -318,6 +322,7 @@ const Module = () => {
 
             return { ...prev, activities: updatedActivities };
         });
+        handlePrerequisite();
     };
 
     const handleEdit = (field: any, value: any) => {
@@ -399,6 +404,33 @@ const Module = () => {
         return option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1;
     };
 
+    const handlePrerequisite = () => {
+        setModuleData((prev: any) => {
+            let parentCode: string = "";
+            let firstIndex = 0;
+            let updatedActivities = prev.activities.map((activity: any) => {
+                if(firstIndex === 0){
+                    firstIndex = 1;
+                    return { ...activity, prerequisite: "" };
+                }
+                else if (activity.level === "L2" || parentCode === "") {
+                    parentCode = activity.code;
+                } else if (activity.level !== "L1") {
+                    return { ...activity, prerequisite: parentCode };
+                }
+                return activity;
+            });
+    
+            return { ...prev, activities: updatedActivities };
+        });
+    };
+    
+    useEffect(() => {
+        if (moduleData.activities.length > 0) {
+            //handlePrerequisite();
+        }
+    }, [moduleData.activities]);    
+        
 
     return (
         <div>
