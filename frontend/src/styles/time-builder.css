@@ -6,12 +6,22 @@
 }
 
 .timeline-items {
-    /* height: calc(100vh - 325px); */
     height: calc(100vh - 250px);
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0px 10px !important;
 }
+
+.first-column-red {
+    background-color: #f0f8ff !important;
+    color: white !important;
+}
+
+.ant-table-cell.first-column-red {
+    background-color: #f0f8ff !important;
+    color: white !important;
+}
+
 
 .module-heading .ant-table-cell {
     background-color: #ddd !important;
@@ -142,4 +152,32 @@
 .custom-table-heading.ant-table-thead>tr>th {
     padding: 5px !important;
     border-radius: 0px !important;
+}
+
+.project-timeline-table {
+    width: 100%;
+
+    .ant-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+    }
+
+    .ant-table-thead>tr>th {
+        background: #666;
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .ant-table-tbody>tr>td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .module-heading {
+        font-weight: bold;
+        background: #eee;
+    }
 }

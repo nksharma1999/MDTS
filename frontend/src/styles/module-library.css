@@ -5,15 +5,15 @@
 }
 
 .module-list-page {
-    width: 30%;
+    width: 35%;
 }
 
 .create-library-section {
-    width: 40%;
+    width: 30%;
 }
 
 .library-details {
-    width: 30%;
+    width: 35%;
 }
 
 .module-list-page,
@@ -60,11 +60,11 @@
 }
 
 .heading-one {
-    flex: 3;
+    flex: 3.5;
     text-align: left;
 
     span {
-        background-color: #258790;
+        background-color: grey;
         padding: 3px 10px;
         color: #fff;
         margin-bottom: 3px;
@@ -74,12 +74,12 @@
 }
 
 .heading-two {
-    flex: 4;
+    flex: 3;
     text-align: left;
-    margin-left: 2px;
+    margin-left: 1.2px;
 
     span {
-        background-color: #258790;
+        background-color: grey;
         padding: 3px 10px;
         color: #fff;
         margin-bottom: 3px;
@@ -89,12 +89,12 @@
 }
 
 .heading-three {
-    flex: 3;
+    flex: 3.5;
     text-align: left;
     margin-left: 1px;
 
     span {
-        background-color: #258790;
+        background-color: grey;
         padding: 3px 10px;
         color: #fff;
         margin-bottom: 3px;

@@ -89,7 +89,14 @@ const Projects = () => {
     }, []);
 
     if (!projectDetails) {
-        return <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>No projects available. Please add a project to get started.</div>;
+        return <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+            No projects available. Please add a project to get started.
+            <div style={{ marginLeft: "30px" }}>
+                <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
+                    <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
+                </Button>
+            </div>
+        </div>;
     }
 
     const { projectParameters, locations, contractualDetails, initialStatus } = projectDetails;

@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, Box, IconButton } from "@mui/material";
 import { FilterList } from "@mui/icons-material";
 import { Select, Input, Button, Typography, message, Modal } from "antd";
-import { SearchOutlined, DeleteOutlined } from "@ant-design/icons";
+import { SearchOutlined, DeleteOutlined, RobotOutlined } from "@ant-design/icons";
 import "../styles/module-library.css";
+import { Link } from "react-router-dom";
 import { getCurrentUserId } from '../Utils/moduleStorage';
 const { Option } = Select;
 
@@ -39,13 +40,16 @@ const ModuleLibrary = () => {
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [newLibraryName, setNewLibraryName] = useState<string>("");
   const [newLibraryMineType, setNewLibraryMineType] = useState<string>("");
+  const [newLibraryMineTypeFilter, setNewLibraryMineTypeFilter] = useState<string>("");
   const [libraryType, setLibraryType] = useState("custom");
   const [filteredData, setFilteredData] = useState<Module[]>([]);
   const [modulesData, setModulesData] = useState<Module[]>([]);
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [selectedLibrary, setSelectedLibrary] = useState<Library | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const projects = ["Project A", "Project B", "Project C"];
+  const [projects, setProjects] = useState<string[]>([]);
+  const [allProjects, setAllProjects] = useState<string[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
   const [mineTypes, setMineTypes] = useState<any>([]);
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -56,6 +60,28 @@ const ModuleLibrary = () => {
       } catch (err) {
         console.error("Error parsing user", err);
       }
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = loggedInUser?.id;
+      const userProjectsKey = `projects_${userId}`;
+      const storedProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+
+      if (!Array.isArray(storedProjects) || storedProjects.length === 0) {
+        console.warn("No projects found for the user.");
+        setProjects([]);
+        setAllProjects([]);
+        return;
+      }
+
+      const projectNames = storedProjects.map((project: any) => project.projectParameters.projectName);
+      setProjects(projectNames);
+      setAllProjects(storedProjects);
+    } catch (error) {
+      console.error("Error fetching projects from local storage:", error);
     }
   }, []);
 
@@ -129,7 +155,6 @@ const ModuleLibrary = () => {
     }
   };
 
-
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
@@ -201,9 +226,9 @@ const ModuleLibrary = () => {
     updateLibraryInLocalStorage(updatedLibrary);
   };
 
+
   const handleDeleteModule = (modIndex: number) => {
     if (!selectedLibrary) return;
-
     Modal.confirm({
       title: "Are you sure you want to delete this module?",
       content: "This action cannot be undone.",
@@ -233,6 +258,13 @@ const ModuleLibrary = () => {
     }
   };
 
+  const handleProjectChange = (value: string) => {
+    setSelectedProject(value);
+    const selected: any = allProjects.find((project: any) => project.projectParameters.projectName === value);
+    setNewLibraryMineType(selected?.projectParameters.typeOfMine || null);
+    setNewLibraryName(value);
+  };
+
   return (
     <>
       <div className="page-heading-module-library">
@@ -247,7 +279,7 @@ const ModuleLibrary = () => {
           <span>Libraries</span>
         </div>
         <div className="heading-three">
-          <span>Create Libraries</span>
+          <span>Create Module Group</span>
         </div>
       </div>
 
@@ -274,6 +306,20 @@ const ModuleLibrary = () => {
                 <Option value="option2">Custom Module</Option>
               </Select>
 
+              <Select
+                size="small"
+                placeholder="Mine Type"
+                value={newLibraryMineTypeFilter || undefined}
+                style={{ width: "100%", height: "26px" }}
+                disabled={libraryType === "project"}
+              >
+                {mineTypes.map((type: any) => (
+                  <Option key={type} value={type}>
+                    {type}
+                  </Option>
+                ))}
+              </Select>
+
               <IconButton color="primary" style={{ padding: "0px" }}>
                 <FilterList />
               </IconButton>
@@ -282,14 +328,14 @@ const ModuleLibrary = () => {
             <TableContainer component={Paper} style={{ marginTop: "5px" }}>
               <Table>
                 <TableHead style={{ display: "block", background: "#258790", color: "white" }}>
-                  <TableRow>
-                    <TableCell style={{ width: "33%", color: "white", fontWeight: "bold" }}>Module Code</TableCell>
-                    <TableCell style={{ width: "35%", color: "white", fontWeight: "bold" }}>Module Name</TableCell>
-                    <TableCell style={{ width: "32%", color: "white", fontWeight: "bold" }}>Mine Type</TableCell>
+                  <TableRow style={{ display: "flex", width: "100%" }}>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 30%", padding: "5px 10px" }}>Module Code</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 40%", padding: "5px 10px" }}>Module Name</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 30%", textAlign: "center", padding: "5px 10px" }}>Mine Type</TableCell>
                   </TableRow>
                 </TableHead>
 
-                <TableBody style={{ display: "block", overflowY: "auto", maxHeight: "calc(100vh - 266px)" }}>
+                <TableBody style={{ display: "block", overflowY: "auto", maxHeight: "calc(100vh - 244px)" }}>
                   {modulesData.length > 0 ? (
                     modulesData.map((module, index) => (
                       <TableRow
@@ -298,20 +344,24 @@ const ModuleLibrary = () => {
                         onDragStart={(e) => handleDragStart(e, module)}
                         style={{ cursor: "grab", display: "flex", width: "100%" }}
                       >
-                        <TableCell style={{ width: "33%" }}>{module.parentModuleCode}</TableCell>
-                        <TableCell style={{ width: "45%" }}>{module.moduleName}</TableCell>
-                        <TableCell style={{ width: "22%" }}>{module.mineType}</TableCell>
+                        <TableCell style={{ flex: "0 0 30%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
+                        <TableCell style={{ flex: "0 0 40%", padding: "8px" }}>{module.moduleName}</TableCell>
+                        <TableCell style={{ flex: "0 0 30%", padding: "8px", textAlign: "center" }}>{module.mineType}</TableCell>
                       </TableRow>
                     ))
                   ) : (
-                    <TableRow style={{ display: "flex", width: "100%" }}>
-                      <TableCell colSpan={3} style={{ textAlign: "center", color: "#888", width: "100%" }}>
-                        Loading modules...
-                      </TableCell>
-                    </TableRow>
+                    <div style={{ padding: "10px", fontSize: "12px", color: "#dddd", display: "flex", justifyContent: "center" }}>
+                      No Module available. Please add a Module to get started.
+                      <div style={{ marginLeft: "30px" }}>
+                        <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
+                          <Link style={{ color: "inherit", textDecoration: "none" }} to={"/modules"}>New</Link>
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </TableBody>
               </Table>
+
             </TableContainer>
 
             {/* <TablePagination
@@ -391,23 +441,11 @@ const ModuleLibrary = () => {
                 setNewLibraryName("");
                 setNewLibraryMineType("");
               }}
+              disabled
               style={{ width: "100%", height: "26px", fontSize: "12px" }}
             >
-              <Option value="project">Project Based Library</Option>
+              {/* <Option value="project">Project Based Library</Option> */}
               <Option value="custom">Custom Library</Option>
-            </Select>
-            <Select
-              size="small"
-              placeholder="Select Mine Type"
-              value={newLibraryMineType || undefined}
-              onChange={(value) => setNewLibraryMineType(value)}
-              style={{ width: "100%", height: "26px" }}
-            >
-              {mineTypes.map((type: any) => (
-                <Option key={type} value={type}>
-                  {type}
-                </Option>
-              ))}
             </Select>
             <IconButton color="primary" style={{ padding: "0px" }}>
               <FilterList />
@@ -420,7 +458,7 @@ const ModuleLibrary = () => {
               {libraryType === "project" ? (
                 <Select
                   value={newLibraryName || undefined}
-                  onChange={(value) => setNewLibraryName(value)}
+                  onChange={handleProjectChange}
                   placeholder="Select Project"
                   style={{ width: "100%", height: "26px" }}
                 >
@@ -433,12 +471,27 @@ const ModuleLibrary = () => {
               ) : (
                 <Input
                   size="small"
-                  placeholder="Library Name"
+                  placeholder="Enter Library Name"
                   type="text"
                   value={newLibraryName}
                   onChange={(e) => setNewLibraryName(e.target.value)}
                 />
               )}
+
+              <Select
+                size="small"
+                placeholder="Mine Type"
+                value={newLibraryMineType || undefined}
+                onChange={(value) => setNewLibraryMineType(value)}
+                style={{ width: "100%", height: "26px" }}
+                disabled={libraryType === "project"}
+              >
+                {mineTypes.map((type: any) => (
+                  <Option key={type} value={type}>
+                    {type}
+                  </Option>
+                ))}
+              </Select>
 
               <Button style={{ height: "26px" }} type="primary" className="bg-secondary" onClick={handleCreateLibrary}>
                 Create

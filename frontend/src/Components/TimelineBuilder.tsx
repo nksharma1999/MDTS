@@ -43,7 +43,7 @@ interface Column {
   dataIndex: string;
   key: string;
   align?: "center" | "left" | "right";
-  render?: (value: any) => string;
+  render?: any;
 }
 
 const TimeBuilder = () => {
@@ -59,8 +59,8 @@ const TimeBuilder = () => {
   const [expandedKeys, setExpandedKeys] = useState<any>([]);
   const [dataSource, setDataSource] = useState<any>([]);
   const [finalData, setFinalData] = useState<Module[]>([]);
-  const [_selectedProjectId, setSelectedProjectId] = useState(null);
-  const [libraryNames, setLibraryNames] = useState<any>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [libraryName, setLibraryName] = useState<any>();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedProjectMineType, setSelectedProjectMineType] = useState("");
 
@@ -136,9 +136,9 @@ const TimeBuilder = () => {
               keyActivity: activity.activityName,
               duration: activity.duration ?? "",
               preRequisite: activity.prerequisite ?? "-",
-              slack: activity.slack ?? "",
-              plannedStart: activity.start ? new Date(activity.start).toISOString().split("T")[0] : "-",
-              plannedFinish: activity.end ? new Date(activity.end).toISOString().split("T")[0] : "-",
+              slack: activity.slack ?? "0",
+              plannedStart: activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+              plannedFinish: activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
               actualStart: "",
               actualFinish: "",
               actualDuration: "",
@@ -151,6 +151,8 @@ const TimeBuilder = () => {
           }),
         };
       });
+      console.log(finDataSource);
+
       setDataSource(finDataSource);
     }
   }, [currentStep, finalData]);
@@ -168,6 +170,8 @@ const TimeBuilder = () => {
   const handleNext = () => {
     if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
+      console.log(sequencedModules);
+
     } else {
       setIsModalVisible(true);
       // window.location.href = "/create/status-update";
@@ -211,213 +215,124 @@ const TimeBuilder = () => {
   };
 
   const handleStartDateChange = (code: string, date: dayjs.Dayjs) => {
-    const updatedActivities: any = activitiesData.map((activity) => {
-      if (activity.code === code) {
-        const duration = activity.duration || 0;
-        const endDate = date.add(duration + 1);
-        return { ...activity, start: date, end: endDate };
-      }
-      return activity;
-    });
-    setActivitiesData(updatedActivities);
+    console.log(`Selected Start Date for ${code}:`, date.format("YYYY-MM-DD"));
 
-    const updatedModules: any = finalData.map((module) => ({
-      ...module,
-      activities: module.activities.map((activity) => {
+    let updatedFinalData = [...finalData];
+    let updatedSequencedModules = [...sequencedModules];
+
+    function updateActivities(activities: any[]) {
+      return activities.map((activity) => {
         if (activity.code === code) {
-          const duration = activity.duration || 0;
-          const endDate = date.add(duration + 1, "day");
-          return { ...activity, start: date, end: endDate };
+          const duration = parseInt(activity.duration, 10) || 0;
+          const endDate = date.add(duration, "day");
+
+          activity.start = date;
+          activity.end = endDate;
+
+          updateDependentActivities(activity.code, endDate);
         }
         return activity;
-      }),
-    }));
-    setFinalData(updatedModules);
+      });
+    }
 
-    const updatedSequencedModules: any = sequencedModules.map((module) => ({
+    updatedFinalData = updatedFinalData.map((module) => ({
       ...module,
-      activities: module.activities.map((activity) => {
-        if (activity.code === code) {
-          const duration = activity.duration || 0;
-          const endDate = date.add(duration + 1, "day");
-          return { ...activity, start: date, end: endDate };
+      activities: updateActivities(module.activities),
+    }));
+
+    updatedSequencedModules = updatedSequencedModules.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+
+    setFinalData(updatedFinalData);
+    setSequencedModules(updatedSequencedModules);
+  };
+
+  const updateDependentActivities = (prerequisiteCode: string, prerequisiteEndDate: dayjs.Dayjs) => {
+    let updatedFinalData = [...finalData];
+    let updatedSequencedModules = [...sequencedModules];
+
+    function updateActivities(activities: any[]) {
+      return activities.map((activity) => {
+        if (activity.prerequisite === prerequisiteCode) {
+          const slack = parseInt(activity.slack, 10) || 0;
+          const startDate = prerequisiteEndDate.add(slack + 1, "day");
+          const duration = parseInt(activity.duration, 10) || 0;
+          const endDate = startDate.add(duration, "day");
+
+          console.log(`Updating Dependent ${activity.code}: Start = ${startDate.format("YYYY-MM-DD")}, End = ${endDate.format("YYYY-MM-DD")}`);
+
+          activity.start = startDate;
+          activity.end = endDate;
+
+          updateDependentActivities(activity.code, endDate);
         }
         return activity;
-      }),
+      });
+    }
+
+    updatedFinalData = updatedFinalData.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
     }));
+
+    updatedSequencedModules = updatedSequencedModules.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+
+    setFinalData(updatedFinalData);
     setSequencedModules(updatedSequencedModules);
   };
 
   const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
-    if (isChecked) {
-      setSelectedActivities([...selectedActivities, activityCode]);
-    } else {
-      setSelectedActivities(selectedActivities.filter((code) => code !== activityCode));
-    }
-    const updatedModules = finalData.map((module) => ({
-      ...module,
-      activities: module.activities.filter((activity) => selectedActivities.includes(activity.code))
-    }));
-    setFinalData(updatedModules);
-  };
+    setSelectedActivities((prevSelectedActivities) => {
+      const updatedActivities = isChecked
+        ? [...prevSelectedActivities, activityCode]
+        : prevSelectedActivities.filter((code) => code !== activityCode);
 
-  const getColumnsForStep = (step: number) => {
-    const baseColumns: any = [
-      { dataIndex: "activityName", key: "activityName", width: "50%", align: "left" },
-    ];
+      setSequencedModules((prevFinalData) =>
+        prevFinalData.map((module) => ({
+          ...module,
+          activities: module.activities.filter((activity) => updatedActivities.includes(activity.code)),
+        }))
+      );
 
-    if (step >= 1) {
-      baseColumns.push({
-        key: "finalize",
-        align: "center",
-        render: (_: any, record: any) => (
-          <Checkbox
-            checked={selectedActivities.includes(record.code)}
-            onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-            disabled={step !== 1}
-          />
-        ),
-      });
-    }
-
-    // if (step >= 2) {
-    //   baseColumns.push({
-    //     key: "prerequisite",
-    //     render: (_: any, record: any) => (
-    //       <Input
-    //         placeholder="Prerequisite"
-    //         value={record.prerequisite}
-    //         onChange={(e) => {
-    //           console.log(activitiesData);
-
-    //           const updatedActivities = activitiesData.map((activity) =>
-    //             activity.code === record.code ? { ...activity, prerequisite: e.target.value } : activity
-    //           );
-    //           setActivitiesData(updatedActivities);
-    //         }}
-    //         disabled={step !== 2}
-    //       />
-    //     ),
-    //   });
-    // }
-
-    if (step >= 2) {
-      baseColumns.push({
-        key: "prerequisite",
-        render: (_: any, record: any) => (
-          <Select
-            showSearch
-            placeholder="Select Prerequisite"
-            value={record.prerequisite === "-" ? undefined : record.prerequisite}
-            onChange={(value) => {
-              setSequencedModules((prevModules) =>
-                prevModules.map((module) => ({
-                  ...module,
-                  activities: module.activities.map((activity) =>
-                    activity.code === record.code
-                      ? { ...activity, prerequisite: value }
-                      : activity
-                  ),
-                }))
-              );
-            }}
-            disabled={step !== 2}
-            filterOption={(input: any, option: any) =>
-              option?.label?.toLowerCase().includes(input.toLowerCase())
-            }
-            options={[
-              { value: "", label: "None" },
-              ...sequencedModules.flatMap((module) =>
-                module.activities.map((activity) => ({
-                  value: activity.code,
-                  label: activity.code,
-                }))
-              ),
-            ]}
-            style={{ width: "100%" }}
-            allowClear
-          />
-        ),
-      });
-    }
-
-    if (step >= 3) {
-      baseColumns.push({
-        key: "slack",
-        render: (_: any, record: any) => (
-          <Input
-            placeholder="Slack"
-            value={record.slack}
-            type="number"
-            defaultValue={0}
-            onChange={(e) => handleSlackChange(record.code, e.target.value)}
-            onKeyDown={(e) => {
-              if (!/^\d$/.test(e.key) && e.key !== "Backspace" && e.key !== "Delete" && e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
-                e.preventDefault();
-              }
-            }}
-            disabled={step !== 3}
-          />
-        ),
-      });
-    }
-
-    if (step >= 4) {
-      baseColumns.push({
-        key: "start",
-        render: (_: any, record: any) => (
-          <DatePicker
-            placeholder="Start Date"
-            value={record.start}
-            onChange={(date) => handleStartDateChange(record.code, date)}
-            disabled={step !== 4}
-          />
-        ),
-      });
-    }
-
-    return baseColumns;
+      return updatedActivities;
+    });
   };
 
   const handleProjectChange = (projectId: any) => {
+    setCurrentStep(0);
     setSelectedProjectId(projectId);
     const project = allProjects.find((p) => p.id === projectId);
     if (project) {
-      const libraries = Object.keys(project.initialStatus).filter(
-        (lib) => project.initialStatus[lib] === "Yes"
-      );
-      setLibraryNames(libraries);
+      const selectedProjectLibrary = project.initialStatus.library;
+      setLibraryName(selectedProjectLibrary);
       setSelectedProjectMineType(project.projectParameters.typeOfMine)
+      handleLibraryChange((project.initialStatus.items.filter((item: any) => item.status.toLowerCase() != "completed")));
     } else {
-      setLibraryNames([]);
+      setLibraryName([]);
     }
   };
 
-  const handleLibraryChange = (selectedLibrary: string) => {
-    const userId = JSON.parse(localStorage.getItem("user") || "{}")?.id;
-    const storedLibraryData = userId && localStorage.getItem(`libraries_${userId}`);
+  const handleLibraryChange = (libraryItems: any) => {
+    if (libraryItems) {
+      setSequencedModules(libraryItems);
+      setModules(libraryItems);
+      const allActivityCodes = libraryItems.flatMap((module: any) =>
+        module.activities.map((activity: any) => activity.code)
+      );
 
-    if (storedLibraryData) {
-      const parsedLibraryData = JSON.parse(storedLibraryData);
+      setActivitiesData(libraryItems.flatMap((module: any) => module.activities));
+      setSelectedActivities(allActivityCodes);
 
-      const library = parsedLibraryData.find((lib: any) => lib.name === selectedLibrary);
-
-      if (library) {
-        setSequencedModules(library.items);
-        setModules(library.items);
-        const allActivityCodes = library.items.flatMap((module: any) =>
-          module.activities.map((activity: any) => activity.code)
-        );
-
-        setActivitiesData(library.items.flatMap((module: any) => module.activities));
-        setSelectedActivities(allActivityCodes);
-
-      } else {
-        setSequencedModules([]);
-        setModules([]);
-        setActivitiesData([]);
-        setSelectedActivities([]);
-      }
+    } else {
+      setSequencedModules([]);
+      setModules([]);
+      setActivitiesData([]);
+      setSelectedActivities([]);
     }
   };
 
@@ -493,8 +408,8 @@ const TimeBuilder = () => {
           activity.duration || 0,
           activity.prerequisite,
           activity.slack || 0,
-          activity.start ? new Date(activity.start).toISOString().split("T")[0] : "-",
-          activity.end ? new Date(activity.end).toISOString().split("T")[0] : "-",
+          activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+          activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
         ]);
 
         row.eachCell((cell: any) => {
@@ -582,28 +497,191 @@ const TimeBuilder = () => {
     { title: "Activity Status", dataIndex: "activityStatus", key: "activityStatus", width: 150, align: "center" },
   ];
 
-  const getOuterTableColumns = (step: number): Column[] => {
-    let columns: Column[] = [
-      { title: "Key Activity", width: "48%", dataIndex: "moduleName", key: "moduleName" },
+  const getColumnsForStep = (step: number) => {
+    const baseColumns: any = [
+      {
+        title: "Code",
+        dataIndex: "code",
+        key: "code",
+        align: "left",
+        render: (_: any, record: any) => record.parentModuleCode || record.code, // Show parentModuleCode for modules, code for activities
+      },
+      {
+        title: "Activity Name",
+        dataIndex: "activityName",
+        key: "activityName",
+        align: "left",
+      },
+      {
+        title: "Duration",
+        dataIndex: "duration",
+        key: "duration",
+        align: "center",
+        render: (duration: any) => (duration ? duration : "0"),
+      },
     ];
 
-    if (step >= 1) {
-      columns.push({ title: "Finalize", align: "center", dataIndex: "finalize", key: "finalize" });
+    if (step === 1) {
+      baseColumns.push({
+        key: "finalize",
+        align: "center",
+        className: step === 1 ? "active-column" : "",
+        onCell: () => ({ className: step === 1 ? "first-column-red" : "" }),
+        render: (_: any, record: any) => (
+          <Checkbox
+            checked={selectedActivities.includes(record.code)}
+            onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
+            disabled={step !== 1}
+          />
+        ),
+      });
     }
+
+    if (step >= 2) {
+      baseColumns.push({
+        key: "prerequisite",
+        className: step === 2 ? "active-column first-column-red" : "",
+        onCell: () => ({ className: step === 2 ? "first-column-red" : "" }),
+        render: (_: any, record: any) => (
+          <Select
+            showSearch
+            placeholder="Select Prerequisite"
+            value={record.prerequisite === "-" ? undefined : record.prerequisite}
+            onChange={(value) => {
+              setSequencedModules((prevModules) =>
+                prevModules.map((module) => ({
+                  ...module,
+                  activities: module.activities.map((activity) =>
+                    activity.code === record.code
+                      ? { ...activity, prerequisite: value }
+                      : activity
+                  ),
+                }))
+              );
+            }}
+            disabled={step !== 2}
+            filterOption={(input: any, option: any) =>
+              option?.label?.toLowerCase().includes(input.toLowerCase())
+            }
+            options={[
+              { value: "", label: "-" },
+              ...sequencedModules.flatMap((module) =>
+                module.activities.map((activity) => ({
+                  value: activity.code,
+                  label: activity.code,
+                }))
+              ),
+            ]}
+            style={{ width: "100%" }}
+            allowClear
+          />
+        ),
+      });
+    }
+
+    if (step >= 3) {
+      baseColumns.push({
+        key: "slack",
+        className: step === 3 ? "active-column first-column-red" : "",
+        onCell: () => ({ className: step === 3 ? "first-column-red" : "" }),
+        render: (_: any, record: any) => (
+          <Input
+            placeholder="Slack"
+            value={record.slack}
+            type="number"
+            defaultValue={0}
+            onChange={(e) => handleSlackChange(record.code, e.target.value)}
+            onKeyDown={(e) => {
+              if (
+                !/^\d$/.test(e.key) &&
+                e.key !== "Backspace" &&
+                e.key !== "Delete" &&
+                e.key !== "ArrowLeft" &&
+                e.key !== "ArrowRight"
+              ) {
+                e.preventDefault();
+              }
+            }}
+            disabled={step !== 3}
+          />
+        ),
+      });
+    }
+
+    if (step >= 4) {
+      baseColumns.push({
+        key: "start",
+        className: step === 4 ? "active-column first-column-red" : "",
+        onCell: () => ({ className: step === 4 ? "first-column-red" : "" }),
+        render: (_: any, record: any) => (
+          <DatePicker
+            placeholder="Start Date"
+            value={record.prerequisite == "" ? record.start : ''}
+            onChange={(date) => handleStartDateChange(record.code, date)}
+            disabled={step !== 4 || record.prerequisite !== ""}
+          />
+        ),
+      });
+    }
+
+    return baseColumns;
+  };
+
+  const getOuterTableColumns = (step: number): Column[] => {
+    let columns: Column[] = [
+      {
+        title: "Code",
+        dataIndex: "code",
+        key: "code",
+        render: (_: any, record: any) => record.parentModuleCode || record.code,
+      },
+      {
+        title: "Key Activity",
+        dataIndex: "moduleName",
+        key: "moduleName",
+      },
+      {
+        title: "Duration",
+        dataIndex: "duration",
+        key: "duration",
+        align: "center",
+        render: (duration: any) => (duration ? duration : ""),
+      },
+    ];
+
+    if (step === 1) {
+      columns.push({
+        title: "Finalize",
+        align: "center",
+        dataIndex: "finalize",
+        key: "finalize",
+      });
+    }
+
     if (step >= 2) {
       columns.push({
         title: "Prerequisite",
         dataIndex: "prerequisite",
         key: "prerequisite",
         align: "center",
-        render: (prerequisite) => (prerequisite?.code ? prerequisite.code : "-"),
+        render: (prerequisite: any) => (prerequisite?.code ? prerequisite.code : ""),
       });
     }
+
     if (step >= 3) {
-      columns.push({ title: "Slack", dataIndex: "slack", key: "slack" });
+      columns.push({
+        title: "Slack",
+        dataIndex: "slack",
+        key: "slack",
+      });
     }
+
     if (step >= 4) {
-      columns.push({ title: "Start Date", dataIndex: "startDate", key: "startDate" });
+      columns.push({
+        title: "Start Date",
+        dataIndex: "startDate",
+        key: "startDate",
+      });
     }
 
     return columns;
@@ -620,8 +698,8 @@ const TimeBuilder = () => {
             <div className="filters">
               <Select
                 placeholder="Select Project"
-                style={{ width: 200 }}
                 onChange={handleProjectChange}
+                style={{ width: "100%" }}
               >
                 {allProjects.map((project) => (
                   <Option key={project.id} value={project.id}>
@@ -630,18 +708,8 @@ const TimeBuilder = () => {
                 ))}
               </Select>
 
-              <Select
-                placeholder="Select Library"
-                style={{ width: 200 }}
-                onChange={handleLibraryChange}
-              >
-                {libraryNames.map((library: any) => (
-                  <Option key={library} value={library}>
-                    {library}
-                  </Option>
-                ))}
-              </Select>
-              <Input value={selectedProjectMineType} placeholder="Project Mine Type" disabled style={{ width: 200 }} />
+              <Input value={selectedProjectMineType} placeholder="Project Mine Type" disabled style={{ width: "100%" }} />
+              <Input value={libraryName} placeholder="Library" disabled style={{ width: "100%" }} />
             </div>
           </div>
           <hr style={{ margin: 0 }} />
@@ -755,7 +823,6 @@ const TimeBuilder = () => {
                   style={{ overflowX: "hidden" }}
                   rowKey="parentModuleCode"
                 />
-
               )}
             </div>
             <hr />
@@ -765,7 +832,7 @@ const TimeBuilder = () => {
                   Previous
                 </Button>
               )}
-              <Button className="bg-secondary" onClick={handleNext} type="primary" size="small">
+              <Button disabled={selectedProjectId == null} className="bg-secondary" onClick={handleNext} type="primary" size="small">
                 {currentStep === 7 ? "Download" : currentStep === 6 ? "Mark as Reviewed" : "Next"}
               </Button>
             </div>

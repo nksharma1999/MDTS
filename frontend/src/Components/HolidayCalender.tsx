@@ -193,7 +193,7 @@ export const HolidayCalender = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Paper className="main-container-div" elevation={0}>
+      <Paper style={{ display: "flex" }} className="main-container-div" elevation={0}>
         <Box className="left-part">
           <Box className="card-header-items">
             <div className="holiday-page-heading">
@@ -403,6 +403,7 @@ export const HolidayCalender = () => {
             })}
           </Box>
         )}
+
         <Modal
           title="Confirm Deletion"
           visible={isDeleteModalVisible}
