@@ -409,7 +409,7 @@ const Module = () => {
             let parentCode: string = "";
             let firstIndex = 0;
             let updatedActivities = prev.activities.map((activity: any) => {
-                if(firstIndex === 0){
+                if (firstIndex === 0) {
                     firstIndex = 1;
                     return { ...activity, prerequisite: "" };
                 }
@@ -420,17 +420,17 @@ const Module = () => {
                 }
                 return activity;
             });
-    
+
             return { ...prev, activities: updatedActivities };
         });
     };
-    
+
     useEffect(() => {
         if (moduleData.activities.length > 0) {
             //handlePrerequisite();
         }
-    }, [moduleData.activities]);    
-        
+    }, [moduleData.activities]);
+
 
     return (
         <div>
@@ -675,9 +675,9 @@ const Module = () => {
                         <div style={{ display: 'flex', gap: "10px" }}>
                             <Select
                                 style={{ width: "100%", marginBottom: "10px" }}
-                                value={selectedOption || ""}
+                                value={selectedOption || undefined}
                                 onChange={setSelectedOption}
-                                placeholder="Select mine type..."
+                                placeholder="Select mine type"
                             >
                                 {options.map((option, index) => (
                                     <Option key={index} value={option}>{option}</Option>
