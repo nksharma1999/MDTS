@@ -279,7 +279,7 @@ const ManageUser: React.FC = () => {
 
       <TableContainer component={Paper} className="table-container">
         <Table>
-          <TableHead>
+          <TableHead style={{ backgroundColor: "#258790" }}>
             <TableRow className="table-header">
               <TableCell className="header-cell">S.No</TableCell>
               <TableCell className="header-cell">Name</TableCell>

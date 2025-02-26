@@ -193,11 +193,6 @@ const Profile = () => {
                 return (
                     <div style={{ marginTop: "10px" }} className="card">
                         <div className="card-body">
-                            {/* <div className="profile-cover bg-secondary">
-                                <div className="profile-item">
-                                    <span>{getInitials(formData.name)}</span>
-                                </div>
-                            </div> */}
                             <div className="profile-cover bg-secondary">
                                 <div className="profile-item">
                                     <div className="profile-image-container">
@@ -247,18 +242,6 @@ const Profile = () => {
                                             placeholder="Enter Company"
                                         />
                                     </Col>
-                                    {/* <Col span={18}>
-                                        <Select
-                                            value={formData.company}
-                                            onChange={(value) => handleSelectChange(value, "company")}
-                                            placeholder="Select Company"
-                                            style={{ width: "100%" }}
-                                        >
-                                            <Option value="Mining Corp">Mining Corp</Option>
-                                            <Option value="Deep Earth Industries">Deep Earth Industries</Option>
-                                            <Option value="Rock Minerals Ltd">Rock Minerals Ltd</Option>
-                                        </Select>
-                                    </Col> */}
                                 </Row>
 
                                 <Row gutter={[16, 16]} className="form-row" align="middle">
@@ -349,30 +332,6 @@ const Profile = () => {
                                         />
                                     </Col>
                                 </Row>
-
-                                {/* <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: "left" }}>
-                                        <label>Upload Photo</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Upload
-                                            showUploadList={false}
-                                            beforeUpload={() => false}
-                                            customRequest={handlePhotoUpload}
-                                            accept="image/*"
-                                        >
-                                            <Button icon={<UploadOutlined />}>Click to Upload</Button>
-                                        </Upload>
-                                        {formData.profilePhoto && (
-                                            <img
-                                                src={formData.profilePhoto}
-                                                alt="Uploaded"
-                                                className="uploaded-photo"
-                                                style={{ marginTop: 10, width: 100, height: 100, objectFit: 'cover', borderRadius: '50%' }}
-                                            />
-                                        )}
-                                    </Col>
-                                </Row> */}
                             </Form>
                             <hr />
                             <div className="button-group">
@@ -404,7 +363,8 @@ const Profile = () => {
                     <div className="basic-info">
                         <div>
                             <img
-                                src="../public/images/logos/user-profile.png"
+                                src={image || "../public/images/logos/user-profile.png"}
+                                // src="../public/images/logos/user-profile.png"
                                 alt="Logo"
                                 className="profile-image"
                             />
@@ -449,65 +409,6 @@ const Profile = () => {
                     footer={null}
                     className="modal-container"
                 >
-                    {/* <Form
-                        requiredMark={false}
-                        form={form}
-                        layout="horizontal"
-                        onFinish={handleSubmit}
-                        style={{ padding: "10px 10px 0px 10px" }}
-                        colon={false}
-                    >
-                        <Form.Item
-                            label="Old Password"
-                            name="oldPassword"
-                            labelCol={{ span: 8, style: { textAlign: "left" } }} // Left-align label
-                            wrapperCol={{ span: 16 }}
-                            rules={[{ required: true, message: "Please enter your old password!" }]}
-                        >
-                            <Input.Password placeholder="Enter old password" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="New Password"
-                            name="newPassword"
-                            labelCol={{ span: 8, style: { textAlign: "left" } }} // Left-align label
-                            wrapperCol={{ span: 16 }}
-                            rules={[
-                                { required: true, message: "Please enter a new password!" },
-                                { min: 6, message: "Password must be at least 6 characters!" }
-                            ]}
-                        >
-                            <Input.Password placeholder="Enter new password" />
-                        </Form.Item>
-
-                        <Form.Item
-                            label="Confirm New Password"
-                            name="confirmNewPassword"
-                            labelCol={{ span: 8, style: { textAlign: "left" } }}
-                            wrapperCol={{ span: 16 }}
-                            dependencies={["newPassword"]}
-                            rules={[
-                                { required: true, message: "Please confirm your new password!" },
-                                ({ getFieldValue }) => ({
-                                    validator(_, value) {
-                                        if (!value || getFieldValue("newPassword") === value) {
-                                            return Promise.resolve();
-                                        }
-                                        return Promise.reject(new Error("Passwords do not match!"));
-                                    },
-                                }),
-                            ]}
-                        >
-                            <Input.Password placeholder="Confirm new password" />
-                        </Form.Item>
-
-                        <Form.Item style={{ display: "flex", justifyContent: "end" }}>
-                            <Button type="primary" className="bg-secondary" htmlType="submit">
-                                Save
-                            </Button>
-                        </Form.Item>
-                    </Form> */}
-
                     <Form
                         requiredMark={false}
                         form={form}
