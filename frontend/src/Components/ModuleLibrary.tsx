@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, Box, IconButton } from "@mui/material";
 import { FilterList } from "@mui/icons-material";
 import { Select, Input, Button, Typography, message, Modal } from "antd";
@@ -35,6 +36,7 @@ interface Library {
 
 const ModuleLibrary = () => {
   const [_searchTerm, setSearchTerm] = useState<string>("");
+  const navigate = useNavigate();
   const [page, setPage] = useState<number>(0);
   const rowsPerPage = 10;
   const [selectedOption, setSelectedOption] = useState<string>("");
@@ -153,6 +155,10 @@ const ModuleLibrary = () => {
     } catch (error) {
       console.error("Error updating library in localStorage:", error);
     }
+  };
+
+  const handleModuleClick = (module: Module) => {
+    navigate('/modules', { state: module });
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -342,7 +348,13 @@ const ModuleLibrary = () => {
                         key={index}
                         draggable
                         onDragStart={(e) => handleDragStart(e, module)}
+                        onClick={() => handleModuleClick(module)}
                         style={{ cursor: "grab", display: "flex", width: "100%" }}
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: "#e3f2fd",
+                          },
+                        }}
                       >
                         <TableCell style={{ flex: "0 0 30%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
                         <TableCell style={{ flex: "0 0 40%", padding: "8px" }}>{module.moduleName}</TableCell>

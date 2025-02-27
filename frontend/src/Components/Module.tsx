@@ -40,8 +40,22 @@ const Module = () => {
         level: "",
         mineType: mineType,
         duration: '',
-        activities: []
+        activities: state?.activities || []
     });
+    const isEditing = !!state;
+
+    useEffect(() => {
+        if (state) {
+            setModuleData({
+                parentModuleCode: state.parentModuleCode,
+                moduleName: state.moduleName,
+                level: state.level,
+                mineType: state.mineType,
+                duration: state.duration,
+                activities: state.activities
+            });
+        }
+    }, [state]);
 
     useEffect(() => {
         try {
@@ -56,42 +70,56 @@ const Module = () => {
 
     const handleSaveModuleAndActivity = () => {
         try {
+          if (isEditing) {
+            const storedModulesString = localStorage.getItem("modules");
+            const storedModules = storedModulesString ? JSON.parse(storedModulesString) : [];
+            const updatedModules = storedModules.map((module: any) =>
+              module.parentModuleCode === moduleData.parentModuleCode ? moduleData : module
+            );
+            localStorage.setItem("modules", JSON.stringify(updatedModules));
+            notification.success({
+              message: "Module updated successfully!",
+              duration: 3,
+            });
+          } else {
             addModule(moduleData);
             notification.success({
-                message: "Modules saved successfully!",
-                duration: 3,
+              message: "Module saved successfully!",
+              duration: 3,
             });
+          }
         } catch (error) {
-            console.error("Error while saving modules:", error);
-            notification.success({
-                message: "Failed to save modules.",
-                description: "Check the console for details.",
-                duration: 3,
-            });
+          console.error("Error while saving/updating module:", error);
+          notification.error({
+            message: "Failed to save/update module.",
+            description: "Check the console for details.",
+            duration: 3,
+          });
         }
+      
         navigate('/create/module-library');
-    };
+      };
 
     const addActivity = () => {
         if (!selectedRow) return;
-    
+
         const isModuleSelected = selectedRow.level === "L1";
         const parentCode = isModuleSelected ? moduleData.parentModuleCode : selectedRow.code;
         const newLevel = isModuleSelected ? "L2" : selectedRow.level;
         const sameLevelActivities = moduleData.activities.filter((a: any) => a.level === newLevel);
         const lastActivity = sameLevelActivities.length > 0 ? sameLevelActivities[sameLevelActivities.length - 1] : null;
         const lastNumber = lastActivity ? parseInt(lastActivity.code.split('/').pop()) : 0;
-    
+
         const newNumber = isModuleSelected
             ? (lastNumber ? lastNumber + 10 : 10)
             : parseInt(selectedRow.code.split('/').pop()) + 10;
-    
+
         const newCode = isModuleSelected
             ? `${moduleData.parentModuleCode}/${newNumber}`
             : `${parentCode.split('/').slice(0, -1).join('/')}/${newNumber}`;
-    
+
         const timestamp = new Date().toLocaleTimeString('en-GB');
-    
+
         const newActivity = {
             code: newCode,
             activityName: "New Activity " + timestamp,
@@ -99,10 +127,10 @@ const Module = () => {
             prerequisite: isModuleSelected ? "" : selectedRow.code,
             level: newLevel
         };
-    
+
         const updatedActivities: any = [];
         let inserted = false;
-    
+
         moduleData.activities.forEach((activity: any) => {
             if (activity.code === selectedRow.code) {
                 updatedActivities.push(activity);
@@ -116,22 +144,22 @@ const Module = () => {
                 updatedActivities.push(activity);
             }
         });
-    
+
         if (isModuleSelected && !inserted) {
             updatedActivities.push(newActivity);
         }
-    
-       
+
+
         setModuleData((prev: any) => {
             const newData = { ...prev, activities: updatedActivities };
             return newData;
         });
-    
+
         setTimeout(() => {
             handlePrerequisite();
         }, 0);
     };
-    
+
 
     const deleteActivity = () => {
         if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
@@ -414,7 +442,7 @@ const Module = () => {
         setModuleData((prev: any) => {
             let parentCode: string = "";
             let firstIndex = 0;
-    
+
             const updatedActivities = prev.activities.map((activity: any, index: number) => {
                 if (firstIndex === 0) {
                     firstIndex = 1;
@@ -428,11 +456,11 @@ const Module = () => {
                 }
                 return activity;
             });
-    
+
             return { ...prev, activities: updatedActivities };
         });
     };
-    
+
 
     useEffect(() => {
         if (moduleData.activities.length > 0) {
@@ -655,8 +683,12 @@ const Module = () => {
                         </Paper>
                     </div>
                     <div className="save-button-container">
-                        <Button type="primary" className="save-button" onClick={handleSaveModuleAndActivity}>
-                            Save <ArrowRightOutlined className="save-button-icon" />
+                        <Button
+                            type="primary"
+                            className="save-button"
+                            onClick={handleSaveModuleAndActivity}
+                        >
+                            {isEditing ? "Update" : "Save"} <ArrowRightOutlined className="save-button-icon" />
                         </Button>
                     </div>
                 </div>
