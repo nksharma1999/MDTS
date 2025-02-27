@@ -77,24 +77,55 @@ export const HolidayCalender = () => {
     setBaseMonth(activeStartDate);
   };
 
-  const handleInputChange = (index: any, field: any, value: any) => {
+  // const handleInputChange = (index: any, field: any, value: any) => {
+  //   const updatedRows: any = [...rows];
+  //   updatedRows[index][field] = value;
+
+  //   if (field === "module") {
+  //     const moduleCount = value.length;
+  //     const impact: any = {};
+  //     if (moduleCount > 0) {
+  //       const dividedImpact = (100 / moduleCount).toFixed(2);
+  //       value.forEach((module: any) => {
+  //         impact[module] = dividedImpact;
+  //       });
+  //     }
+  //     updatedRows[index].impact = impact;
+  //   }
+
+  //   setRows(updatedRows);
+  // };
+
+  const handleInputChange = (index: number, field: string, value: string[]) => {
     const updatedRows: any = [...rows];
-    updatedRows[index][field] = value;
 
     if (field === "module") {
-      const moduleCount = value.length;
-      const impact: any = {};
-      if (moduleCount > 0) {
-        const dividedImpact = (100 / moduleCount).toFixed(2);
-        value.forEach((module: any) => {
+      let selectedModules = value;
+
+      if (value.includes("all")) {
+        selectedModules = moduleOptions;
+      }
+
+      updatedRows[index][field] = selectedModules;
+
+      const impact: Record<string, string> = {};
+      if (selectedModules.includes("all")) {
+        impact["all"] = "100";
+      } else if (selectedModules.length > 0) {
+        const dividedImpact: any = 100;
+        selectedModules.forEach((module) => {
           impact[module] = dividedImpact;
         });
       }
+
       updatedRows[index].impact = impact;
+    } else {
+      updatedRows[index][field] = value;
     }
 
     setRows(updatedRows);
   };
+
 
   const handleImpactChange = (index: any, module: any, value: any) => {
     const updatedRows: any = [...rows];
@@ -155,8 +186,13 @@ export const HolidayCalender = () => {
   };
 
   const deleteRow = (index: number) => {
-    setRows((prevRows) => prevRows.filter((_, i) => i !== index));
+    setRows((prevRows) => {
+      const updatedRows = prevRows.filter((_, i) => i !== index);
+      localStorage.setItem("holidayCalendarData", JSON.stringify(updatedRows));
+      return updatedRows;
+    });
   };
+
 
   const saveChanges = (index: number) => {
     const row = rows[index];
@@ -219,7 +255,7 @@ export const HolidayCalender = () => {
 
           </Box>
 
-          <TableContainer className="table-items">
+          {/* <TableContainer className="table-items">
             <Table stickyHeader>
               <TableHead
                 className="bg-secondary"
@@ -368,7 +404,133 @@ export const HolidayCalender = () => {
                 ))}
               </TableBody>
             </Table>
+          </TableContainer> */}
+          <TableContainer className="table-items">
+            <Table stickyHeader>
+              <TableHead
+                className="bg-secondary"
+                sx={{ position: "sticky", top: 0, zIndex: 2, backgroundColor: "#257180" }}
+              >
+                <TableRow className="table-header">
+                  {tableHeaders.map((header) => (
+                    <TableCell
+                      key={header}
+                      className="table-cell"
+                      sx={{ backgroundColor: "#257180", color: "white", fontWeight: "bold" }}
+                    >
+                      {header}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((row, index) => (
+                  <TableRow key={index}>
+                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      <DatePicker
+                        value={row.from}
+                        onChange={(date) => handleInputChange(index, "from", date as any)}
+                        disabled={!row.editing}
+                        disabledDate={(current: any) =>
+                          current
+                            ? current.isBefore(dayjs().startOf("day")) || (row.to && current.isAfter(dayjs(row.to)))
+                            : false
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      <DatePicker
+                        value={row.to}
+                        onChange={(date) => handleInputChange(index, "to", date as any)}
+                        disabled={!row.editing}
+                        style={{ width: "100%" }}
+                        disabledDate={(current: any) =>
+                          current
+                            ? current.isBefore(dayjs().startOf("day")) || (row.from && current.isBefore(dayjs(row.from)))
+                            : false
+                        }
+                      />
+                    </TableCell>
+
+                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      <Input
+                        value={row.holiday}
+                        onChange={(e) => handleInputChange(index, "holiday", e.target.value as any)}
+                        placeholder="Enter holiday name"
+                        disabled={!row.editing}
+                      />
+                    </TableCell>
+
+                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      {row.editing ? (
+                        <Select
+                          mode="multiple"
+                          value={row.module}
+                          onChange={(value) => handleInputChange(index, "module", value)}
+                          style={{ width: "180px" }}
+                        >
+                          <Select.Option key="all" value="all">
+                            Select All
+                          </Select.Option>
+                          {moduleOptions.map((module) => (
+                            <Select.Option key={module} value={module}>
+                              {module}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      ) : (
+                        <Box>
+                          {row.module.map((module) => (
+                            <Typography key={module} variant="body2">
+                              {module}
+                            </Typography>
+                          ))}
+                        </Box>
+                      )}
+                    </TableCell>
+
+                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      <Box sx={{ display: "flex", gap: "5px", flexWrap: "wrap", flexDirection: "column", justifyContent: "center" }}>
+                        {Object.entries(row.impact).map(([module, impact]) => (
+                          <Box key={module} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            {row.editing ? (
+                              <TextField
+                                value={impact}
+                                onChange={(e) => handleImpactChange(index, module, e.target.value)}
+                                size="small"
+                                sx={{ width: "60px" }}
+                              />
+                            ) : (
+                              <Typography variant="body2">{impact !== undefined ? `${impact}%` : "N/A"}</Typography>
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
+                    </TableCell>
+
+                    <TableCell sx={{ textAlign: "center", display: "flex", gap: "10px", justifyContent: "center", borderBottom: "0px" }}>
+                      {row.editing ? (
+                        <>
+                          <Tooltip title="Delete">
+                            <Button type="primary" danger shape="circle" icon={<DeleteOutlined />} onClick={() => showDeleteModal(index)} />
+                          </Tooltip>
+                          <Tooltip title="Save">
+                            <Button type="primary" shape="circle" icon={<SaveOutlined />} onClick={() => saveChanges(index)} />
+                          </Tooltip>
+                        </>
+                      ) : (
+                        <Tooltip title="Edit">
+                          <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => toggleEdit(index)} />
+                        </Tooltip>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </TableContainer>
+
         </Box>
 
         {showCalendar && (

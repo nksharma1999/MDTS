@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, message } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, message, Result } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import type { ColumnsType } from "antd/es/table";
@@ -7,9 +7,11 @@ import dayjs from "dayjs";
 const { Option } = Select;
 const { Step } = Steps;
 import ExcelJS from "exceljs";
-
 import { saveAs } from "file-saver";
-
+import { useNavigate } from "react-router-dom";
+import { FolderOpenOutlined } from "@mui/icons-material";
+import { CalendarOutlined } from "@ant-design/icons";
+import moment from 'moment';
 interface Activity {
   code: string;
   activityName: string;
@@ -63,6 +65,10 @@ const TimeBuilder = () => {
   const [libraryName, setLibraryName] = useState<any>();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedProjectMineType, setSelectedProjectMineType] = useState("");
+  const navigate = useNavigate();
+  const [finalHolidays, setFinalHolidays] = useState<HolidayData[]>();
+  const [isSaturdayWorking, setIsSaturdayWorking] = useState(false);
+  const [isSundayWorking, setIsSundayWorking] = useState(false);
 
   useEffect(() => {
     try {
@@ -76,6 +82,37 @@ const TimeBuilder = () => {
         return;
       }
       setAllProjects(storedData);
+      if (storedData && Array.isArray(storedData) && storedData.length === 1) {
+        const firstProject = storedData[0];
+
+        if (firstProject && firstProject.id) {
+          setSelectedProjectId(firstProject.id);
+
+          const project = storedData.find((p) => p?.id === firstProject.id);
+
+          if (project && project.initialStatus) {
+            const selectedProjectLibrary = project.initialStatus.library || [];
+            setLibraryName(selectedProjectLibrary);
+
+            if (project.projectParameters) {
+              setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
+            }
+
+            if (Array.isArray(project.initialStatus.items)) {
+              handleLibraryChange(
+                project.initialStatus.items.filter(
+                  (item: any) => item?.status?.toLowerCase() !== "completed"
+                )
+              );
+            } else {
+              handleLibraryChange([]);
+            }
+          } else {
+            setLibraryName([]);
+          }
+        }
+      }
+
 
     } catch (error) {
       console.error("An unexpected error occurred while fetching projects:", error);
@@ -92,20 +129,9 @@ const TimeBuilder = () => {
         })
       );
       setHolidayData(parsedData);
+      setFinalHolidays(parsedData);
       setSelected(Object.fromEntries(parsedData.map((item) => [item.key, true])));
     }
-
-    // if (storedModuleData) {
-    //   const parsedModules = JSON.parse(storedModuleData);
-    //   setSequencedModules(parsedModules);
-    //   setModules(parsedModules);
-    //   const allActivityCodes = parsedModules.flatMap((module: any) =>
-    //     module.activities.map((activity: any) => activity.code)
-    //   );
-
-    //   setActivitiesData(parsedModules.flatMap((module: any) => module.activities));
-    //   setSelectedActivities(allActivityCodes);
-    // }
   }, []);
 
   useEffect(() => {
@@ -151,30 +177,52 @@ const TimeBuilder = () => {
           }),
         };
       });
-      console.log(finDataSource);
-
       setDataSource(finDataSource);
     }
   }, [currentStep, finalData]);
 
+  useEffect(() => {
+    finalData.forEach((module) => {
+      module.activities.forEach((activity) => {
+        if (activity.start) {
+          handleStartDateChange(activity.code, activity.start);
+        }
+      });
+    });
+    console.log(finalHolidays);
+
+  }, [isSaturdayWorking, isSundayWorking, finalHolidays]);
+
   const toggleCheckbox = (key: string) => {
-    setSelected((prev) => ({ ...prev, [key]: !prev[key] }));
-    const canceledHolidays = holidayData.filter((holiday) => !selected[holiday.key]);
-    const updatedModules = finalData.map((module) => ({
-      ...module,
-      holidays: canceledHolidays,
-    }));
-    setFinalData(updatedModules);
+    setSelected((prev) => {
+      const updatedSelected = { ...prev, [key]: !prev[key] };
+
+      // Filter holidays that are still checked (true)
+      const updatedHolidays = holidayData.filter((holiday) => updatedSelected[holiday.key]);
+
+      console.log("Checked Holidays:", updatedHolidays);
+
+      // Update final holidays list
+      setFinalHolidays(updatedHolidays);
+
+      // Update finalData modules with new holiday list
+      const updatedModules = finalData.map((module) => ({
+        ...module,
+        holidays: updatedHolidays,
+      }));
+
+      setFinalData(updatedModules);
+
+      return updatedSelected;
+    });
   };
 
   const handleNext = () => {
     if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
       console.log(sequencedModules);
-
     } else {
       setIsModalVisible(true);
-      // window.location.href = "/create/status-update";
     }
   };
 
@@ -214,20 +262,51 @@ const TimeBuilder = () => {
     setSequencedModules(updatedSequencedModules);
   };
 
-  const handleStartDateChange = (code: string, date: dayjs.Dayjs) => {
-    console.log(`Selected Start Date for ${code}:`, date.format("YYYY-MM-DD"));
+  const addBusinessDays = (startDate: any, days: any) => {
+    let date = startDate;
+    let addedDays = 0;
+    let holidays = [];
 
+    while (addedDays < days) {
+      date = date.add(1, "day");
+
+      const isSaturday = date.day() === 6;
+      const isSunday = date.day() === 0;
+      const isHoliday = finalHolidays?.some((holiday) => {
+        const holidayDate = moment(holiday.from).format("YYYY-MM-DD");
+        return holidayDate === date.format("YYYY-MM-DD");
+      });
+
+      if (
+        (isSaturday && !isSaturdayWorking) ||
+        (isSunday && !isSundayWorking)
+      ) {
+        holidays.push({ date: date.format("YYYY-MM-DD"), reason: "Weekend" });
+      } else if (isHoliday) {
+        holidays.push({
+          date: date.format("YYYY-MM-DD"),
+          reason: "Holiday",
+        });
+      } else {
+        addedDays++;
+      }
+    }
+    return { date, holidays };
+  };
+
+  const handleStartDateChange = (code: any, date: any) => {
     let updatedFinalData = [...finalData];
     let updatedSequencedModules = [...sequencedModules];
 
-    function updateActivities(activities: any[]) {
-      return activities.map((activity) => {
+    function updateActivities(activities: any) {
+      return activities.map((activity: any) => {
         if (activity.code === code) {
           const duration = parseInt(activity.duration, 10) || 0;
-          const endDate = date.add(duration, "day");
+          const { date: endDate, holidays } = addBusinessDays(date, duration);
 
           activity.start = date;
           activity.end = endDate;
+          activity.holidays = holidays;
 
           updateDependentActivities(activity.code, endDate);
         }
@@ -249,22 +328,21 @@ const TimeBuilder = () => {
     setSequencedModules(updatedSequencedModules);
   };
 
-  const updateDependentActivities = (prerequisiteCode: string, prerequisiteEndDate: dayjs.Dayjs) => {
+  const updateDependentActivities = (prerequisiteCode: any, prerequisiteEndDate: any) => {
     let updatedFinalData = [...finalData];
     let updatedSequencedModules = [...sequencedModules];
 
-    function updateActivities(activities: any[]) {
-      return activities.map((activity) => {
+    function updateActivities(activities: any) {
+      return activities.map((activity: any) => {
         if (activity.prerequisite === prerequisiteCode) {
           const slack = parseInt(activity.slack, 10) || 0;
-          const startDate = prerequisiteEndDate.add(slack + 1, "day");
+          const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, slack + 1);
           const duration = parseInt(activity.duration, 10) || 0;
-          const endDate = startDate.add(duration, "day");
-
-          console.log(`Updating Dependent ${activity.code}: Start = ${startDate.format("YYYY-MM-DD")}, End = ${endDate.format("YYYY-MM-DD")}`);
+          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
 
           activity.start = startDate;
           activity.end = endDate;
+          activity.holidays = [...slackHolidays, ...durationHolidays];
 
           updateDependentActivities(activity.code, endDate);
         }
@@ -311,7 +389,7 @@ const TimeBuilder = () => {
       const selectedProjectLibrary = project.initialStatus.library;
       setLibraryName(selectedProjectLibrary);
       setSelectedProjectMineType(project.projectParameters.typeOfMine)
-      handleLibraryChange((project.initialStatus.items.filter((item: any) => item.status.toLowerCase() != "completed")));
+      handleLibraryChange((project.initialStatus.items.filter((item: any) => item.status?.toLowerCase() != "completed")));
     } else {
       setLibraryName([]);
     }
@@ -347,8 +425,7 @@ const TimeBuilder = () => {
       "Pre-Requisite",
       "Slack",
       "Planned Start",
-      "Planned Finish",
-      "Activity Status",
+      "Planned Finish"
     ];
     const headerRow = worksheet.addRow(globalHeader);
 
@@ -441,7 +518,7 @@ const TimeBuilder = () => {
     setIsModalVisible(false);
   };
 
-  const columns: ColumnsType<HolidayData> = [
+  const holidayColumns: ColumnsType<HolidayData> = [
     {
       title: "From Date",
       dataIndex: "from",
@@ -493,8 +570,7 @@ const TimeBuilder = () => {
     { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
     { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
-    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
-    { title: "Activity Status", dataIndex: "activityStatus", key: "activityStatus", width: 150, align: "center" },
+    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
   ];
 
   const getColumnsForStep = (step: number) => {
@@ -587,10 +663,12 @@ const TimeBuilder = () => {
         render: (_: any, record: any) => (
           <Input
             placeholder="Slack"
-            value={record.slack}
-            type="number"
+            type="text"
             defaultValue={0}
-            onChange={(e) => handleSlackChange(record.code, e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "");
+              handleSlackChange(record.code, value);
+            }}
             onKeyDown={(e) => {
               if (
                 !/^\d$/.test(e.key) &&
@@ -695,148 +773,196 @@ const TimeBuilder = () => {
             <div className="heading">
               <span>Timeline Builder</span>
             </div>
-            <div className="filters">
-              <Select
-                placeholder="Select Project"
-                onChange={handleProjectChange}
-                style={{ width: "100%" }}
-              >
-                {allProjects.map((project) => (
-                  <Option key={project.id} value={project.id}>
-                    {project.projectParameters.projectName}
-                  </Option>
-                ))}
-              </Select>
+            {allProjects.length > 0 && (
+              <div className="filters">
+                <Select
+                  placeholder="Select Project"
+                  value={selectedProjectId}
+                  onChange={handleProjectChange}
+                  style={{ width: "100%" }}
+                >
+                  {allProjects.map((project) => (
+                    <Option key={project.id} value={project.id}>
+                      {project.projectParameters.projectName}
+                    </Option>
+                  ))}
+                </Select>
 
-              <Input value={selectedProjectMineType} placeholder="Project Mine Type" disabled style={{ width: "100%" }} />
-              <Input value={libraryName} placeholder="Library" disabled style={{ width: "100%" }} />
-            </div>
+                <Input value={selectedProjectMineType} placeholder="Project Mine Type" disabled style={{ width: "100%" }} />
+                <Input value={libraryName} placeholder="Library" disabled style={{ width: "100%" }} />
+              </div>
+            )}
           </div>
           <hr style={{ margin: 0 }} />
-          <div className="timeline-steps">
-            <Steps current={currentStep}>
-              <Step title="Sequencing" />
-              <Step title="Finalize Activities" />
-              <Step title="Prerequisites" />
-              <Step title="Slack" />
-              <Step title="Start Date" />
-              <Step title="Holiday" />
-              <Step title="Project Timeline" />
-            </Steps>
-          </div>
+          {allProjects.length > 0 && (
+            <div className="timeline-steps">
+              <Steps current={currentStep}>
+                <Step title="Sequencing" />
+                <Step title="Finalize Activities" />
+                <Step title="Prerequisites" />
+                <Step title="Slack" />
+                <Step title="Start Date" />
+                <Step title="Holiday" />
+                <Step title="Project Timeline" />
+              </Steps>
+            </div>
+          )}
 
-          <div className="main-item-container">
-            <div className="timeline-items">
-              {currentStep === 0 ? (
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Droppable droppableId="modules">
-                    {(provided) => (
-                      <div {...provided.droppableProps} ref={provided.innerRef}>
-                        {sequencedModules.map((module, index) => (
-                          <Draggable key={module.parentModuleCode} draggableId={module.parentModuleCode} index={index}>
-                            {(provided) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                style={{
-                                  padding: "10px",
-                                  margin: "0px 0px 8px 0px",
-                                  backgroundColor: "#f0f0f0",
-                                  borderRadius: "4px",
-                                  ...provided.draggableProps.style,
-                                }}
-                              >
-                                <strong>{module.parentModuleCode}</strong> {module.moduleName}
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
+          {allProjects.length > 0 ? (
+            <div className="main-item-container">
+              <div className="timeline-items">
+                {currentStep === 0 ? (
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="modules">
+                      {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef}>
+                          {sequencedModules.map((module, index) => (
+                            <Draggable key={module.parentModuleCode} draggableId={module.parentModuleCode} index={index}>
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  style={{
+                                    padding: "10px",
+                                    margin: "0px 0px 8px 0px",
+                                    backgroundColor: "#f0f0f0",
+                                    borderRadius: "4px",
+                                    ...provided.draggableProps.style,
+                                  }}
+                                >
+                                  <strong>{module.parentModuleCode}</strong> {module.moduleName}
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                ) : currentStep === 5 ? (
+                  <div>
+                    {holidayData.length > 0 ? (
+                      <>
+                        <div className="st-sun-field">
+                          <Checkbox
+                            className="saturday-sunday-checkbox"
+                            checked={isSaturdayWorking}
+                            onChange={(e) => setIsSaturdayWorking(e.target.checked)}
+                          >
+                            Saturday Working
+                          </Checkbox>
+                          <Checkbox
+                            className="saturday-sunday-checkbox"
+                            checked={isSundayWorking}
+                            onChange={(e) => setIsSundayWorking(e.target.checked)}
+                          >
+                            Sunday Working
+                          </Checkbox>
+                        </div>
+                        <Table className="project-timeline-table" dataSource={holidayData} columns={holidayColumns} pagination={false} />
+                      </>
+
+                    ) : (
+                      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                        <Result
+                          icon={<CalendarOutlined style={{ color: "#1890ff", fontSize: "48px" }} />}
+                          title="No Holiday Records Found"
+                          subTitle="You haven't added any holidays yet. Click below to add one."
+                          extra={
+                            <Button type="primary" className="bg-secondary" size="large" onClick={() => navigate("/create/non-working-days")}>
+                              Add Holiday
+                            </Button>
+                          }
+                        />
                       </div>
                     )}
-                  </Droppable>
-                </DragDropContext>
-              ) : currentStep === 5 ? (
-                <div>
-                  <Table className="project-timeline-table" dataSource={holidayData} columns={columns} pagination={false} />
-                </div>
-              ) : currentStep === 6 || currentStep === 7 ? (
-                <div style={{ overflowX: "hidden" }}>
+                  </div>
+                ) : currentStep === 6 || currentStep === 7 ? (
+                  <div style={{ overflowX: "hidden" }}>
+                    <Table
+                      columns={finalColumns}
+                      dataSource={dataSource}
+                      className="project-timeline-table"
+                      pagination={false}
+                      expandable={{
+                        expandedRowRender: () => null,
+                        rowExpandable: (record) => record.children && record.children.length > 0,
+                        expandedRowKeys: expandedKeys,
+                        onExpand: (expanded, record) => {
+                          setExpandedKeys(
+                            expanded
+                              ? [...expandedKeys, record.key]
+                              : expandedKeys.filter((key: any) => key !== record.key)
+                          );
+                        },
+                      }}
+                      rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
+                      bordered
+                      scroll={{
+                        x: "max-content",
+                        y: "calc(100vh - 320px)",
+                      }}
+                    />
+                  </div>
+                ) : (
                   <Table
-                    columns={finalColumns}
-                    dataSource={dataSource}
+                    columns={getOuterTableColumns(currentStep)}
                     className="project-timeline-table"
+                    dataSource={sequencedModules}
                     pagination={false}
+                    sticky={{ offsetHeader: 0 }}
+                    rowClassName={(record) => (record.activities ? "module-heading" : "")}
+                    expandedRowKeys={expandedRowKeys}
+                    onExpand={(expanded, record) => {
+                      if (expanded) {
+                        setExpandedRowKeys([...expandedRowKeys, record.parentModuleCode]);
+                      } else {
+                        setExpandedRowKeys(expandedRowKeys.filter((key) => key !== record.parentModuleCode));
+                      }
+                    }}
                     expandable={{
-                      expandedRowRender: () => null,
-                      rowExpandable: (record) => record.children && record.children.length > 0,
-                      expandedRowKeys: expandedKeys,
-                      onExpand: (expanded, record) => {
-                        setExpandedKeys(
-                          expanded
-                            ? [...expandedKeys, record.key]
-                            : expandedKeys.filter((key: any) => key !== record.key)
-                        );
-                      },
+                      expandedRowRender: (module) => (
+                        <Table
+                          columns={getColumnsForStep(currentStep)}
+                          dataSource={module.activities}
+                          pagination={false}
+                          showHeader={false}
+                          bordered
+                          sticky
+                          style={{ marginBottom: "10px" }}
+                          scroll={{ x: "hidden" }}
+                        />
+                      ),
+                      rowExpandable: (module) => module.activities.length > 0,
                     }}
-                    rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
-                    bordered
-                    scroll={{
-                      x: "max-content",
-                      y: "calc(100vh - 320px)",
-                    }}
+                    scroll={{ y: 290, x: "hidden" }}
+                    style={{ overflowX: "hidden" }}
+                    rowKey="parentModuleCode"
                   />
-                </div>
-              ) : (
-                <Table
-                  columns={getOuterTableColumns(currentStep)}
-                  className="project-timeline-table"
-                  dataSource={sequencedModules}
-                  pagination={false}
-                  sticky={{ offsetHeader: 0 }}
-                  rowClassName={(record) => (record.activities ? "module-heading" : "")}
-                  expandedRowKeys={expandedRowKeys}
-                  onExpand={(expanded, record) => {
-                    if (expanded) {
-                      setExpandedRowKeys([...expandedRowKeys, record.parentModuleCode]);
-                    } else {
-                      setExpandedRowKeys(expandedRowKeys.filter((key) => key !== record.parentModuleCode));
-                    }
-                  }}
-                  expandable={{
-                    expandedRowRender: (module) => (
-                      <Table
-                        columns={getColumnsForStep(currentStep)}
-                        dataSource={module.activities}
-                        pagination={false}
-                        showHeader={false}
-                        bordered
-                        sticky
-                        style={{ marginBottom: "10px" }}
-                        scroll={{ x: "hidden" }}
-                      />
-                    ),
-                    rowExpandable: (module) => module.activities.length > 0,
-                  }}
-                  scroll={{ y: 290, x: "hidden" }}
-                  style={{ overflowX: "hidden" }}
-                  rowKey="parentModuleCode"
-                />
-              )}
-            </div>
-            <hr />
-            <div className={`action-buttons ${currentStep === 0 ? "float-right" : ""}`}>
-              {currentStep > 0 && (
-                <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">
-                  Previous
+                )}
+              </div>
+              <hr />
+              <div className={`action-buttons ${currentStep === 0 ? "float-right" : ""}`}>
+                {currentStep > 0 && (
+                  <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">
+                    Previous
+                  </Button>
+                )}
+                <Button disabled={selectedProjectId == null} className="bg-secondary" onClick={handleNext} type="primary" size="small">
+                  {currentStep === 7 ? "Download" : currentStep === 6 ? "Mark as Reviewed" : "Next"}
                 </Button>
-              )}
-              <Button disabled={selectedProjectId == null} className="bg-secondary" onClick={handleNext} type="primary" size="small">
-                {currentStep === 7 ? "Download" : currentStep === 6 ? "Mark as Reviewed" : "Next"}
-              </Button>
+              </div>
             </div>
-          </div>
+          ) : <div className="contaainer">
+            <div className="no-project-message">
+              <FolderOpenOutlined style={{ fontSize: "16px", color: "#1890ff" }} />
+              <h3>No Projects Found</h3>
+              <p>You need to create a project for defining timeline.</p>
+              <button onClick={() => navigate("/create/register-new-project")}>Create Project</button>
+            </div>
+          </div>}
         </div>
       </div>
       <Modal
