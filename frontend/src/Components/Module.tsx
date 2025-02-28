@@ -33,6 +33,7 @@ const Module = () => {
     const [newMineType, setNewMineType] = useState<string>("");
     const [shorthandCode, setShorthandCode] = useState<string>("");
     const [moduleCodeName, setModuleCodeName] = useState<string>("");
+    const [filteredModuleData, setFilteredModuleData] = useState<any>(null);
 
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
@@ -70,35 +71,35 @@ const Module = () => {
 
     const handleSaveModuleAndActivity = () => {
         try {
-          if (isEditing) {
-            const storedModulesString = localStorage.getItem("modules");
-            const storedModules = storedModulesString ? JSON.parse(storedModulesString) : [];
-            const updatedModules = storedModules.map((module: any) =>
-              module.parentModuleCode === moduleData.parentModuleCode ? moduleData : module
-            );
-            localStorage.setItem("modules", JSON.stringify(updatedModules));
-            notification.success({
-              message: "Module updated successfully!",
-              duration: 3,
-            });
-          } else {
-            addModule(moduleData);
-            notification.success({
-              message: "Module saved successfully!",
-              duration: 3,
-            });
-          }
+            if (isEditing) {
+                const storedModulesString = localStorage.getItem("modules");
+                const storedModules = storedModulesString ? JSON.parse(storedModulesString) : [];
+                const updatedModules = storedModules.map((module: any) =>
+                    module.parentModuleCode === moduleData.parentModuleCode ? moduleData : module
+                );
+                localStorage.setItem("modules", JSON.stringify(updatedModules));
+                notification.success({
+                    message: "Module updated successfully!",
+                    duration: 3,
+                });
+            } else {
+                addModule(moduleData);
+                notification.success({
+                    message: "Module saved successfully!",
+                    duration: 3,
+                });
+            }
         } catch (error) {
-          console.error("Error while saving/updating module:", error);
-          notification.error({
-            message: "Failed to save/update module.",
-            description: "Check the console for details.",
-            duration: 3,
-          });
+            console.error("Error while saving/updating module:", error);
+            notification.error({
+                message: "Failed to save/update module.",
+                description: "Check the console for details.",
+                duration: 3,
+            });
         }
-      
+
         navigate('/create/module-library');
-      };
+    };
 
     const addActivity = () => {
         if (!selectedRow) return;
@@ -468,6 +469,30 @@ const Module = () => {
         }
     }, [moduleData.activities]);
 
+    const handleAssignRACI = () => {
+        if (!selectedRow) {
+            notification.warning({
+                message: "Please select a row to assign RACI.",
+                duration: 3,
+            });
+            return;
+        }
+
+        // Filter activities to include only the selected activity
+        const filteredData = {
+            ...moduleData, // Copy all other properties
+            activities: moduleData.activities.filter(
+                (activity: any) => activity.code === selectedRow.code
+            ),
+        };
+
+        // Set the filtered data in state
+        setFilteredModuleData(filteredData);
+
+        // Open the modal
+        setOpenModal(true);
+    };
+
 
     return (
         <div>
@@ -550,8 +575,9 @@ const Module = () => {
                                         <Tooltip title="Assign RACI">
                                             <Button
                                                 icon={<UserOutlined />}
-                                                onClick={() => setOpenModal(true)}
+                                                onClick={handleAssignRACI}
                                                 className="icon-button blue"
+                                                disabled={!selectedRow}
                                             />
                                         </Tooltip>
                                         <Modal
@@ -561,7 +587,12 @@ const Module = () => {
                                             footer={false}
                                             width={"50%"}
                                         >
-                                            <UserRolesPage open={openModal} onClose={() => setOpenModal(false)} />
+                                            <UserRolesPage
+                                                open={openModal}
+                                                onClose={() => setOpenModal(false)}
+                                                selectedRow={selectedRow} // Pass selectedRow
+                                                moduleData={filteredModuleData} // Pass filtered moduleData from state
+                                            />
                                         </Modal>
                                     </Col>
                                     <Col>

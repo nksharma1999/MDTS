@@ -4,6 +4,7 @@ const MODULE_KEY = "modules";
 const FORM_DATA = "formDatas";
 const MINE_TYPE_KEY = "mineTypes";
 const DOCUMENTS_KEY = " documents";
+const USERS = "users";
 
 // Get all modules from local storage
 export const getModules = () => {
@@ -337,6 +338,34 @@ export const getCurrentUserId = (): string | null => {
   } catch (error) {
     console.error("Error retrieving current user ID:", error);
     return null;
+  }
+};
+
+// Get all users from local storage
+export const getAllUsers = () => {
+  try {
+    const savedUsers = localStorage.getItem(USERS);
+    if (!savedUsers) {
+      console.warn("No users found in localStorage.");
+      return [];
+    }
+
+    const users = JSON.parse(savedUsers);
+    return users; // Return the parsed users directly
+  } catch (error) {
+    console.error("Error parsing users from localStorage:", error);
+    return [];
+  }
+};
+
+export const saveUsers = (userList: any) => {
+  try {
+    // Convert the user list to a JSON string
+    const usersString = JSON.stringify(userList);
+    // Save the JSON string to localStorage under the key "USERS"
+    localStorage.setItem(USERS, usersString);
+  } catch (error) {
+    console.error("Error saving users to localStorage:", error);
   }
 };
 

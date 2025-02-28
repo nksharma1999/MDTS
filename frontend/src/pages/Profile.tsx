@@ -11,18 +11,30 @@ const { Option } = Select;
 const Profile = () => {
 
     const [formData, setFormData] = useState({
-        id: "",
-        name: "",
-        mobile: "",
-        whatsapp: "",
-        registeredOn: "",
-        profilePhoto: "",
-        company: "",
-        designation: "",
-        role: "",
-        email: "",
-        isTempPassword: true
+        id: null as number | null,
+        name: null as string | null,
+        company: null as string | null,
+        designation: null as string | null,
+        mobile: null as string | null,
+        email: null as string | null,
+        whatsapp: null as string | null,
+        registeredOn: null as string | null,
+        profilePhoto: null as string | null,
+        password: null as string | null,
+        isTempPassword: null as boolean | null,
+        role: null as string | null,
+        assignedModules: [] as {
+            moduleCode: string | null;
+            moduleName: string | null;
+            isApplicableOnModule: boolean | null;
+            responsibilitiesOnActivities: {
+                activityCode: string | null;
+                activityName: string | null;
+                responsibilities: string[];
+            }[];
+        }[]
     });
+    
     const [selectedTab, setSelectedTab] = useState("Profile Information");
     const [image, setImage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
