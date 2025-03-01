@@ -44,7 +44,7 @@ const AppRoutes = () => {
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/create/status-update" element={<StatusUpdate />} />
+                    <Route path="/create/project-timeline" element={<StatusUpdate />} />
                     <Route path="/CreateModule" element={<CreateModule />} />
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
                     <Route path="/create/non-working-days" element={<HolidayCalender />} />

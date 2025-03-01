@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Form, Input, Row, Col, Button, Modal, Select } from 'antd';
+import { Form, Input, Row, Col, Button, Modal, Select, Dropdown, Menu } from 'antd';
 import { Link } from "react-router-dom";
 import ImageContainer from "../components/ImageContainer";
 import { SearchOutlined } from "@mui/icons-material";
-import { RobotOutlined } from "@ant-design/icons";
+import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
 interface LocationDetails {
     state: string;
     district: string;
@@ -58,6 +58,7 @@ interface ProjectData {
     contractualDetails: ContractualDetails;
     initialStatus: InitialStatus;
 }
+
 const membersList = ["Alice", "Bob", "Charlie", "David", "Emma"];
 const Projects = () => {
     const [allProjects, setAllProjects] = useState<any[]>([]);
@@ -66,6 +67,9 @@ const Projects = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<string | null>(null);
     const [addedMembers, setAddedMembers] = useState<string[]>([]);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<any>(null);
+
     useEffect(() => {
         try {
             const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -115,7 +119,6 @@ const Projects = () => {
         console.log("searching...");
     };
 
-
     const showModal = () => setIsModalOpen(true);
     const handleCancel = () => setIsModalOpen(false);
 
@@ -126,36 +129,73 @@ const Projects = () => {
         setIsModalOpen(false);
         setSelectedMember(null);
     };
+
+    const handleDeleteProject = () => {
+        if (!projectToDelete) return;
+
+        const updatedProjects = allProjects.filter(
+            (project) => project.id !== projectToDelete.id
+        );
+
+        const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const userId = loggedInUser.id;
+        const userProjectsKey = `projects_${userId}`;
+
+        localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
+        setAllProjects(updatedProjects);
+        setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
+        setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0].projectParameters.projectName : "");
+        setIsDeleteModalOpen(false);
+    };
+
+    const closeDeleteModal = () => {
+        setProjectToDelete(null);
+        setIsDeleteModalOpen(false);
+    };
+
+    const showDeleteModal = (project: ProjectData) => {
+        setProjectToDelete(project);
+        setIsDeleteModalOpen(true);
+    };
+
+    const menu = (project: ProjectData) => (
+        <Menu>
+            <Menu.Item key="delete" onClick={() => showDeleteModal(project)}>
+                Delete
+            </Menu.Item>
+        </Menu>
+    );
+
     return (
         <>
             <div className="project-container">
                 <div className="all-project-details">
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <div className="heading">Projects</div>
-                        <div>
-                            <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
-                                <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
-                            </Button>
-                        </div>
+                        <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
+                            <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
+                        </Button>
                     </div>
                     <div className="search">
                         <Input
                             size="small"
                             placeholder="Find the projects..."
                             onChange={handleSearch}
-                            prefix={<SearchOutlined />}
+                            prefix={<SearchOutlined style={{ fontSize: "18px", color: "#ddd" }} />}
                             style={{ height: "26px", fontSize: "12px" }}
                         />
                     </div>
-                    {allProjects.map((project: any) => (
-                        <p
-                            className={selectedProjectName == project.projectParameters.projectName ? "selected-project" : ""}
-                            key={project.id}
-                            style={{ cursor: "pointer", marginBottom: "8px" }}
+                    {allProjects.map((project) => (
+                        <div
+                            key={project.projectParameters.projectName}
+                            className={`project-item ${selectedProjectName === project.projectParameters.projectName ? "selected-project" : ""}`}
                             onClick={() => handleProjectClick(project.projectParameters.projectName)}
                         >
-                            {project.projectParameters.projectName}
-                        </p>
+                            <span>{project.projectParameters.projectName}</span>
+                            <Dropdown overlay={menu(project)} trigger={["hover"]}>
+                                <MoreOutlined className="three-dot-menu" />
+                            </Dropdown>
+                        </div>
                     ))}
                 </div>
                 <section className="project-info">
@@ -340,6 +380,17 @@ const Projects = () => {
                         </Select.Option>
                     ))}
                 </Select>
+            </Modal>
+
+            <Modal
+                title="Confirm Deletion"
+                open={isDeleteModalOpen}
+                onOk={handleDeleteProject}
+                onCancel={closeDeleteModal}
+                okText="Delete"
+                okButtonProps={{ danger: true }}
+            >
+                <p>Are you sure you want to delete this project?</p>
             </Modal>
 
         </>

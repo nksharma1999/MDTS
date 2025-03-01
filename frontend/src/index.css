@@ -118,3 +118,7 @@ hr {
 .modal-body-item-padding {
     padding: 10px 10px 0px 10px;
 }
+
+.modal-body-items {
+    padding: 10px;
+}

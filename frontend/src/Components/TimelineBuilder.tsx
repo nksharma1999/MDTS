@@ -9,9 +9,11 @@ const { Step } = Steps;
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
-import { FolderOpenOutlined } from "@mui/icons-material";
-import { CalendarOutlined } from "@ant-design/icons";
+import { CalendarOutlined, ClockCircleOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, ToolOutlined } from "@ant-design/icons";
 import moment from 'moment';
+import { getCurrentUserId } from '../Utils/moduleStorage';
+import { useLocation } from "react-router-dom";
+
 interface Activity {
   code: string;
   activityName: string;
@@ -54,7 +56,7 @@ const TimeBuilder = () => {
   const [allProjects, setAllProjects] = useState<any[]>([]);
   const [sequencedModules, setSequencedModules] = useState<Module[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
-  const [activitiesData, setActivitiesData] = useState<Activity[]>([]);
+  const [_activitiesData, setActivitiesData] = useState<Activity[]>([]);
   const [holidayData, setHolidayData] = useState<HolidayData[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
@@ -62,6 +64,8 @@ const TimeBuilder = () => {
   const [dataSource, setDataSource] = useState<any>([]);
   const [finalData, setFinalData] = useState<Module[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [selectedProjectName, setSelectedProjectName] = useState<any>(null);
   const [libraryName, setLibraryName] = useState<any>();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedProjectMineType, setSelectedProjectMineType] = useState("");
@@ -69,14 +73,20 @@ const TimeBuilder = () => {
   const [finalHolidays, setFinalHolidays] = useState<HolidayData[]>();
   const [isSaturdayWorking, setIsSaturdayWorking] = useState(false);
   const [isSundayWorking, setIsSundayWorking] = useState(false);
-
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const location = useLocation();
+  const [isMenualTimeline, setIsMenualTimeline] = useState(false);
+  const [allProjectsTimelines, setAllProjectsTimelines] = useState<any[]>([]);
+  const [openExistingTimelineModal, setOpenExistingTimelineModal] = useState(false);
+  const [selectedExistingProjectId, setSelectedExistingProjectId] = useState(null);
+  const [selectedExistingProject, setSelectedExistigProject] = useState<any>(null);
   useEffect(() => {
     try {
       const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
       const userId = loggedInUser.id;
       const userProjectsKey = `projects_${userId}`;
-      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
+      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]").filter((item: any) => item.projectTimeline == undefined);
+      setAllProjectsTimelines(JSON.parse(localStorage.getItem(userProjectsKey) || "[]").filter((item: any) => item.projectTimeline != undefined))
       if (!Array.isArray(storedData) || storedData.length === 0) {
         setAllProjects([]);
         return;
@@ -84,16 +94,27 @@ const TimeBuilder = () => {
       setAllProjects(storedData);
       if (storedData && Array.isArray(storedData) && storedData.length === 1) {
         const firstProject = storedData[0];
-
         if (firstProject && firstProject.id) {
           setSelectedProjectId(firstProject.id);
+          setSelectedProject(storedData[0]);
 
           const project = storedData.find((p) => p?.id === firstProject.id);
+          const selectedProjectLibrary = project.initialStatus.library || [];
+          setLibraryName(selectedProjectLibrary);
+          if (project && project.projectTimeline) {
+            if (project.projectParameters) {
+              setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
+            }
+            setIsSaturdayWorking(project.projectTimeline[0].saturdayWorking)
+            setIsSundayWorking(project.projectTimeline[0].sundayWorking)
 
-          if (project && project.initialStatus) {
-            const selectedProjectLibrary = project.initialStatus.library || [];
-            setLibraryName(selectedProjectLibrary);
-
+            if (Array.isArray(project.projectTimeline)) {
+              handleLibraryChange(project.projectTimeline);
+            } else {
+              handleLibraryChange([]);
+            }
+          }
+          else if (project && project.initialStatus) {
             if (project.projectParameters) {
               setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
             }
@@ -112,7 +133,6 @@ const TimeBuilder = () => {
           }
         }
       }
-
 
     } catch (error) {
       console.error("An unexpected error occurred while fetching projects:", error);
@@ -189,23 +209,42 @@ const TimeBuilder = () => {
         }
       });
     });
-    console.log(finalHolidays);
-
   }, [isSaturdayWorking, isSundayWorking, finalHolidays]);
+
+  useEffect(() => {
+    if (location.state && location.state.selectedProject) {
+      const project = location.state.selectedProject;
+      setIsUpdateMode(true);
+      setSelectedProjectName(project.projectParameters.projectName);
+      setSelectedProjectId(project.id);
+      setSelectedProject(project);
+
+      const selectedProjectLibrary = project.initialStatus.library || [];
+      setLibraryName(selectedProjectLibrary);
+      if (project && project.projectTimeline) {
+        if (project.projectParameters) {
+          setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
+        }
+        setIsSaturdayWorking(project.projectTimeline[0].saturdayWorking)
+        setIsSundayWorking(project.projectTimeline[0].sundayWorking)
+
+        if (Array.isArray(project.projectTimeline)) {
+          handleLibraryChange(project.projectTimeline);
+        } else {
+          handleLibraryChange([]);
+        }
+      }
+      else {
+        setLibraryName([]);
+      }
+    }
+  }, [location.state]);
 
   const toggleCheckbox = (key: string) => {
     setSelected((prev) => {
       const updatedSelected = { ...prev, [key]: !prev[key] };
-
-      // Filter holidays that are still checked (true)
       const updatedHolidays = holidayData.filter((holiday) => updatedSelected[holiday.key]);
-
-      console.log("Checked Holidays:", updatedHolidays);
-
-      // Update final holidays list
       setFinalHolidays(updatedHolidays);
-
-      // Update finalData modules with new holiday list
       const updatedModules = finalData.map((module) => ({
         ...module,
         holidays: updatedHolidays,
@@ -220,9 +259,15 @@ const TimeBuilder = () => {
   const handleNext = () => {
     if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
-      console.log(sequencedModules);
     } else {
-      setIsModalVisible(true);
+      if (isUpdateMode) {
+        saveProjectTimeline(sequencedModules);
+        navigate("/create/project-timeline")
+      }
+      else {
+        saveProjectTimeline(sequencedModules);
+        setIsModalVisible(true);
+      }
     }
   };
 
@@ -239,31 +284,58 @@ const TimeBuilder = () => {
     setSequencedModules(items);
   };
 
-  const handleSlackChange = (code: string, value: string) => {
-    const updatedActivities = activitiesData.map((activity) =>
-      activity.code === code ? { ...activity, slack: value } : activity
-    );
-    setActivitiesData(updatedActivities);
+  const handleSlackChange = (code: any, newSlack: any) => {
+    let updatedFinalData = [...finalData];
+    let updatedSequencedModules = [...sequencedModules];
 
-    const updatedModules = finalData.map((module) => ({
-      ...module,
-      activities: module.activities.map((activity) =>
-        activity.code === code ? { ...activity, slack: value } : activity
-      ),
-    }));
-    setFinalData(updatedModules);
+    function updateActivities(activities: any) {
+      return activities.map((activity: any) => {
+        if (activity.code === code) {
+          activity.slack = newSlack;
+          const prerequisiteEndDate = activity.prerequisite
+            ? getActivityEndDate(activity.prerequisite)
+            : activity.start;
+          const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, parseInt(newSlack, 10) + 1);
+          const duration = parseInt(activity.duration, 10) || 0;
+          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
 
-    const updatedSequencedModules = sequencedModules.map((module) => ({
+          activity.start = startDate;
+          activity.end = endDate;
+          activity.holidays = [...slackHolidays, ...durationHolidays];
+          updateDependentActivities(activity.code, endDate);
+        }
+        return activity;
+      });
+    }
+
+    updatedFinalData = updatedFinalData.map((module) => ({
       ...module,
-      activities: module.activities.map((activity) =>
-        activity.code === code ? { ...activity, slack: value } : activity
-      ),
+      activities: updateActivities(module.activities),
     }));
+
+    updatedSequencedModules = updatedSequencedModules.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+
+    setFinalData(updatedFinalData);
     setSequencedModules(updatedSequencedModules);
   };
 
+  const getActivityEndDate = (prerequisiteCode: any) => {
+    let endDate = null;
+    finalData.forEach((module) => {
+      module.activities.forEach((activity) => {
+        if (activity.code === prerequisiteCode) {
+          endDate = activity.end;
+        }
+      });
+    });
+    return endDate;
+  };
+
   const addBusinessDays = (startDate: any, days: any) => {
-    let date = startDate;
+    let date = moment(startDate);
     let addedDays = 0;
     let holidays = [];
 
@@ -272,20 +344,19 @@ const TimeBuilder = () => {
 
       const isSaturday = date.day() === 6;
       const isSunday = date.day() === 0;
-      const isHoliday = finalHolidays?.some((holiday) => {
+      const holidayEntry: any = finalHolidays?.find((holiday) => {
         const holidayDate = moment(holiday.from).format("YYYY-MM-DD");
         return holidayDate === date.format("YYYY-MM-DD");
       });
 
-      if (
-        (isSaturday && !isSaturdayWorking) ||
-        (isSunday && !isSundayWorking)
-      ) {
-        holidays.push({ date: date.format("YYYY-MM-DD"), reason: "Weekend" });
-      } else if (isHoliday) {
+      if (isSaturday && !isSaturdayWorking) {
+        holidays.push({ date: date.format("YYYY-MM-DD"), reason: "Saturday" });
+      } else if (isSunday && !isSundayWorking) {
+        holidays.push({ date: date.format("YYYY-MM-DD"), reason: "Sunday" });
+      } else if (holidayEntry) {
         holidays.push({
           date: date.format("YYYY-MM-DD"),
-          reason: "Holiday",
+          reason: holidayEntry.holiday || "Holiday",
         });
       } else {
         addedDays++;
@@ -307,6 +378,8 @@ const TimeBuilder = () => {
           activity.start = date;
           activity.end = endDate;
           activity.holidays = holidays;
+          activity.saturdayWorking = isSaturdayWorking;
+          activity.sundayWorking = isSundayWorking;
 
           updateDependentActivities(activity.code, endDate);
         }
@@ -321,6 +394,8 @@ const TimeBuilder = () => {
 
     updatedSequencedModules = updatedSequencedModules.map((module) => ({
       ...module,
+      saturdayWorking: isSaturdayWorking,
+      sundayWorking: isSundayWorking,
       activities: updateActivities(module.activities),
     }));
 
@@ -343,6 +418,8 @@ const TimeBuilder = () => {
           activity.start = startDate;
           activity.end = endDate;
           activity.holidays = [...slackHolidays, ...durationHolidays];
+          activity.saturdayWorking = isSaturdayWorking;
+          activity.sundayWorking = isSundayWorking;
 
           updateDependentActivities(activity.code, endDate);
         }
@@ -357,6 +434,8 @@ const TimeBuilder = () => {
 
     updatedSequencedModules = updatedSequencedModules.map((module) => ({
       ...module,
+      saturdayWorking: isSaturdayWorking,
+      sundayWorking: isSundayWorking,
       activities: updateActivities(module.activities),
     }));
 
@@ -385,6 +464,7 @@ const TimeBuilder = () => {
     setCurrentStep(0);
     setSelectedProjectId(projectId);
     const project = allProjects.find((p) => p.id === projectId);
+    setSelectedProject(project);
     if (project) {
       const selectedProjectLibrary = project.initialStatus.library;
       setLibraryName(selectedProjectLibrary);
@@ -513,9 +593,25 @@ const TimeBuilder = () => {
     const blob = new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    saveAs(blob, "activity_data.xlsx");
+    saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
     message.success("Download started!");
     setIsModalVisible(false);
+  };
+
+  const saveProjectTimeline = (sequencedModules: any) => {
+    const activeUserId = getCurrentUserId();
+    if (!activeUserId) return console.error("No active user found.");
+
+    const userProjectsKey = `projects_${activeUserId}`;
+    const storedProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+
+    const projectId = selectedProjectId;
+    const projectIndex = storedProjects.findIndex((p: any) => p.id === projectId);
+
+    if (projectIndex === -1) return console.error("Project not found.");
+    storedProjects[projectIndex].projectTimeline = sequencedModules;
+    localStorage.setItem(userProjectsKey, JSON.stringify(storedProjects));
+    message.success("Project timeline saved successfully!.");
   };
 
   const holidayColumns: ColumnsType<HolidayData> = [
@@ -664,7 +760,7 @@ const TimeBuilder = () => {
           <Input
             placeholder="Slack"
             type="text"
-            defaultValue={0}
+            value={record.slack || 0}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, "");
               handleSlackChange(record.code, value);
@@ -694,7 +790,7 @@ const TimeBuilder = () => {
         render: (_: any, record: any) => (
           <DatePicker
             placeholder="Start Date"
-            value={record.prerequisite == "" ? record.start : ''}
+            value={record.prerequisite === "" && record.start ? dayjs(record.start) : null}
             onChange={(date) => handleStartDateChange(record.code, date)}
             disabled={step !== 4 || record.prerequisite !== ""}
           />
@@ -765,36 +861,110 @@ const TimeBuilder = () => {
     return columns;
   };
 
+  const handleExistingProjectChange = (projectId: any) => {
+    setSelectedExistingProjectId(projectId);
+    const userId = getCurrentUserId();
+    const userProjectsKey = `projects_${userId}`;
+    const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+    const selectedExProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
+    setSelectedExistigProject(selectedExProject);
+  };
+
+  const handleSaveProjectTimeline = () => {
+    try {
+      if (!selectedExistingProjectId) {
+        message.warning("Please select a project first.");
+        return;
+      }
+
+      const userId = getCurrentUserId();
+      const userProjectsKey = `projects_${userId}`;
+      const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+
+      const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
+      const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
+
+      if (!selectedProject || !currentProject) {
+        message.error("Invalid project selection.");
+        return;
+      }
+
+      const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
+      const selectedLibrary = selectedProject?.initialStatus?.library;
+      const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
+      const currentLibrary = currentProject?.initialStatus?.library;
+
+      if (selectedMineType !== currentMineType || selectedLibrary !== currentLibrary) {
+        message.warning("Selected project must have the same Mine Type and Library.");
+        return;
+      }
+
+      if (selectedProject.projectTimeline) {
+        currentProject.projectTimeline = selectedProject.projectTimeline;
+        localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
+
+        message.success("Project timeline linked successfully!");
+        setTimeout(() => {
+          navigate("/create/project-timeline", { state: { currentProject } });
+        }, 1000);
+        setOpenExistingTimelineModal(false);
+      } else {
+        message.warning("Selected project does not have a timeline.");
+      }
+    } catch (error) {
+      console.error("Error updating project timeline:", error);
+      message.error("Failed to link project timeline. Please try again.");
+    }
+  };
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ width: "100%" }} className="time-builder-page">
-          <div className="title-and-filter">
-            <div className="heading">
-              <span>Timeline Builder</span>
-            </div>
-            {allProjects.length > 0 && (
-              <div className="filters">
-                <Select
-                  placeholder="Select Project"
-                  value={selectedProjectId}
-                  onChange={handleProjectChange}
-                  style={{ width: "100%" }}
-                >
-                  {allProjects.map((project) => (
-                    <Option key={project.id} value={project.id}>
-                      {project.projectParameters.projectName}
-                    </Option>
-                  ))}
-                </Select>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div className="title-and-filter">
+              <div className="heading">
+                <span>Timeline Builder</span>
+              </div>
+              {allProjects.length > 0 && (
+                <div>
+                  <div className="filters">
+                    <Select
+                      placeholder="Select Project"
+                      disabled={isUpdateMode}
+                      value={isUpdateMode ? selectedProjectName : selectedProjectId}
+                      onChange={handleProjectChange}
+                      style={{ width: "100%" }}
+                    >
+                      {allProjects.map((project) => (
+                        <Option key={project.id} value={project.id}>
+                          {project.projectParameters.projectName}
+                        </Option>
+                      ))}
+                    </Select>
 
-                <Input value={selectedProjectMineType} placeholder="Project Mine Type" disabled style={{ width: "100%" }} />
-                <Input value={libraryName} placeholder="Library" disabled style={{ width: "100%" }} />
+                    <Input value={selectedProjectMineType} placeholder="Project Mine Type" disabled style={{ width: "100%" }} />
+                    <Input value={libraryName} placeholder="Library" disabled style={{ width: "100%" }} />
+                  </div>
+                </div>
+              )}
+            </div>
+            {isMenualTimeline && (
+              <div style={{ padding: "8px 8px 0px 0px" }}>
+                <Button
+                  type="primary"
+                  disabled={!selectedProjectId}
+                  icon={<LinkOutlined />}
+                  onClick={() => setOpenExistingTimelineModal(true)}
+                  style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
+                >
+                  Link Existing Timeline
+                </Button>
               </div>
             )}
           </div>
           <hr style={{ margin: 0 }} />
-          {allProjects.length > 0 && (
+          {selectedProject != null && isMenualTimeline && (
             <div className="timeline-steps">
               <Steps current={currentStep}>
                 <Step title="Sequencing" />
@@ -808,7 +978,7 @@ const TimeBuilder = () => {
             </div>
           )}
 
-          {allProjects.length > 0 ? (
+          {selectedProject != null && isMenualTimeline ? (
             <div className="main-item-container">
               <div className="timeline-items">
                 {currentStep === 0 ? (
@@ -861,7 +1031,7 @@ const TimeBuilder = () => {
                             Sunday Working
                           </Checkbox>
                         </div>
-                        <Table className="project-timeline-table" dataSource={holidayData} columns={holidayColumns} pagination={false} />
+                        <Table className="project-timeline-table" dataSource={holidayData} columns={holidayColumns} pagination={false} scroll={{ y: 'calc(100vh - 350px)' }} />
                       </>
 
                     ) : (
@@ -950,17 +1120,73 @@ const TimeBuilder = () => {
                     Previous
                   </Button>
                 )}
-                <Button disabled={selectedProjectId == null} className="bg-secondary" onClick={handleNext} type="primary" size="small">
-                  {currentStep === 7 ? "Download" : currentStep === 6 ? "Mark as Reviewed" : "Next"}
+                <Button
+                  disabled={selectedProjectId == null}
+                  className="bg-secondary"
+                  onClick={handleNext}
+                  type="primary"
+                  size="small"
+                >
+                  {currentStep === 7
+                    ? isUpdateMode
+                      ? "Update & Download"
+                      : "Save & Download"
+                    : currentStep === 6
+                      ? "Mark as Reviewed"
+                      : "Next"}
                 </Button>
+
               </div>
             </div>
-          ) : <div className="contaainer">
+          ) : <div className="container">
             <div className="no-project-message">
-              <FolderOpenOutlined style={{ fontSize: "16px", color: "#1890ff" }} />
-              <h3>No Projects Found</h3>
-              <p>You need to create a project for defining timeline.</p>
-              <button onClick={() => navigate("/create/register-new-project")}>Create Project</button>
+
+              {allProjects.length === 0 ? (
+                <>
+                  <h3>No Projects Available</h3>
+                  <p>Start by creating a new project to define a timeline.</p>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => navigate("/create/register-new-project")}
+                    style={{ backgroundColor: "#1890ff", borderColor: "#1890ff" }}
+                  >
+                    Create Project
+                  </Button>
+                </>
+              ) : !selectedProject ? (
+                <>
+                  <ExclamationCircleOutlined style={{ fontSize: "50px", color: "#258790" }} />
+                  <h3>No Project Selected</h3>
+                  <p>Please select a project to continue.</p>
+                </>
+              ) : (
+                <>
+                  <ClockCircleOutlined style={{ fontSize: "50px", color: "#258790" }} />
+                  <h3>Manage Your Timeline</h3>
+                  <p>Choose an option below to proceed:</p>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <Button
+                      type="primary"
+                      disabled={!selectedProjectId}
+                      icon={<LinkOutlined />}
+                      onClick={() => setOpenExistingTimelineModal(true)}
+                      style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
+                    >
+                      Link Existing Timeline
+                    </Button>
+                    <Button
+                      type="primary"
+                      disabled={!selectedProjectId}
+                      icon={<FolderOpenOutlined />}
+                      onClick={() => setIsMenualTimeline(true)}
+                      style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
+                    >
+                      Create Timeline Manually
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>}
         </div>
@@ -972,8 +1198,48 @@ const TimeBuilder = () => {
         onCancel={() => setIsModalVisible(false)}
         okText="Download"
         cancelText="Cancel"
+        className="modal-container"
       >
         <p>Are you sure you want to download the data in Excel format?</p>
+      </Modal>
+      <Modal
+        title="Link Existing Project Timeline"
+        visible={openExistingTimelineModal}
+        onCancel={() => setOpenExistingTimelineModal(false)}
+        onOk={handleSaveProjectTimeline}
+        okText="Save"
+        className="modal-container"
+        okButtonProps={{ className: "bg-secondary" }}
+      >
+        <div style={{ padding: "0px 10px 10px 5px" }}>
+          <span style={{ marginLeft: "10px", fontSize: "16px", fontWeight: "400" }}>Select Project</span>
+          <div className="filters" style={{ marginTop: "8px" }}>
+            <Select
+              placeholder="Select Project"
+              disabled={isUpdateMode}
+              value={selectedExistingProjectId}
+              onChange={handleExistingProjectChange}
+              style={{ width: "100%" }}
+              allowClear={true}
+            >
+              {allProjectsTimelines.map((project) => (
+                <Option key={project.id} value={project.id}>
+                  {project.projectParameters.projectName}
+                </Option>
+              ))}
+            </Select>
+            <Button
+              type="primary"
+              disabled={!selectedExistingProjectId}
+              icon={<ToolOutlined />}
+              onClick={() => navigate("/create/project-timeline", { state: { selectedExistingProject } })}
+              style={{ marginLeft: "15px", backgroundColor: "#d35400" }}
+            >
+              View Timeline
+            </Button>
+          </div>
+        </div>
+        <hr />
       </Modal>
     </>
   );

@@ -1,556 +1,442 @@
-// import React, { useState } from "react";
-// import {
-//   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton,
-//   TextField,
-// } from "@mui/material";
-// import "../styles/status-update.css"
-// import EditIcon from "@mui/icons-material/Edit";
-// import DeleteIcon from "@mui/icons-material/Delete";
-// import SaveIcon from "@mui/icons-material/Save";
-// import CancelIcon from "@mui/icons-material/Cancel";
-// import AddIcon from "@mui/icons-material/Add";
-// import RemoveIcon from "@mui/icons-material/Remove";
-
-// const initialModules = [
-//   {
-//     name: "Contract Formulation",
-//     activities: [
-//       {
-//         SrNo: "CF",
-//         Code: "CF/010",
-//         keyActivity: "Declaration as H1 Bidder",
-//         duration: 0,
-//         preRequisite: "",
-//         slack: "",
-//         plannedStart: "5 Mar 25",
-//         plannedFinish: "5 Mar 25",
-//         activityStatus: "Completed",
-//         actualStart: "",
-//         actualFinish: "",
-//         actualDuration: "Auto",
-//         remarks: "",
-//         expectedStart: "",
-//         expectedFinish: "Auto",
-//       },
-//       {
-//         SrNo: "CF",
-//         Code: "CF/020",
-//         keyActivity: "Signing of CBPDA",
-//         duration: 6,
-//         preRequisite: "CF/010",
-//         slack: "",
-//         plannedStart: "6 Mar 25",
-//         plannedFinish: "5 Apr 25",
-//         activityStatus: "In progress",
-//         actualStart: "",
-//         actualFinish: "",
-//         actualDuration: "Auto",
-//         remarks: "",
-//         expectedStart: "Auto",
-//         expectedFinish: "Auto",
-//       },
-//     ],
-//   },
-//   {
-//     name: "Budgetary Planning",
-//     activities: [
-//       {
-//         SrNo: "BP",
-//         Code: "BP/010",
-//         keyActivity: "Preparation of NFA for interim budget",
-//         duration: 15,
-//         preRequisite: "CF/010",
-//         slack: 15,
-//         plannedStart: "21 Mar 25",
-//         plannedFinish: "",
-//         activityStatus: "Yet to Start",
-//         actualStart: "",
-//         actualFinish: "",
-//         actualDuration: "",
-//         remarks: "",
-//         expectedStart: "",
-//         expectedFinish: "",
-//       },
-//     ],
-//   },
-// ];
-
-// export const StatusUpdate = () => {
-//   const [modules, setModules] = useState(initialModules);
-//   const [editingRow, setEditingRow] = useState(null);
-//   const [editData, setEditData] = useState({});
-//   const [expandedModules, setExpandedModules] = useState([]);
-
-//   const handleEdit = (moduleIndex: any, rowIndex: any) => {
-//     setEditingRow({ moduleIndex, rowIndex });
-//     setEditData({ ...modules[moduleIndex].activities[rowIndex] });
-//   };
-
-//   const handleCancelEdit = () => {
-//     setEditingRow(null);
-//     setEditData({});
-//   };
-
-//   const handleSaveEdit = () => {
-//     const updatedModules = [...modules];
-//     updatedModules[editingRow.moduleIndex].activities[editingRow.rowIndex] =
-//       editData;
-//     setModules(updatedModules);
-//     handleCancelEdit();
-//   };
-
-//   const handleDelete = (moduleIndex: any, rowIndex: any) => {
-//     const updatedModules = [...modules];
-//     updatedModules[moduleIndex].activities.splice(rowIndex, 1);
-//     setModules(updatedModules);
-//   };
-
-//   const handleChange = (field: any, value: any) => {
-//     setEditData((prev) => ({ ...prev, [field]: value }));
-//   };
-
-//   const toggleModule = (moduleIndex: any) => {
-//     if (expandedModules.includes(moduleIndex)) {
-//       setExpandedModules(expandedModules.filter((index) => index !== moduleIndex));
-//     } else {
-//       setExpandedModules([...expandedModules, moduleIndex]);
-//     }
-//   };
-
-//   return (
-//     <>
-//       <div className="main-status-update">
-//         <div className="status-heading">
-//           <p>Status Update</p>
-//         </div>
-//         <div className="status-update-items">
-//           <TableContainer component={Paper}>
-//             <Table>
-//               <TableHead className="table-header">
-//                 <TableRow style={{ color: "white", width: "70%" }}>
-//                   <TableCell className="header-cell" style={{ fontWeight: "bold" }}></TableCell>
-//                   <TableCell className="header-cell" style={{ fontWeight: "bold" }}>Module</TableCell>
-//                 </TableRow>
-//               </TableHead>
-//               <TableBody>
-//                 {modules.map((module, moduleIndex) => (
-//                   <React.Fragment key={moduleIndex}>
-//                     <TableRow>
-//                       <TableCell className="table-cell-item">
-//                         <IconButton
-//                           size="small"
-//                           onClick={() => toggleModule(moduleIndex)}
-//                         >
-//                           {expandedModules.includes(moduleIndex) ? (
-//                             <RemoveIcon />
-//                           ) : (
-//                             <AddIcon />
-//                           )}
-//                         </IconButton>
-//                       </TableCell>
-//                       <TableCell>{module.name}</TableCell>
-//                     </TableRow>
-//                     {expandedModules.includes(moduleIndex) && (
-//                       <TableRow>
-//                         <TableCell colSpan={3}>
-//                           <Table>
-//                             <TableHead className="table-header">
-//                               <TableRow>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Sr. No.
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Key Activities
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Duration
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Pre-requisite
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Slack
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Planned Start
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Planned Finish
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Activity Status
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Actual Start
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Actual Finish
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Actual Duration
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Remarks
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Expected Start
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Expected Finish
-//                                 </TableCell>
-//                                 <TableCell className="custom-table-cell" style={{ fontWeight: "bold" }}>
-//                                   Actions
-//                                 </TableCell>
-//                               </TableRow>
-//                             </TableHead>
-//                             <TableBody>
-//                               {module.activities.map((activity, rowIndex) => (
-//                                 <TableRow key={rowIndex}>
-//                                   {editingRow &&
-//                                     editingRow.moduleIndex === moduleIndex &&
-//                                     editingRow.rowIndex === rowIndex ? (
-//                                     <>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.SrNo}
-//                                           onChange={(e) =>
-//                                             handleChange("SrNo", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.keyActivity}
-//                                           onChange={(e) =>
-//                                             handleChange("keyActivity", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.duration}
-//                                           onChange={(e) =>
-//                                             handleChange("duration", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.preRequisite}
-//                                           onChange={(e) =>
-//                                             handleChange("preRequisite", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.slack}
-//                                           onChange={(e) =>
-//                                             handleChange("slack", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.plannedStart}
-//                                           onChange={(e) =>
-//                                             handleChange("plannedStart", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.plannedFinish}
-//                                           onChange={(e) =>
-//                                             handleChange("plannedFinish", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.activityStatus}
-//                                           onChange={(e) =>
-//                                             handleChange("activityStatus", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.actualStart}
-//                                           onChange={(e) =>
-//                                             handleChange("actualStart", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.actualFinish}
-//                                           onChange={(e) =>
-//                                             handleChange("actualFinish", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.actualDuration}
-//                                           onChange={(e) =>
-//                                             handleChange("actualDuration", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.remarks}
-//                                           onChange={(e) =>
-//                                             handleChange("remarks", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.expectedStart}
-//                                           onChange={(e) =>
-//                                             handleChange("expectedStart", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <TextField
-//                                           value={editData.expectedFinish}
-//                                           onChange={(e) =>
-//                                             handleChange("expectedFinish", e.target.value)
-//                                           }
-//                                         />
-//                                       </TableCell>
-//                                       <TableCell>
-//                                         <IconButton onClick={handleSaveEdit}>
-//                                           <SaveIcon />
-//                                         </IconButton>
-//                                         <IconButton onClick={handleCancelEdit}>
-//                                           <CancelIcon />
-//                                         </IconButton>
-//                                       </TableCell>
-//                                     </>
-//                                   ) : (
-//                                     <>
-//                                       <TableCell>{activity.SrNo}</TableCell>
-//                                       <TableCell>{activity.keyActivity}</TableCell>
-//                                       <TableCell>{activity.duration}</TableCell>
-//                                       <TableCell>{activity.preRequisite}</TableCell>
-//                                       <TableCell>{activity.slack}</TableCell>
-//                                       <TableCell>{activity.plannedStart}</TableCell>
-//                                       <TableCell>{activity.plannedFinish}</TableCell>
-//                                       <TableCell>{activity.activityStatus}</TableCell>
-//                                       <TableCell>{activity.actualStart}</TableCell>
-//                                       <TableCell>{activity.actualFinish}</TableCell>
-//                                       <TableCell>{activity.actualDuration}</TableCell>
-//                                       <TableCell>{activity.remarks}</TableCell>
-//                                       <TableCell>{activity.expectedStart}</TableCell>
-//                                       <TableCell>{activity.expectedFinish}</TableCell>
-//                                       <TableCell>
-//                                         <IconButton
-//                                           onClick={() => handleEdit(moduleIndex, rowIndex)}
-//                                         >
-//                                           <EditIcon />
-//                                         </IconButton>
-//                                         <IconButton
-//                                           onClick={() => handleDelete(moduleIndex, rowIndex)}
-//                                         >
-//                                           <DeleteIcon />
-//                                         </IconButton>
-//                                       </TableCell>
-//                                     </>
-//                                   )}
-//                                 </TableRow>
-//                               ))}
-//                             </TableBody>
-//                           </Table>
-//                         </TableCell>
-//                       </TableRow>
-//                     )}
-//                   </React.Fragment>
-//                 ))}
-//               </TableBody>
-//             </Table>
-//           </TableContainer>
-//         </div>
-//       </div>
-//     </>
-//   );
-// };
-// export default StatusUpdate;
-
-
-
-import { Table } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/status-update.css";
+import { ColumnsType } from "antd/es/table";
+import dayjs from "dayjs";
+import { FolderOpenOutlined } from "@mui/icons-material";
+import { useLocation, useNavigate } from "react-router-dom";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import { Button, Select, Modal, Input, message, Table } from "antd";
+import { DownloadOutlined, EditOutlined, ShareAltOutlined } from "@ant-design/icons";
+interface Activity {
+  code: string;
+  activityName: string;
+  prerequisite: string;
+  slack: string;
+  level: string;
+  duration: number;
+  start: string | null;
+  end: string | null;
+  activityStatus: string | null;
+}
 
-const initialModules = [
-  {
-    name: "Contract Formulation",
-    moduleCode: "CF",
-    activities: [
-      {
-        SrNo: "CF",
-        Code: "CF/010",
-        keyActivity: "Declaration as H1 Bidder",
-        duration: 0,
-        preRequisite: "",
-        slack: "",
-        plannedStart: "5 Mar 25",
-        plannedFinish: "5 Mar 25",
-        activityStatus: "Completed",
-        actualStart: "",
-        actualFinish: "",
-        actualDuration: "Auto",
-        remarks: "",
-        expectedStart: "",
-        expectedFinish: "Auto",
-      },
-      {
-        SrNo: "CF",
-        Code: "CF/020",
-        keyActivity: "Signing of CBPDA",
-        duration: 6,
-        preRequisite: "CF/010",
-        slack: "",
-        plannedStart: "6 Mar 25",
-        plannedFinish: "5 Apr 25",
-        activityStatus: "In progress",
-        actualStart: "",
-        actualFinish: "",
-        actualDuration: "Auto",
-        remarks: "",
-        expectedStart: "Auto",
-        expectedFinish: "Auto",
-      },
-    ],
-  },
-  {
-    name: "Budgetary Planning",
-    moduleCode: "BP",
-    activities: [
-      {
-        SrNo: "BP",
-        Code: "BP/010",
-        keyActivity: "Preparation of NFA for interim budget",
-        duration: 15,
-        preRequisite: "CF/010",
-        slack: 15,
-        plannedStart: "21 Mar 25",
-        plannedFinish: "",
-        activityStatus: "Yet to Start",
-        actualStart: "",
-        actualFinish: "",
-        actualDuration: "",
-        remarks: "",
-        expectedStart: "",
-        expectedFinish: "",
-      },
-    ],
-  },
-  {
-    name: "Budgetary Planning",
-    moduleCode: "BP",
-    activities: [
-      {
-        SrNo: "BP",
-        Code: "BP/010",
-        keyActivity: "Preparation of NFA for interim budget",
-        duration: 15,
-        preRequisite: "CF/010",
-        slack: 15,
-        plannedStart: "21 Mar 25",
-        plannedFinish: "",
-        activityStatus: "Yet to Start",
-        actualStart: "",
-        actualFinish: "",
-        actualDuration: "",
-        remarks: "",
-        expectedStart: "",
-        expectedFinish: "",
-      },
-    ],
-  },
-];
+interface Module {
+  parentModuleCode: string;
+  moduleName: string;
+  activities: Activity[];
+}
 
-const columns: any = [
-  { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, fixed: "left" },
-  { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250 },
-  { title: "Duration", dataIndex: "duration", key: "duration", width: 80 },
-  { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120 },
-  { title: "Slack", dataIndex: "slack", key: "slack", width: 80 },
-  { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120 },
-  { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120 },
-  { title: "Activity Status", dataIndex: "activityStatus", key: "activityStatus", width: 150 },
-  { title: "Actual Start", dataIndex: "actualStart", key: "actualStart", width: 120 },
-  { title: "Actual Finish", dataIndex: "actualFinish", key: "actualFinish", width: 120 },
-  { title: "Actual Duration", dataIndex: "actualDuration", key: "actualDuration", width: 120 },
-  { title: "Remarks", dataIndex: "remarks", key: "remarks", width: 120 },
-  { title: "Expected Start", dataIndex: "expectedStart", key: "expectedStart", width: 120, fixed: "right" },
-  { title: "Expected Finish", dataIndex: "expectedFinish", key: "expectedFinish", width: 120, fixed: "right" },
-];
+const { Option } = Select;
 
 export const StatusUpdate = () => {
-  const [expandedKeys, setExpandedKeys] = useState(initialModules.map((_, index) => `module-${index}`));
-  const dataSource = initialModules.map((module, moduleIndex) => ({
-    key: `module-${moduleIndex}`,
-    SrNo: module.moduleCode,
-    Code: module.moduleCode,
-    keyActivity: module.name,
-    duration: "",
-    preRequisite: "",
-    slack: "",
-    plannedStart: "",
-    plannedFinish: "",
-    activityStatus: "",
-    actualStart: "",
-    actualFinish: "",
-    actualDuration: "",
-    remarks: "",
-    expectedStart: "",
-    expectedFinish: "",
-    isModule: true,
-    children: module.activities.map((activity, actIndex) => ({
-      key: `activity-${moduleIndex}-${actIndex}`,
-      ...activity,
-      isModule: false,
-    })),
-  }));
+  const [expandedKeys, setExpandedKeys] = useState<any>([]);
+  const [allProjects, setAllProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [sequencedModules, setSequencedModules] = useState<Module[]>([]);
+  const [dataSource, setDataSource] = useState<any>([]);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [email, setEmail] = useState("");
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    setEmail("");
+  };
+
+  // useEffect(() => {
+  //   try {
+  //     const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+  //     const userId = loggedInUser?.id;
+  //     if (!userId) return;
+
+  //     const userProjectsKey = `projects_${userId}`;
+  //     const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+
+  //     if (Array.isArray(storedData)) {
+  //       const updatedData = storedData.map((project, index) => {
+  //         if (index === 1 || index === 2) {
+  //           const { projectTimeline, ...rest } = project;
+  //           return rest;
+  //         }
+  //         return project;
+  //       });
+  //       localStorage.setItem(userProjectsKey, JSON.stringify(updatedData));
+  //     }
+  //   } catch (error) {
+  //     console.error("An unexpected error occurred while fetching projects:", error);
+  //   }
+  // }, []);
+
+  useEffect(() => {
+    try {
+      const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = loggedInUser?.id;
+      if (!userId) return;
+
+      const userProjectsKey = `projects_${userId}`;
+      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]").filter((item: any) => item.projectTimeline != undefined);
+
+      if (!Array.isArray(storedData) || storedData.length === 0) {
+        setAllProjects([]);
+        return;
+      }
+
+      setAllProjects(storedData);
+
+      if (storedData.length === 1) {
+        const firstProject = storedData[0];
+
+        if (firstProject?.id) {
+          setSelectedProjectId(firstProject.id);
+          setSelectedProject(firstProject);
+
+          if (firstProject?.projectTimeline && Array.isArray(firstProject.projectTimeline)) {
+            handleLibraryChange(firstProject.projectTimeline);
+          } else if (firstProject?.initialStatus?.items && Array.isArray(firstProject.initialStatus.items)) {
+            handleLibraryChange(firstProject.initialStatus.items.filter(
+              (item: any) => item?.status?.toLowerCase() !== "completed"
+            ));
+          } else {
+            handleLibraryChange([]);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("An unexpected error occurred while fetching projects:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (location.state && location.state.currentProject) {
+      const selectedActiveProject = location.state.currentProject;
+      if (selectedActiveProject?.id) {
+        setSelectedProjectId(selectedActiveProject.id);
+        setSelectedProject(selectedActiveProject);
+        if (selectedActiveProject?.projectTimeline && Array.isArray(selectedActiveProject.projectTimeline)) {
+          handleLibraryChange(selectedActiveProject.projectTimeline);
+        } else if (selectedActiveProject?.initialStatus?.items && Array.isArray(selectedActiveProject.initialStatus.items)) {
+          handleLibraryChange(selectedActiveProject.initialStatus.items.filter(
+            (item: any) => item?.status?.toLowerCase() !== "completed"
+          ));
+        }
+      }
+      setTimeout(() => navigate(".", { replace: true }), 0);
+    }
+  }, [location.state]);
+
+  const handleProjectChange = (projectId: any) => {
+    setSelectedProjectId(projectId);
+    const project = allProjects.find((p) => p.id === projectId);
+    setSelectedProject(project);
+
+    if (project?.projectTimeline) {
+      handleLibraryChange(project?.projectTimeline);
+    } else {
+      handleLibraryChange([]);
+    }
+  };
+
+  const handleLibraryChange = (libraryItems: any) => {
+    if (libraryItems) {
+      setSequencedModules(libraryItems);
+      const finDataSource = libraryItems.map((module: any, moduleIndex: number) => {
+        return {
+          key: `module-${moduleIndex}`,
+          SrNo: module.parentModuleCode,
+          Code: module.parentModuleCode,
+          keyActivity: module.moduleName,
+          isModule: true,
+          children: (module.activities || []).map((activity: any, actIndex: number) => ({
+            key: `activity-${moduleIndex}-${actIndex}`,
+            SrNo: module.parentModuleCode,
+            Code: activity.code,
+            keyActivity: activity.activityName,
+            duration: activity.duration ?? "",
+            preRequisite: activity.prerequisite ?? "-",
+            slack: activity.slack ?? "0",
+            plannedStart: activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+            plannedFinish: activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+            actualStart: "",
+            actualFinish: "",
+            actualDuration: "",
+            remarks: "",
+            expectedStart: "",
+            expectedFinish: "",
+            isModule: false,
+            activityStatus: activity.activityStatus || "Pending",
+          })),
+        };
+      });
+
+      setDataSource(finDataSource);
+      setExpandedKeys(finDataSource.map((_: any, index: any) => `module-${index}`));
+    } else {
+      setSequencedModules([]);
+      setDataSource([]);
+    }
+  };
+
+  const finalColumns: ColumnsType = [
+    { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
+    { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
+    { title: "Duration", dataIndex: "duration", key: "duration", width: 80, align: "center" },
+    { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
+    { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
+    { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
+    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
+  ];
+
+  const handleDownload = async () => {
+    const workbook: any = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Activities");
+
+    const globalHeader = [
+      "Sr No.",
+      "Key Activity",
+      "Duration",
+      "Pre-Requisite",
+      "Slack",
+      "Planned Start",
+      "Planned Finish"
+    ];
+    const headerRow = worksheet.addRow(globalHeader);
+
+    headerRow.eachCell((cell: any) => {
+      cell.font = { bold: true, size: 14, color: { argb: "FFFFFF" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "258790" },
+      };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+      };
+    });
+
+    worksheet.getRow(1).height = 30;
+
+    const moduleHeaderStyle = {
+      font: { bold: true, size: 14, color: { argb: "000000" } },
+      fill: {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "DDDDDD" },
+      },
+      alignment: { horizontal: "left", vertical: "middle" },
+    };
+
+    const activityRowStyle = {
+      font: { size: 11 },
+      alignment: { horizontal: "left", vertical: "middle" },
+    };
+
+    sequencedModules.forEach((module) => {
+      const moduleHeaderRow = worksheet.addRow([
+        module.parentModuleCode,
+        module.moduleName,
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ]);
+
+      moduleHeaderRow.eachCell((cell: any) => {
+        cell.font = moduleHeaderStyle.font;
+        cell.fill = moduleHeaderStyle.fill;
+        cell.alignment = moduleHeaderStyle.alignment;
+      });
+
+      module.activities.forEach((activity) => {
+        const row = worksheet.addRow([
+          activity.code,
+          activity.activityName,
+          activity.duration || 0,
+          activity.prerequisite,
+          activity.slack || 0,
+          activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+          activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+        ]);
+
+        row.eachCell((cell: any) => {
+          cell.font = activityRowStyle.font;
+          cell.alignment = activityRowStyle.alignment;
+        });
+      });
+
+      worksheet.addRow([]);
+    });
+
+    worksheet.columns = [
+      { width: 20 },
+      { width: 30 },
+      { width: 15 },
+      { width: 30 },
+      { width: 15 },
+      { width: 25 },
+      { width: 25 },
+      { width: 30 },
+    ];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
+    message.success("Download started!");
+  };
+
+  const editTimeBuilder = () => {
+    navigate("/create/timeline-builder", { state: { selectedProject: selectedProject } });
+  };
+
+  const handleShare = () => {
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      message.error("Please enter a valid email address.");
+      return;
+    }
+    message.success(`Shared to ${email}`);
+    setIsModalOpen(false);
+    setEmail("");
+  };
 
   return (
-    <div className="main-status-update">
+    <>
       <div className="status-heading">
-        <p>Status Update</p>
+        <p>Project Timeline</p>
       </div>
-      <hr />
-      <div className="status-update-items">
-        <Table
-          columns={columns}
-          dataSource={dataSource}
-          pagination={false}
-          expandable={{
-            expandedRowRender: () => null,
-            rowExpandable: (record) => record.children && record.children.length > 0,
-            expandedRowKeys: expandedKeys,
-            onExpand: (expanded, record) => {
-              setExpandedKeys(
-                expanded
-                  ? [...expandedKeys, record.key]
-                  : expandedKeys.filter((key) => key !== record.key)
-              );
-            },
-          }}
-          rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
-          bordered
-          scroll={{
-            x: "max-content",
-            y: "calc(100vh - 225px)",
-          }}
-        />
+
+      <div className="main-status-update">
+        <div className="status-toolbar">
+          <div className="filters">
+            <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Select Project</label>
+            <Select
+              placeholder="Select Project"
+              value={selectedProjectId}
+              onChange={handleProjectChange}
+              dropdownMatchSelectWidth={false}
+              style={{ width: "100%" }}
+            >
+              {allProjects.map((project) => (
+                <Option key={project.id} value={project.id}>
+                  {project.projectParameters.projectName}
+                </Option>
+              ))}
+            </Select>
+          </div>
+          <div className="actions">
+            <Button
+              type="primary"
+              disabled={!selectedProjectId}
+              icon={<DownloadOutlined />}
+              onClick={handleDownload}
+              style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
+            >
+              Download Timeline
+            </Button>
+            <Button
+              type="primary"
+              disabled={!selectedProjectId}
+              icon={<EditOutlined />}
+              onClick={editTimeBuilder}
+              style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
+            >
+              Edit Timeline
+            </Button>
+            <Button
+              type="primary"
+              className="bg-secondary"
+              disabled={!selectedProjectId}
+              icon={<ShareAltOutlined />}
+              onClick={showModal}
+              style={{ marginLeft: "15px", backgroundColor: "#4169E1", borderColor: "#007BFF" }}
+            >
+              Share
+            </Button>
+          </div>
+        </div>
+        <hr />
+        {selectedProject != null ? (
+          <div className="status-update-items">
+            <div style={{ overflowX: "hidden" }}>
+              <Table
+                columns={finalColumns}
+                dataSource={dataSource}
+                className="project-timeline-table"
+                pagination={false}
+                expandable={{
+                  expandedRowRender: () => null,
+                  rowExpandable: (record) => record.children && record.children.length > 0,
+                  expandedRowKeys: expandedKeys,
+                  onExpand: (expanded, record) => {
+                    setExpandedKeys(
+                      expanded
+                        ? [...expandedKeys, record.key]
+                        : expandedKeys.filter((key: any) => key !== record.key)
+                    );
+                  },
+                }}
+                rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
+                bordered
+                scroll={{
+                  x: "max-content",
+                  y: "calc(100vh - 252px)",
+                }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="container-msg">
+            <div className="no-project-message">
+              <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
+              {allProjects.length === 0 ? (
+                <>
+                  <h3>No Projects Found</h3>
+                  <p>You need to create a project for defining a timeline.</p>
+                  <button onClick={() => navigate("/create/register-new-project")}>Create Project</button>
+                </>
+              ) : (
+                <>
+                  <h3>No Project Selected</h3>
+                  <p>Please select a project to continue.</p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      <Modal
+        title="Share Timeline"
+        visible={isModalOpen}
+        onCancel={handleCancel}
+        onOk={handleShare}
+        okText="Send"
+        className="modal-container"
+        okButtonProps={{ className: "bg-secondary" }}
+      >
+        <div style={{ padding: "0px 10px", fontWeight: "400", fontSize: "16px" }}>
+          <span>Enter recipient's email:</span>
+          <Input
+            style={{ marginTop: "10px" }}
+            type="email"
+            placeholder="example@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+      </Modal>
+
+    </>
   );
 };
 

@@ -33,7 +33,7 @@ const initialNavLinks: any = [
             { label: "Notification", action: "/create/notification", isNull: true },
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
             { label: "Module Library", action: "/create/module-library" },
-            { label: "Status Update", action: "/create/status-update" },
+            { label: "Project Timeline", action: "/create/project-timeline" },
             { label: "RACI, Alert & Notification", action: "/create/raci-alert-notification" },
             { label: "Dashboard", action: "/create/dashboard", isNull: true },
             { label: "Document", action: "/create/document" },
