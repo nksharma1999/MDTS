@@ -221,7 +221,7 @@ const CreateDocument: React.FC = () => {
           </div>
 
         </div>
-        <div className="right-images">
+        <div className="right-images image-container">
           <ImageContainer imageUrl="/images/auths/m5.jpg" />
         </div>
       </div>

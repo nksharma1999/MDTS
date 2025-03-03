@@ -27,16 +27,16 @@ const initialNavLinks: any = [
             { label: "Register New Project", action: "/create/register-new-project" },
             { label: "Modules", action: "/modules" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
+            { label: "Project Timeline", action: "/create/project-timeline" },
+            { label: "Module Library", action: "/create/module-library" },
             { label: "Non-working Days", action: "/create/non-working-days" },
-            { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
-            { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
+            { label: "RACI, Alert & Notification", action: "/create/raci-alert-notification" },
+            { label: "Document", action: "/create/document" },
             { label: "Notification", action: "/create/notification", isNull: true },
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
-            { label: "Module Library", action: "/create/module-library" },
-            { label: "Project Timeline", action: "/create/project-timeline" },
-            { label: "RACI, Alert & Notification", action: "/create/raci-alert-notification" },
             { label: "Dashboard", action: "/create/dashboard", isNull: true },
-            { label: "Document", action: "/create/document" },
+            { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
+            { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
         ]
     }
 ];
@@ -65,6 +65,29 @@ const Navbar: React.FC = () => {
             setUser(JSON.parse(storedUser));
         }
     }, []);
+
+    useEffect(() => {
+        const currentPath = location.pathname;
+        let foundTab: NavItem | any = null;
+        let parentLabel: string | undefined;
+        navLinks.forEach((link) => {
+            if (link.subItems) {
+                const subTab = link.subItems.find((sub) => sub.action === currentPath);
+                if (subTab) {
+                    foundTab = subTab;
+                    parentLabel = link.label;
+                }
+            } else if (link.action === currentPath) {
+                foundTab = link;
+            }
+        });
+        if (foundTab) {
+            setSelectedDropdownKeys((prev) => ({
+                ...prev,
+                [parentLabel || foundTab.label]: foundTab.label,
+            }));
+        }
+    }, [location.pathname, navLinks]);
 
     const handleLogout = () => {
         localStorage.removeItem("user");

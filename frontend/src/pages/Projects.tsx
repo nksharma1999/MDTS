@@ -5,6 +5,9 @@ import { Link } from "react-router-dom";
 import ImageContainer from "../components/ImageContainer";
 import { SearchOutlined } from "@mui/icons-material";
 import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
+import { Collapse, Table, Typography } from "antd";
+const { Panel } = Collapse;
+const { Title } = Typography;
 interface LocationDetails {
     state: string;
     district: string;
@@ -103,7 +106,7 @@ const Projects = () => {
         </div>;
     }
 
-    const { projectParameters, locations, contractualDetails, initialStatus } = projectDetails;
+    const { projectParameters, locations, contractualDetails, initialStatus }: any = projectDetails;
 
     const handleProjectClick = (projectName: string) => {
         const selectedProject = allProjects.find(
@@ -200,7 +203,10 @@ const Projects = () => {
                 </div>
                 <section className="project-info">
                     <div className="base-details">
-                        <p>{selectedProjectName}</p>
+                        <div>
+                            <p>{selectedProjectName}</p>
+                            <div style={{ fontSize: "12px", color: "#c5c5c5" }}>{projectParameters.companyName}</div>
+                        </div>
                         <div>
                             <Button className="bg-secondary" onClick={showModal}>
                                 Add Member
@@ -338,20 +344,47 @@ const Projects = () => {
                         <div className="info-item">
                             <p>Initial Status</p>
                             <hr style={{ margin: "0px 0px 10px 0px", height: "1.5px" }} />
-                            <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
-                                <Row gutter={16}>
-                                    <Col span={24}>
-                                        <Form.Item label="Forest Clearance">
-                                            <Input value={initialStatus.forestclearence} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Shivam">
-                                            <Input value={initialStatus.shivam} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </Form>
+                            <div style={{ padding: 5, maxWidth: "900px" }}>
+                                <Title level={4} style={{ margin: "0px 0px 10px 10px" }}>
+                                    {initialStatus.library}
+                                </Title>
+                                <Collapse accordion>
+                                    {initialStatus.items.map((module: any) => (
+                                        <Panel
+                                            key={module.parentModuleCode}
+                                            header={<b style={{ fontSize: "14px" }}>{module.moduleName}</b>}
+                                            extra={<span style={{ fontSize: "12px" }}>Mine Type: {module.mineType}</span>}
+                                        >
+                                            <Table
+                                                dataSource={module.activities}
+                                                columns={[
+                                                    {
+                                                        title: "Activity Name",
+                                                        dataIndex: "activityName",
+                                                        key: "activityName",
+                                                        width: "50%",
+                                                    },
+                                                    {
+                                                        title: "Duration (days)",
+                                                        dataIndex: "duration",
+                                                        key: "duration",
+                                                        align: "center",
+                                                    },
+                                                    {
+                                                        title: "Prerequisite",
+                                                        dataIndex: "prerequisite",
+                                                        key: "prerequisite",
+                                                        align: "center",
+                                                    },
+                                                ]}
+                                                rowKey="code"
+                                                pagination={false}
+                                                bordered
+                                            />
+                                        </Panel>
+                                    ))}
+                                </Collapse>
+                            </div>
                         </div>
                     </div>
                 </section>

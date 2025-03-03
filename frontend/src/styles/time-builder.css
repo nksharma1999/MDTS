@@ -239,15 +239,26 @@
     background-color: #3a8c94;
 }
 
-.st-sun-field {
+.holiday-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
     border: 1px solid #ddd;
-    padding: 10px;
     border-radius: 4px;
     margin-bottom: 10px;
     box-shadow: 0px 1px 0px 0px rgba(9, 30, 66, .25);
 }
 
+
+.st-sun-field {
+    padding: 10px;
+}
+
 .saturday-sunday-checkbox {
     margin-right: 16px;
+}
+
+.add-new-holiday {
+    padding-right: 10px;
 }

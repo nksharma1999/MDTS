@@ -123,7 +123,7 @@ const Document: React.FC = () => {
                         className="custom-table"
                     />
                 </div>
-                <div className="right-images">
+                <div className="right-images image-container">
                     <ImageContainer imageUrl="/images/auths/m8.jpg" />
                 </div>
             </div>

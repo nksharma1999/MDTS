@@ -8,6 +8,7 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Button, Select, Modal, Input, message, Table } from "antd";
 import { DownloadOutlined, EditOutlined, ShareAltOutlined } from "@ant-design/icons";
+import eventBus from "../Utils/EventEmitter";
 interface Activity {
   code: string;
   activityName: string;
@@ -48,30 +49,6 @@ export const StatusUpdate = () => {
     setIsModalOpen(false);
     setEmail("");
   };
-
-  // useEffect(() => {
-  //   try {
-  //     const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-  //     const userId = loggedInUser?.id;
-  //     if (!userId) return;
-
-  //     const userProjectsKey = `projects_${userId}`;
-  //     const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
-  //     if (Array.isArray(storedData)) {
-  //       const updatedData = storedData.map((project, index) => {
-  //         if (index === 1 || index === 2) {
-  //           const { projectTimeline, ...rest } = project;
-  //           return rest;
-  //         }
-  //         return project;
-  //       });
-  //       localStorage.setItem(userProjectsKey, JSON.stringify(updatedData));
-  //     }
-  //   } catch (error) {
-  //     console.error("An unexpected error occurred while fetching projects:", error);
-  //   }
-  // }, []);
 
   useEffect(() => {
     try {
@@ -296,6 +273,7 @@ export const StatusUpdate = () => {
   };
 
   const editTimeBuilder = () => {
+    eventBus.emit("updateTab", "/create/timeline-builder");
     navigate("/create/timeline-builder", { state: { selectedProject: selectedProject } });
   };
 
@@ -402,7 +380,10 @@ export const StatusUpdate = () => {
                 <>
                   <h3>No Projects Found</h3>
                   <p>You need to create a project for defining a timeline.</p>
-                  <button onClick={() => navigate("/create/register-new-project")}>Create Project</button>
+                  <button onClick={() => {
+                    eventBus.emit("updateTab", "/create/register-new-project");
+                    navigate("/create/register-new-project");
+                  }}>Create Project</button>
                 </>
               ) : (
                 <>

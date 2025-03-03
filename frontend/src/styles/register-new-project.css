@@ -1,5 +1,6 @@
 .registration-container {
     display: flex;
+    gap: 5px;
 
     .step-registration-form {
         flex: 7;
@@ -11,7 +12,12 @@
 
     .image-container {
         flex: 3;
+        height: calc(100vh - 85px);
+        overflow-y: scroll;
+        overflow-x: hidden;
+        margin-top: 10px;
     }
+
 }
 
 .form-items {
