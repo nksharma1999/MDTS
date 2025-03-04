@@ -937,6 +937,7 @@ const TimeBuilder = () => {
   };
 
   const handleCancelUpdateProjectTimeline = () => {
+    setIsCancelEditModalVisiblVisible(false)
     setIsUpdateMode(false);
     setSelectedProject(null);
     setSelectedProjectId(null);
@@ -948,12 +949,12 @@ const TimeBuilder = () => {
     <>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <div style={{ width: "100%" }} className="time-builder-page">
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div className="title-and-filter">
               <div className="heading">
                 <span>Timeline Builder</span>
               </div>
-              {allProjects.length > 0 && (
+              {(allProjects.length > 0 || selectedProject) && (
                 <div>
                   <div className="filters">
                     <Select
@@ -989,7 +990,7 @@ const TimeBuilder = () => {
                 </Button>
               </div>
             ) : isUpdateMode && (<>
-              <div style={{ padding: "8px 8px 0px 0px" }}>
+              <div style={{ paddingRight: "5px" }}>
                 <Button
                   type="primary"
                   disabled={!selectedProjectId}
@@ -1195,7 +1196,7 @@ const TimeBuilder = () => {
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={() => navigate("/create/register-new-project")}
-                    style={{ backgroundColor: "#1890ff", borderColor: "#1890ff" }}
+                    className="bg-secondary"
                   >
                     Create Project
                   </Button>
@@ -1240,7 +1241,7 @@ const TimeBuilder = () => {
       <Modal
         title="Confirm Download"
         visible={isModalVisible}
-        onOk={handleCancelUpdateProjectTimeline}
+        onOk={handleDownload}
         onCancel={() => setIsModalVisible(false)}
         okText="Download"
         cancelText="Cancel"
@@ -1253,7 +1254,7 @@ const TimeBuilder = () => {
       <Modal
         title="Confirm Discard Changes"
         visible={isCancelEditModalVisible}
-        onOk={handleDownload}
+        onOk={handleCancelUpdateProjectTimeline}
         onCancel={() => setIsCancelEditModalVisiblVisible(false)}
         okText="Yes, Discard"
         cancelText="Cancel"
