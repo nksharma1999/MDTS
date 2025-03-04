@@ -18,6 +18,7 @@ import {
   Toolbar,
   Tooltip,
 } from "@mui/material";
+import { getAllUsers } from "../Utils/moduleStorage"; 
 import { useNavigate } from "react-router-dom";
 import { getModules } from "../Utils/moduleStorage";
 import "../styles/user-management.css";
@@ -26,16 +27,6 @@ import Assignment from "@mui/icons-material/Assignment";
 import { Col, Form, Input, Modal, Row, Select, Typography, List } from "antd";
 const { Option } = Select;
 const { Text } = Typography;
-interface User {
-  id: number;
-  name: string;
-  company: string;
-  project: string;
-  mobile: string;
-  email: string;
-  whatsapp: string;
-  profilePhoto: string;
-}
 
 interface Module {
   parentModuleCode: string;
@@ -67,6 +58,14 @@ interface User {
   password?: string;
   isTempPassword?: boolean;
   role?: string;
+  assignedModules?: {
+    moduleCode: string;
+    moduleName: string;
+    responsibilitiesOnActivities: {
+      activityCode: string;
+      responsibilities: string[];
+    }[];
+  }[];
 }
 
 const ManageUser: React.FC = () => {
@@ -88,6 +87,61 @@ const ManageUser: React.FC = () => {
   const [selectedUserFor, setSelectedUserFor] = useState<any>({
     raci: {},
   });
+
+  useEffect(() => {
+    const fetchData = () => {
+      const allUsers = getAllUsers();
+      setUsers(allUsers);
+
+      const uniqueModules: any = [];
+      allUsers.forEach((user: User) => {
+        user.assignedModules?.forEach((module) => {
+          if (!uniqueModules.some((m: any) => m.parentModuleCode === module.moduleCode)) {
+            uniqueModules.push({
+              parentModuleCode: module.moduleCode,
+              moduleName: module.moduleName,
+            });
+          }
+        });
+      });
+
+      setModules(uniqueModules);
+    };
+
+    if (openRACIModal) {
+      fetchData();
+    }
+  }, [openRACIModal]);
+
+
+
+  // Get RACI assignments for the selected user
+  const getRACIAssignments = (user, moduleCode) => {
+    const module = user.assignedModules?.find((m) => m.moduleCode === moduleCode);
+    if (module) {
+      return {
+        responsible: module.responsibilitiesOnActivities?.some((a) =>
+          a.responsibilities.includes("Responsible")
+        ),
+        accountable: module.responsibilitiesOnActivities?.some((a) =>
+          a.responsibilities.includes("Accountable")
+        ),
+        consulted: module.responsibilitiesOnActivities?.some((a) =>
+          a.responsibilities.includes("Consulted")
+        ),
+        informed: module.responsibilitiesOnActivities?.some((a) =>
+          a.responsibilities.includes("Informed")
+        ),
+      };
+    }
+    return {
+      responsible: false,
+      accountable: false,
+      consulted: false,
+      informed: false,
+    };
+  };
+
 
   useEffect(() => {
     const storedUsers = localStorage.getItem("users");
@@ -218,9 +272,11 @@ const ManageUser: React.FC = () => {
   };
 
 
+  
+
   return (
     <div className="page-container">
-      <div style={{ background: "none", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0px" }} >
+      <div style={{ background: "none", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0px" }}>
         <div className="" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div className="holiday-page-heading" style={{ marginLeft: "10px" }}>
             RACI, Alert & Notification
@@ -237,7 +293,6 @@ const ManageUser: React.FC = () => {
           <div className="toolbar-buttons">
             {[
               { title: "View", icon: <Visibility sx={{ color: "#1976d2" }} />, action: handleViewUser },
-              // { title: "Edit", icon: <Edit sx={{ color: "#2e7d32" }} />, action: handleEditUser },
               { title: "Archive", icon: <Archive sx={{ color: "#ff9800" }} />, action: handleArchiveUser }
             ].map(({ title, icon, action }, index) => (
               <Tooltip key={index} title={title}>
@@ -271,7 +326,6 @@ const ManageUser: React.FC = () => {
               </IconButton>
             </Tooltip>
           </div>
-
         </Toolbar>
       </div>
 
@@ -338,81 +392,149 @@ const ManageUser: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openRACIModal} onClose={handleCloseModal} maxWidth="lg" fullWidth className="dialog-raci">
-        <DialogTitle>RACI Module Assignments</DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={openRACIModal}
+        onClose={handleCloseModal}
+        maxWidth="lg"
+        fullWidth
+        style={{ fontFamily: "Arial, sans-serif" }}
+      >
+        <DialogTitle
+          style={{
+            backgroundColor: "#258790",
+            color: "white",
+            padding: "16px 24px",
+            fontSize: "18px",
+            fontWeight: "bold",
+          }}
+        >
+          RACI Module Assignments
+        </DialogTitle>
+        <DialogContent style={{ padding: "20px 24px" }}>
           {selectedUser && (
             <div>
-              <div className="table-container">
-                <table className="raci-table">
+              <div style={{ marginTop: "10px" }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                  }}
+                >
                   <thead>
                     <tr>
-                      <th>Responsible</th>
-                      <th>Accountable</th>
-                      <th>Consulted</th>
-                      <th>Informed</th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          textAlign: "left",
+                          backgroundColor: "#f5f5f5",
+                          fontWeight: "bold",
+                          color: "#333",
+                          borderBottom: "1px solid #e0e0e0",
+                        }}
+                      >
+                        Module
+                      </th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          textAlign: "left",
+                          backgroundColor: "#f5f5f5",
+                          fontWeight: "bold",
+                          color: "#333",
+                          borderBottom: "1px solid #e0e0e0",
+                        }}
+                      >
+                        Activity
+                      </th>
+                      <th
+                        style={{
+                          padding: "12px",
+                          textAlign: "left",
+                          backgroundColor: "#f5f5f5",
+                          fontWeight: "bold",
+                          color: "#333",
+                          borderBottom: "1px solid #e0e0e0",
+                        }}
+                      >
+                        Responsibilities
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {modules.map((module) => (
-                      <tr key={module.parentModuleCode}>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.responsible || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "responsible")}
-                              />
-                            }
-                            label="Responsible"
-                          />
-                        </td>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.accountable || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "accountable")}
-                              />
-                            }
-                            label="Accountable"
-                          />
-                        </td>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.consulted || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "consulted")}
-                              />
-                            }
-                            label="Consulted"
-                          />
-                        </td>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.informed || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "informed")}
-                              />
-                            }
-                            label="Informed"
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedUser.assignedModules?.map((module) =>
+                      module.responsibilitiesOnActivities.map((activity) => (
+                        <tr
+                          key={`${module.moduleCode}-${activity.activityCode}`}
+                          style={{
+                            backgroundColor: "white",
+                            color: "#555",
+                          }}
+                        >
+                          <td
+                            style={{
+                              padding: "12px",
+                              textAlign: "left",
+                              borderBottom: "1px solid #e0e0e0",
+                            }}
+                          >
+                            {module.moduleName}
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px",
+                              textAlign: "left",
+                              borderBottom: "1px solid #e0e0e0",
+                            }}
+                          >
+                            {activity.activityCode}
+                          </td>
+                          <td
+                            style={{
+                              padding: "12px",
+                              textAlign: "left",
+                              borderBottom: "1px solid #e0e0e0",
+                            }}
+                          >
+                            {activity.responsibilities.join(", ")}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} className="close-button">
+        <DialogActions
+          style={{
+            padding: "16px 24px",
+            borderTop: "1px solid #e0e0e0",
+          }}
+        >
+          <Button
+            onClick={handleCloseModal}
+            style={{
+              backgroundColor: "#f5f5f5",
+              color: "#333",
+              border: "1px solid #ccc",
+              padding: "8px 16px",
+              fontSize: "14px",
+              textTransform: "none",
+            }}
+          >
             Close
           </Button>
-          <Button onClick={handleCloseModal} className="save-button" disabled={!isRACIValid}>
+          <Button
+            onClick={handleCloseModal}
+            style={{
+              backgroundColor: "#258790",
+              color: "white",
+              padding: "8px 16px",
+              fontSize: "14px",
+              textTransform: "none",
+            }}
+          >
             Save
           </Button>
         </DialogActions>
@@ -434,10 +556,6 @@ const ManageUser: React.FC = () => {
               <span>{getInitials(selectedUser?.name)}</span>
             </div>
           </div>
-          {/* <div className="profile-min-details">
-            <p className="user-name">{selectedUser?.name}</p>
-            <p className="email">{selectedUser?.email}</p>
-          </div> */}
           <div className="user-details">
             <Row gutter={[16, 16]} className="form-row" align="middle">
               <Col span={6} style={{ textAlign: 'left' }}>
@@ -535,66 +653,8 @@ const ManageUser: React.FC = () => {
                 />
               </Col>
             </Row>
-
           </div>
         </div>
-      </Modal>
-
-      <Modal
-        visible={addMemberModalVisible}
-        onCancel={handleClose}
-        onOk={handleSendInvites}
-        okText="Send Invites"
-        okButtonProps={{ className: "bg-secondary" }}
-        cancelButtonProps={{ className: "bg-tertiary" }}
-        closable={false}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-          <Text strong style={{ fontSize: "16px" }}>Invite your Team</Text>
-          <Button
-            size="small"
-            className="bg-secondary"
-            sx={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
-            onClick={() => navigate("/employee-registration")}
-          >
-            Create Member Manually
-          </Button>
-        </div>
-        <Text>Empower everyone to get more deals done—faster.</Text>
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item
-            name="permissionProfile"
-            label="Set permission profile"
-            rules={[{ required: true, message: 'Please select a permission profile!' }]}
-          >
-            <Select placeholder="Select...">
-              <Option value="admin">Admin</Option>
-              <Option value="manager">Manager</Option>
-              <Option value="employee">Employee</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item name="emails" label="Add multiple email addresses">
-            <Input placeholder="Enter email addresse" />
-          </Form.Item>
-        </Form>
-
-        {/* <div style={{ marginTop: 24 }}>
-          <Text strong>Invitation Suggestions</Text>
-          <List
-            dataSource={invitationSuggestions}
-            renderItem={item => (
-              <List.Item
-                actions={[<Button onClick={() => handleAddEmail(item.email)}>Add</Button>]}
-              >
-                <List.Item.Meta
-                  title={item.name}
-                  description={`${item.role} | ${item.email}`}
-                />
-              </List.Item>
-            )}
-          />
-        </div> */}
       </Modal>
     </div>
   );
