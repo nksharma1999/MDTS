@@ -22,7 +22,7 @@
 }
 
 .professional-form {
-    height: calc(100vh - 272px);
+    height: calc(100vh - 190px);
     overflow-y: auto;
     overflow-x: hidden;
     padding: 10px;

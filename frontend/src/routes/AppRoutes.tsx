@@ -2,32 +2,34 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Register from "../pages/Registration";
 import Dashboard from "../pages/dashboard";
 import SignIn from "../pages/SignIn";
-import CreateDocument from "../components/CreateDocument";
-import { CreateModule } from "../components/CreateModule";
-import DocumentPage from "../components/Document";
-import DocumentLibrary from "../components/DocumentLibrary";
-import { HolidayCalender } from "../components/HolidayCalender";
-import ManageUser from "../components/ManageUser";
-import ModuleBuilder from "../components/ModuleBuilder";
-import { ModuleDetails } from "../components/ModuleDetail";
-import ModuleLibrary from "../components/ModuleLibrary";
-import NotificationLibrary from "../components/NotificationLibrary";
-import { ProjectDetails } from "../components/ProjectDetails";
-import ProjectParametersPage from "../components/ProjectParameterPage";
-import { RegisterNewProject } from "../components/RegisterNewProject";
-import TimelineBuilder from "../components/TimelineBuilder";
-import ViewDocumentPage from "../components/ViewDocumentPage";
-import ViewUser from "../components/ViewUser";
 import About from "../pages/About";
 import Projects from "../pages/Projects";
 import KnowledgeCenter from "../pages/KnowledgeCenter";
 import Document from "../pages/Document";
 import DataMaster from "../pages/DataMaster";
 import NotFound from "../pages/NotFound";
-import { EmployeeRegistration } from "../components/EmployeeRegistration";
-import Module from "../components/Module";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "./ProtectedRoutes";
+import Profile from "../pages/Profile";
+import Module from "../Components/Module";
+import CreateDocument from "../Components/CreateDocument";
+import { CreateModule } from "../Components/CreateModule";
+import DocumentPage from "../Components/Document";
+import DocumentLibrary from "../Components/DocumentLibrary";
+import { EmployeeRegistration } from "../Components/EmployeeRegistration";
+import { HolidayCalender } from "../Components/HolidayCalender";
+import ManageUser from "../Components/ManageUser";
+import { ModuleDetails } from "../Components/ModuleDetail";
+import ModuleLibrary from "../Components/ModuleLibrary";
+import NotificationLibrary from "../Components/NotificationLibrary";
+import { ProjectDetails } from "../Components/ProjectDetails";
+import ProjectParametersPage from "../Components/ProjectParameterPage";
+import { RegisterNewProject } from "../Components/RegisterNewProject";
+import StatusUpdate from "../Components/StatusUpdate";
+import TimelineBuilder from "../Components/TimelineBuilder";
+import ViewDocumentPage from "../Components/ViewDocumentPage";
+import ViewUser from "../Components/ViewUser";
+
 
 const AppRoutes = () => {
     return (
@@ -41,7 +43,8 @@ const AppRoutes = () => {
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />
-                    <Route path="/create/status-update" element={<ModuleBuilder />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/create/project-timeline" element={<StatusUpdate />} />
                     <Route path="/CreateModule" element={<CreateModule />} />
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
                     <Route path="/create/non-working-days" element={<HolidayCalender />} />
@@ -58,7 +61,7 @@ const AppRoutes = () => {
                     <Route path="/create/timeline-builder" element={<TimelineBuilder />} />
                     <Route path="/data-master" element={<DataMaster />} />
                     <Route path="/about" element={<About />} />
-                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/projects-details" element={<Projects />} />
                     <Route path="/modules" element={<Module />} />
                     <Route path="/knowledge-center" element={<KnowledgeCenter />} />
                     <Route path="/document" element={<Document />} />

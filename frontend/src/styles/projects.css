@@ -1,6 +1,40 @@
 .project-container {
-    height: calc(100vh - 165px);
+    height: calc(100vh - 105px);
     display: flex;
+}
+
+.project-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 2px 0px 0px 5px;
+    border-radius: 5px;
+    transition: background 0.2s;
+    position: relative;
+    font-size: 13.5px;
+}
+
+.project-item:hover {
+    background: #f5f5f5;
+}
+
+.project-options {
+    visibility: hidden;
+    cursor: pointer;
+}
+
+.project-item:hover .project-options {
+    visibility: visible;
+}
+
+.three-dot-menu {
+    visibility: hidden;
+    transition: visibility 0.2s ease-in-out;
+}
+
+.project-item:hover .three-dot-menu {
+    visibility: visible;
 }
 
 .all-project-details {
@@ -12,11 +46,11 @@
     overflow-y: auto;
     overflow-x: hidden;
     border-radius: 4px;
-    margin: 8px;
+    margin: 10px 8px 8px 8px;
 
     p {
         font-size: 16px !important;
-        font-weight: normal !important;
+        font-weight: normal;
     }
 
     & p:hover {
@@ -27,7 +61,28 @@
 
 .project-info {
     width: 50%;
-    height: 100%;
+    margin: 10px 8px 8px 8px;
+}
+
+.base-details {
+    outline: 1px solid #ddd;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 5px;
+
+    p {
+        margin: 0px !important;
+        font-size: 18px;
+        font-weight: bold;
+        color: gray;
+    }
+}
+
+.details-paremeters {
+    height: 93%;
     overflow-y: auto;
     display: grid;
     grid-template-columns: 1fr;
@@ -36,7 +91,12 @@
     overflow-y: auto;
     overflow-x: hidden;
     border-radius: 4px;
-    margin: 8px;
+}
+
+.selected-project {
+    color: #258790;
+    font-weight: bold !important;
+    text-decoration: underline;
 }
 
 .heading {

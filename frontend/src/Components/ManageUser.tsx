@@ -17,24 +17,16 @@ import {
   TableRow,
   Toolbar,
   Tooltip,
-  Typography,
 } from "@mui/material";
+import { getAllUsers } from "../Utils/moduleStorage";
 import { useNavigate } from "react-router-dom";
 import { getModules } from "../Utils/moduleStorage";
 import "../styles/user-management.css";
-import { Visibility, Edit, Archive, Notifications } from "@mui/icons-material";
+import { Visibility, Archive, Notifications, Edit } from "@mui/icons-material";
 import Assignment from "@mui/icons-material/Assignment";
-import { Col, Input, Modal, Row } from "antd";
-interface User {
-  id: number;
-  name: string;
-  company: string;
-  project: string;
-  mobile: string;
-  email: string;
-  whatsapp: string;
-  profilePhoto: string;
-}
+import { Col, Form, Input, List, Modal, Row, Select, Typography } from "antd";
+const { Option } = Select;
+const { Text } = Typography;
 
 interface Module {
   parentModuleCode: string;
@@ -57,54 +49,124 @@ interface User {
   id: number;
   name: string;
   company: string;
-  project: string;
+  designation?: string;
   mobile: string;
   email: string;
   whatsapp: string;
+  registeredOn?: string;
   profilePhoto: string;
+  password?: string;
+  isTempPassword?: boolean;
+  role?: string;
+  assignedModules?: {
+    moduleCode: string;
+    moduleName: string;
+    responsibilitiesOnActivities: {
+      activityCode: string;
+      responsibilities: string[];
+    }[];
+  }[];
 }
 
-const ManageUser: React.FC = () => {
+interface ManageUserProps {
+  options?: {
+    isAddMember?: boolean;
+    isToolbar?: boolean;
+    title?: string;
+  };
+}
+
+const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const navigate = useNavigate();
-  const [modules, setModules] = useState<Module[]>([]);
+  const [_modules, setModules] = useState<Module[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [openAlertModal, setOpenAlertModal] = useState<boolean>(false);
   const [openRACIModal, setOpenRACIModal] = useState<boolean>(false);
-  const [isRACIValid, _setIsRACIValid] = useState<boolean>(false);
+  const [_isRACIValid, _setIsRACIValid] = useState<boolean>(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-
+  const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     email: true,
     whatsapp: true,
     text: true,
   });
+  const [form] = Form.useForm();
+  const [selectedEmails, setSelectedEmails] = useState<any>([]);
 
-  const [selectedUserFor, setSelectedUserFor] = useState<any>({
+  const [_selectedUserFor, setSelectedUserFor] = useState<any>({
     raci: {},
   });
 
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      company: "ABC Corp",
-      project: "Project Alpha",
-      mobile: "1234567890",
-      email: "john@example.com",
-      whatsapp: "1234567890",
-      profilePhoto: "https://via.placeholder.com/120",
-    },
-    {
-      id: 2,
-      name: "Jane Doe",
-      company: "XYZ Inc",
-      project: "Project Beta",
-      mobile: "0987654321",
-      email: "jane@example.com",
-      whatsapp: "0987654321",
-      profilePhoto: "https://via.placeholder.com/120",
-    },
-  ]);
+  useEffect(() => {
+    const fetchData = () => {
+      const allUsers = getAllUsers();
+      setUsers(allUsers);
+
+      const uniqueModules: any = [];
+      allUsers.forEach((user: User) => {
+        user.assignedModules?.forEach((module) => {
+          if (!uniqueModules.some((m: any) => m.parentModuleCode === module.moduleCode)) {
+            uniqueModules.push({
+              parentModuleCode: module.moduleCode,
+              moduleName: module.moduleName,
+            });
+          }
+        });
+      });
+
+      setModules(uniqueModules);
+    };
+
+    if (openRACIModal) {
+      fetchData();
+    }
+  }, [openRACIModal]);
+
+  const getRACIAssignments = (user: any, moduleCode: any) => {
+    const module = user.assignedModules?.find((m: any) => m.moduleCode === moduleCode);
+    if (module) {
+      return {
+        responsible: module.responsibilitiesOnActivities?.some((a: any) =>
+          a.responsibilities.includes("Responsible")
+        ),
+        accountable: module.responsibilitiesOnActivities?.some((a: any) =>
+          a.responsibilities.includes("Accountable")
+        ),
+        consulted: module.responsibilitiesOnActivities?.some((a: any) =>
+          a.responsibilities.includes("Consulted")
+        ),
+        informed: module.responsibilitiesOnActivities?.some((a: any) =>
+          a.responsibilities.includes("Informed")
+        ),
+      };
+    }
+    return {
+      responsible: false,
+      accountable: false,
+      consulted: false,
+      informed: false,
+    };
+  };
+
+  useEffect(() => {
+    const storedUsers = localStorage.getItem("users");
+    if (storedUsers) {
+      const parsedUsers: User[] = JSON.parse(storedUsers).map((user: any) => ({
+        id: user.id,
+        name: user.name || "N/A",
+        company: user.company || "N/A",
+        designation: user.designation || "N/A",
+        mobile: user.mobile || "N/A",
+        email: user.email,
+        whatsapp: user.whatsapp || "N/A",
+        registeredOn: user.registeredOn || "",
+        profilePhoto: user.profilePhoto || "https://via.placeholder.com/120",
+        role: user.role || "User",
+      }));
+      setUsers(parsedUsers);
+    }
+  }, []);
 
   useEffect(() => {
     const savedModules: Module[] = getModules();
@@ -190,67 +252,99 @@ const ManageUser: React.FC = () => {
       : parts[0][0]?.toUpperCase() || "";
   }
 
+  const invitationSuggestions = [
+    { name: 'sudhindra rao', role: 'Founder & COO', email: 'sudhindra@simpro.co.in' },
+    { name: 'amit tiwari', role: 'Manager-Business', email: 'amit.tiwari@simpro.co.in' }
+  ];
+
+  const handleAddEmail = (email: any) => {
+    if (!selectedEmails.includes(email)) {
+      setSelectedEmails([...selectedEmails, email]);
+    }
+  };
+
+  const handleSendInvites = () => {
+    form.validateFields().then(values => {
+      console.log('Inviting:', { ...values, emails: selectedEmails });
+      setAddMemberModalVisible(false);
+    });
+  };
+
+  const handleClose = () => {
+    setAddMemberModalVisible(false);
+  };
 
   return (
     <div className="page-container">
-      <div style={{ background: "none", display: "flex", justifyContent: "space-between" }} >
-        <div className="holiday-page-heading" style={{ marginLeft: "10px", marginTop: "5px" }}>
-          RACI, Alert & Notification
+      <div style={{ background: "none", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0px" }}>
+        <div className="" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="holiday-page-heading" style={{ marginLeft: "10px" }}>
+            {options?.title ? options.title : "RACI, Alert & Notification"}
+          </div>
+          {options?.isAddMember && (
+            <div className="searching-and-create" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <Tooltip title="Add new member">
+                <Button style={{ fontSize: "14px", textTransform: "none", padding: "0px 10px" }} size="small" onClick={() => { setAddMemberModalVisible(true) }} className="add-member-button bg-secondary">
+                  Add Member
+                </Button>
+              </Tooltip>
+            </div>
+          )}
         </div>
-        <Toolbar className="toolbar" style={{ paddingRight: "5px" }}>
-          <Typography variant="h6" className="toolbar-title">
-            Toolbar
-          </Typography>
+        {options?.isToolbar != false && (
+          <Toolbar className="toolbar" style={{ paddingRight: "5px" }}>
+            <div className="toolbar-buttons">
+              {[
+                { title: "View", icon: <Visibility sx={{ color: "#1976d2" }} />, action: handleViewUser },
+                { title: "Edit", icon: <Edit sx={{ color: "#2e7d32" }} />, action: handleEditUser },
+                { title: "Archive", icon: <Archive sx={{ color: "#ff9800" }} />, action: handleArchiveUser }
+              ].map(({ title, icon, action }, index) => (
+                <Tooltip key={index} title={title}>
+                  <IconButton
+                    onClick={action}
+                    disabled={!selectedUser}
+                    className={`toolbar-icon ${selectedUser ? "enabled" : "disabled"}`}
+                  >
+                    {icon}
+                  </IconButton>
+                </Tooltip>
+              ))}
 
-          <div className="toolbar-buttons">
-            {[
-              { title: "View", icon: <Visibility sx={{ color: "#1976d2" }} />, action: handleViewUser },
-              { title: "Edit", icon: <Edit sx={{ color: "#2e7d32" }} />, action: handleEditUser },
-              { title: "Archive", icon: <Archive sx={{ color: "#ff9800" }} />, action: handleArchiveUser }
-            ].map(({ title, icon, action }, index) => (
-              <Tooltip key={index} title={title}>
+              <Tooltip title="Assign RACI">
                 <IconButton
-                  onClick={action}
                   disabled={!selectedUser}
-                  className={`toolbar-icon ${selectedUser ? "enabled" : "disabled"}`}
+                  onClick={() => setOpenRACIModal(true)}
+                  className="toolbar-icon"
                 >
-                  {icon}
+                  <Assignment sx={{ color: "#9c27b0" }} />
                 </IconButton>
               </Tooltip>
-            ))}
 
-            <Tooltip title="Assign RACI">
-              <IconButton
-                disabled={!selectedUser}
-                onClick={() => setOpenRACIModal(true)}
-                className="toolbar-icon"
-              >
-                <Assignment sx={{ color: "#9c27b0" }} />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Alerts">
-              <IconButton
-                disabled={!selectedUser}
-                onClick={() => setOpenAlertModal(true)}
-                className="toolbar-icon"
-              >
-                <Notifications sx={{ color: "#d32f2f" }} />
-              </IconButton>
-            </Tooltip>
-          </div>
-
-        </Toolbar>
+              <Tooltip title="Alerts">
+                <IconButton
+                  disabled={!selectedUser}
+                  onClick={() => setOpenAlertModal(true)}
+                  className="toolbar-icon"
+                >
+                  <Notifications sx={{ color: "#d32f2f" }} />
+                </IconButton>
+              </Tooltip>
+            </div>
+          </Toolbar>
+        )}
       </div>
+
+      <hr style={{ marginTop: "5px" }} />
 
       <TableContainer component={Paper} className="table-container">
         <Table>
-          <TableHead>
+          <TableHead style={{ backgroundColor: "#258790" }}>
             <TableRow className="table-header">
               <TableCell className="header-cell">S.No</TableCell>
               <TableCell className="header-cell">Name</TableCell>
               <TableCell className="header-cell">Company</TableCell>
-              <TableCell className="header-cell">Project</TableCell>
+              <TableCell className="header-cell">Designation</TableCell>
+              <TableCell className="header-cell">Role</TableCell>
               <TableCell className="header-cell">Mobile</TableCell>
               <TableCell className="header-cell">Email</TableCell>
               <TableCell className="header-cell">WhatsApp</TableCell>
@@ -266,7 +360,8 @@ const ManageUser: React.FC = () => {
                 <TableCell className="table-cell-item">{index + 1}</TableCell>
                 <TableCell className="table-cell-item">{user.name}</TableCell>
                 <TableCell className="table-cell-item">{user.company}</TableCell>
-                <TableCell className="table-cell-item">{user.project}</TableCell>
+                <TableCell className="table-cell-item">{user.designation}</TableCell>
+                <TableCell className="table-cell-item">{user.role}</TableCell>
                 <TableCell className="table-cell-item">{user.mobile}</TableCell>
                 <TableCell className="table-cell-item">{user.email}</TableCell>
                 <TableCell className="table-cell-item">{user.whatsapp}</TableCell>
@@ -302,83 +397,39 @@ const ManageUser: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openRACIModal} onClose={handleCloseModal} maxWidth="lg" fullWidth className="dialog-raci">
-        <DialogTitle>RACI Module Assignments</DialogTitle>
-        <DialogContent>
+      <Dialog open={openRACIModal} onClose={handleCloseModal} maxWidth="lg" fullWidth className="raci-dialog">
+        <DialogTitle className="raci-dialog-title">RACI Module Assignments</DialogTitle>
+        <DialogContent className="raci-dialog-content">
           {selectedUser && (
             <div>
-              <div className="table-container">
+              <div className="raci-table-container">
                 <table className="raci-table">
                   <thead>
                     <tr>
-                      <th>Responsible</th>
-                      <th>Accountable</th>
-                      <th>Consulted</th>
-                      <th>Informed</th>
+                      <th className="raci-table-header">Module</th>
+                      <th className="raci-table-header">Activity</th>
+                      <th className="raci-table-header">Responsibilities</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {modules.map((module) => (
-                      <tr key={module.parentModuleCode}>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.responsible || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "responsible")}
-                              />
-                            }
-                            label="Responsible"
-                          />
-                        </td>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.accountable || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "accountable")}
-                              />
-                            }
-                            label="Accountable"
-                          />
-                        </td>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.consulted || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "consulted")}
-                              />
-                            }
-                            label="Consulted"
-                          />
-                        </td>
-                        <td>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={selectedUserFor?.raci?.[module.parentModuleCode]?.informed || false}
-                                onChange={(e) => handleRACIChange(e, module.parentModuleCode, "informed")}
-                              />
-                            }
-                            label="Informed"
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedUser.assignedModules?.map((module) =>
+                      module.responsibilitiesOnActivities.map((activity) => (
+                        <tr key={`${module.moduleCode}-${activity.activityCode}`} className="raci-table-row">
+                          <td className="raci-table-cell">{module.moduleName}</td>
+                          <td className="raci-table-cell">{activity.activityCode}</td>
+                          <td className="raci-table-cell">{activity.responsibilities.join(", ")}</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} className="close-button">
-            Close
-          </Button>
-          <Button onClick={handleCloseModal} className="save-button" disabled={!isRACIValid}>
-            Save
-          </Button>
+        <DialogActions className="raci-dialog-actions">
+          <Button onClick={handleCloseModal} className="raci-button raci-close-button">Close</Button>
+          <Button onClick={handleCloseModal} className="raci-button raci-save-button">Save</Button>
         </DialogActions>
       </Dialog>
 
@@ -389,7 +440,7 @@ const ManageUser: React.FC = () => {
         onCancel={handleCancel}
         centered
         className="custom-user-modal"
-        width={600}
+        width={800}
         footer={[""]}
       >
         <div className="user-info-main">
@@ -398,13 +449,7 @@ const ManageUser: React.FC = () => {
               <span>{getInitials(selectedUser?.name)}</span>
             </div>
           </div>
-          <div className="profile-min-details">
-            <p className="user-name">{selectedUser?.name}</p>
-            <p className="email">{selectedUser?.email}</p>
-          </div>
-
           <div className="user-details">
-            <hr />
             <Row gutter={[16, 16]} className="form-row" align="middle">
               <Col span={6} style={{ textAlign: 'left' }}>
                 <label>Full Name</label>
@@ -431,13 +476,25 @@ const ManageUser: React.FC = () => {
             </Row>
             <Row gutter={[16, 16]} className="form-row" align="middle">
               <Col span={6} style={{ textAlign: 'left' }}>
-                <label>Project</label>
+                <label>Designation</label>
               </Col>
               <Col span={18}>
                 <Input
                   disabled
                   style={{ marginBottom: "10px" }}
-                  value={selectedUser?.project}
+                  value={selectedUser?.designation}
+                />
+              </Col>
+            </Row>
+            <Row gutter={[16, 16]} className="form-row" align="middle">
+              <Col span={6} style={{ textAlign: 'left' }}>
+                <label>Role</label>
+              </Col>
+              <Col span={18}>
+                <Input
+                  disabled
+                  style={{ marginBottom: "10px" }}
+                  value={selectedUser?.role}
                 />
               </Col>
             </Row>
@@ -485,11 +542,70 @@ const ManageUser: React.FC = () => {
                 <Input
                   disabled
                   style={{ marginBottom: "10px" }}
-                  value={selectedUser?.name}
+                  value={selectedUser?.registeredOn}
                 />
               </Col>
             </Row>
+          </div>
+        </div>
+      </Modal>
 
+      <Modal
+        visible={addMemberModalVisible}
+        onCancel={handleClose}
+        onOk={handleSendInvites}
+        okText="Send Invites"
+        okButtonProps={{ className: "bg-secondary" }}
+        cancelButtonProps={{ className: "bg-tertiary" }}
+        closable={false}
+        width={"50%"}
+        className="modal-container"
+      >
+        <div className="modal-body" style={{ padding: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Text strong style={{ fontSize: "16px" }}>Invite your Team</Text>
+            <Button
+              size="small"
+              className="bg-secondary"
+              sx={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
+              onClick={() => navigate("/employee-registration")}
+            >
+              Create Member Manually
+            </Button>
+          </div>
+          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+            <Form.Item
+              name="permissionProfile"
+              label="Set permission profile"
+              rules={[{ required: true, message: 'Please select a permission profile!' }]}
+            >
+              <Select placeholder="Select...">
+                <Option value="admin">Admin</Option>
+                <Option value="manager">Manager</Option>
+                <Option value="employee">Employee</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item name="emails" label="Add multiple email addresses">
+              <Input placeholder="Enter email addresse" />
+            </Form.Item>
+          </Form>
+
+          <div style={{ marginTop: 24 }}>
+            <Text strong>Invitation Suggestions</Text>
+            <List
+              dataSource={invitationSuggestions}
+              renderItem={item => (
+                <List.Item
+                  actions={[<Button onClick={() => handleAddEmail(item.email)}>Add</Button>]}
+                >
+                  <List.Item.Meta
+                    title={item.name}
+                    description={`${item.role} | ${item.email}`}
+                  />
+                </List.Item>
+              )}
+            />
           </div>
         </div>
       </Modal>

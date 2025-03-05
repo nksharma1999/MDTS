@@ -1,19 +1,21 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Input, Select, Button, Form, Upload, DatePicker, Row, Col } from "antd";
-import { UploadOutlined, ArrowRightOutlined } from "@ant-design/icons";
+import { UploadOutlined, ArrowRightOutlined, EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import moment from "moment";
 import "../styles/employee-registration.css"
 import ImageContainer from "../components/ImageContainer";
 interface EmployeeData {
   name: string;
   company: string;
-  project: string[];
+  role: string;
   mobile: string;
   email: string;
+  designation: string;
   whatsapp: string;
   registrationDate: string | null;
   photo: string;
+  password: string;
 }
 
 interface LocationState {
@@ -29,25 +31,24 @@ export const EmployeeRegistration = () => {
   const [formData, setFormData] = useState<EmployeeData>({
     name: user?.name || "",
     company: user?.company || "",
-    project: user?.project || [],
+    role: user?.role || "",
     mobile: user?.mobile || "",
     email: user?.email || "",
     whatsapp: user?.whatsapp || "",
     registrationDate: user?.registrationDate || "",
     photo: user?.photo || "",
+    designation: user?.designation || "",
+    password: user?.password || "",
   });
 
-  const projectOptions = ["Project A", "Project B", "Project C", "Project D"];
-  const companyOptions = ["Company A", "Company B", "Company C", "Company D"];
-
+  const roleOptions = ["Editor", "Viewer"];
+  const companyOptions = ["Mining Corp", "Deep Earth Industries", "Rock Minerals Ltd"];
+  const [passwordVisible, _setPasswordVissible] = useState(false);
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  const handleProjectChange = (value: string[]) => {
-    setFormData((prev) => ({ ...prev, project: value }));
-  };
+  const designationOptions = ['Mining Engineer', 'Geologist', 'Operations Manager'];
 
   const handlePhotoUpload = (file: any) => {
     setFormData((prev) => ({ ...prev, photo: URL.createObjectURL(file.originFileObj) }));
@@ -55,13 +56,32 @@ export const EmployeeRegistration = () => {
   };
 
   const handleSaveOrUpdate = () => {
+    const existingEmployees = JSON.parse(localStorage.getItem("users") || "[]");
+
     if (isEdit) {
+      const updatedEmployees = existingEmployees.map((emp: EmployeeData) =>
+        emp.email === formData.email ? { ...emp, ...formData } : emp
+      );
+      localStorage.setItem("users", JSON.stringify(updatedEmployees));
       console.log("Updating user:", formData);
     } else {
-      console.log("Saving new user:", formData);
+      const newEmployee = {
+        id: Date.now(),
+        ...formData,
+        registeredOn: new Date().toISOString(),
+        profilePhoto: formData.photo || "",
+        password: "default@123",
+        isTempPassword: true,
+      };
+
+      const updatedEmployees = [...existingEmployees, newEmployee];
+      localStorage.setItem("users", JSON.stringify(updatedEmployees));
+      console.log("Saving new user:", newEmployee);
     }
+
     navigate("/create/raci-alert-notification");
   };
+
 
   return (
     <>
@@ -108,18 +128,35 @@ export const EmployeeRegistration = () => {
 
                 <Row gutter={[16, 16]} className="form-row" align="middle">
                   <Col span={6} style={{ textAlign: 'left' }}>
-                    <label>Project</label>
+                    <label>Designation</label>
                   </Col>
                   <Col span={18}>
                     <Select
-                      mode="multiple"
-                      value={formData.project}
-                      onChange={handleProjectChange}
-                      placeholder="Select Projects"
+                      value={formData.designation}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, designation: value }))}
+                      placeholder="Select Designation"
                     >
-                      {projectOptions.map((project) => (
-                        <Select.Option key={project} value={project}>
-                          {project}
+                      {designationOptions.map((designation) => (
+                        <Select.Option key={designation} value={designation}>
+                          {designation}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Col>
+                </Row>
+                <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Role</label>
+                  </Col>
+                  <Col span={18}>
+                    <Select
+                      value={formData.role}
+                      onChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
+                      placeholder="Select Role"
+                    >
+                      {roleOptions.map((role) => (
+                        <Select.Option key={role} value={role}>
+                          {role}
                         </Select.Option>
                       ))}
                     </Select>
@@ -180,8 +217,26 @@ export const EmployeeRegistration = () => {
                     />
                   </Col>
                 </Row>
-
+                {/* Password Field with Show/Hide */}
                 <Row gutter={[16, 16]} className="form-row" align="middle">
+                  <Col span={6} style={{ textAlign: 'left' }}>
+                    <label>Password</label>
+                  </Col>
+                  <Col span={18}>
+                    <Input.Password
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="Enter Password"
+                      iconRender={(visible) =>
+                        visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                      }
+                      type={passwordVisible ? "text" : "password"}
+                    />
+                  </Col>
+                </Row>
+
+                {/* <Row gutter={[16, 16]} className="form-row" align="middle">
                   <Col span={6} style={{ textAlign: 'left' }}>
                     <label>Upload Photo</label>
                   </Col>
@@ -198,7 +253,7 @@ export const EmployeeRegistration = () => {
                       <img src={formData.photo} alt="Uploaded" className="uploaded-photo" />
                     )}
                   </Col>
-                </Row>
+                </Row> */}
               </Form>
               <hr />
               <div className="button-group">

@@ -84,7 +84,7 @@ const CreateDocument: React.FC = () => {
         message.error("Failed to save the document. Please try again.");
       }
     }
-    navigate("/documentlibrary");
+    navigate("/document");
   };
 
   const handleCancel = () => {
@@ -221,7 +221,7 @@ const CreateDocument: React.FC = () => {
           </div>
 
         </div>
-        <div className="right-images">
+        <div className="right-images image-container">
           <ImageContainer imageUrl="/images/auths/m5.jpg" />
         </div>
       </div>

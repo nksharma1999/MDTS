@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, Dropdown, Button, Typography, Divider, Modal } from "antd";
-import { DownOutlined, UserOutlined } from "@ant-design/icons";
+import { DownOutlined, LogoutOutlined, UserOutlined, UserSwitchOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
-import eventBus from "../Utils/EventEmitter";
 const { Title } = Typography;
 interface NavItem {
     label: string;
@@ -18,7 +17,7 @@ interface NavItem {
 const initialNavLinks: any = [
     { label: "Home", action: "/home" },
     { label: "About", action: "/about" },
-    { label: "Projects", action: "/projects", view: true },
+    { label: "Projects", action: "/projects-details" },
     { label: "Document", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
     { label: "Data Master", action: "/data-master" },
@@ -27,18 +26,17 @@ const initialNavLinks: any = [
         subItems: [
             { label: "Register New Project", action: "/create/register-new-project" },
             { label: "Modules", action: "/modules" },
-            // { label: "Create New Module", option: "popup", name: "add_new_modal" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
+            { label: "Project Timeline", action: "/create/project-timeline" },
+            { label: "Module Library", action: "/create/module-library" },
             { label: "Non-working Days", action: "/create/non-working-days" },
-            { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
-            { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
+            { label: "RACI, Alert & Notification", action: "/create/raci-alert-notification" },
+            { label: "Document", action: "/create/document" },
             { label: "Notification", action: "/create/notification", isNull: true },
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
-            { label: "Module Library", action: "/create/module-library" },
-            { label: "Status Update", action: "/create/status-update" },
-            { label: "RACI, Alert & Notification", action: "/create/raci-alert-notification" },
             { label: "Dashboard", action: "/create/dashboard", isNull: true },
-            { label: "Document", action: "/create/document" },
+            { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
+            { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
         ]
     }
 ];
@@ -50,34 +48,9 @@ const Navbar: React.FC = () => {
     const [navLinks, setNavLinks] = useState<NavItem[]>(initialNavLinks);
     const [user, setUser] = useState<{ name: string } | null>(null);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
-    useEffect(() => {
-        eventBus.on<string>("newProjectAdded", (projectName) => {
-            setNavLinks((prevNavLinks) => {
-                const updatedNavLinks = prevNavLinks.map((navLink) => {
-                    if (navLink.label === "Projects") {
-                        const newProject: NavItem = {
-                            label: projectName,
-                            action: `/projects`,
-                            view: true,
-                        };
-                        return {
-                            ...navLink,
-                            subItems: navLink.subItems ? [...navLink.subItems, newProject] : [newProject]
-                        };
-                    }
-                    return navLink;
-                });
-                localStorage.setItem('navLinks', JSON.stringify(updatedNavLinks));
-                return updatedNavLinks;
-            });
-        });
-
-        return () => {
-            eventBus.remove("newProjectAdded");
-            console.log("Event listener removed");
-        };
-    }, []);
-
+    const handlePopupOpen = (name: string) => setOpenPopup(name);
+    const isActive = (action: string) => location.pathname.startsWith(action);
+    const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
     const showLogoutModal = () => {
         setIsLogoutModalVisible(true);
     };
@@ -93,16 +66,35 @@ const Navbar: React.FC = () => {
         }
     }, []);
 
+    useEffect(() => {
+        const currentPath = location.pathname;
+        let foundTab: NavItem | any = null;
+        let parentLabel: string | undefined;
+        navLinks.forEach((link) => {
+            if (link.subItems) {
+                const subTab = link.subItems.find((sub) => sub.action === currentPath);
+                if (subTab) {
+                    foundTab = subTab;
+                    parentLabel = link.label;
+                }
+            } else if (link.action === currentPath) {
+                foundTab = link;
+            }
+        });
+        if (foundTab) {
+            setSelectedDropdownKeys((prev) => ({
+                ...prev,
+                [parentLabel || foundTab.label]: foundTab.label,
+            }));
+        }
+    }, [location.pathname, navLinks]);
+
     const handleLogout = () => {
         localStorage.removeItem("user");
         setUser(null);
         setIsLogoutModalVisible(false);
         navigate("/sign-in");
     };
-
-    const handlePopupOpen = (name: string) => setOpenPopup(name);
-    const isActive = (action: string) => location.pathname.startsWith(action);
-    const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
 
     const handleDropdownSelect = (menuLabel: string, subItem: any) => {
         setSelectedDropdownKeys((prev) => ({
@@ -127,16 +119,43 @@ const Navbar: React.FC = () => {
         }
     };
 
+    const handleMenuClick = ({ key }: { key: string }) => {
+        setSelectedDropdownKeys({})
+        if (key === "/profile") {
+            navigate("/profile");
+        } else if (key === "logout") {
+            showLogoutModal();
+        }
+    };
+
     const profileMenu = (
-        <Menu>
-            <Menu.Item key="logout" onClick={showLogoutModal}>
+        <Menu onClick={handleMenuClick} selectedKeys={[location.pathname]}>
+            <Menu.Item key="/profile" icon={<UserSwitchOutlined />}>
+                Profile
+            </Menu.Item>
+            <Menu.Item key="logout" icon={<LogoutOutlined />}>
                 Logout
             </Menu.Item>
         </Menu>
     );
+
     return (
         <>
-            <div className="navbar" style={{ backgroundColor: "#257180", display: "flex", alignItems: "center", padding: "15px" }}>
+            <div className="navbar" style={{ background: "linear-gradient(90deg, #257180, #257180,rgb(241, 76, 76))", display: "flex", alignItems: "center", padding: "3px 10px" }}>
+                <div className="logo-sections">
+                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
+                        <img
+                            src="/images/logos/main-logo.png"
+                            alt="Logo"
+                            className="logo-image"
+                        />
+                    </Link>
+                </div>
+                <div className="project-title">
+                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
+                        <p>Mine Development Tracking System</p>
+                    </Link>
+                </div>
                 <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
                 {navLinks.map((link, index) => (
                     <div key={index} style={{ margin: "0 5px" }}>
@@ -171,7 +190,7 @@ const Navbar: React.FC = () => {
                             </div>
                         ) : (
                             <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
-                                <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"}>{link.label}</Link>
+                                <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
                             </Button>
 
                         )}
@@ -183,26 +202,23 @@ const Navbar: React.FC = () => {
                 <div className="">
                     {user ? (
                         <Dropdown overlay={profileMenu}>
-                            <Button className="signin-btn" style={{ marginLeft: "20px" }} type="text">
-                                <UserOutlined /> <DownOutlined />
+                            <Button
+                                style={{ marginLeft: "20px", display: 'flex', alignItems: 'center', gap: '8px' }}
+                                className="bg-tertiary text-white"
+                                type="text"
+                            >
+                                <UserOutlined />
+                                <span style={{ fontWeight: 'bold' }}>{user.name}</span>
+                                <DownOutlined />
                             </Button>
                         </Dropdown>
+
                     ) : (
                         <Button className="signin-btn" style={{ marginLeft: "20px" }}>
                             <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>
                         </Button>
                     )}
                 </div>
-
-                {/* <div className="">
-                    <Button className="signin-btn" style={{ marginLeft: "20px" }}>
-                        <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Login</Link>
-                    </Button>
-                    <Button className="signin-btn" style={{ marginLeft: "20px" }}>
-                        <Link to="/employee-registration" style={{ color: "inherit", textDecoration: "none" }} className="custom-link">Registration</Link>
-                    </Button>
-                </div> */}
-
             </div>
             <Modal
                 title="Confirm Logout"

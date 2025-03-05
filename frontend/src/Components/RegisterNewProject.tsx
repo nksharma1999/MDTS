@@ -1,26 +1,35 @@
 import "../styles/register-new-project.css";
 import { useEffect, useState } from "react";
-import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification } from "antd";
+import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification, Table, Tooltip, Typography } from "antd";
 import "../styles/register-new-project.css";
 import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
-import eventBus from "../Utils/EventEmitter";
 import ImageContainer from "../components/ImageContainer";
-import { getOrderedModuleNames } from "../Utils/moduleStorage";
+import { getAllLibraries } from "../Utils/moduleStorage";
 const { Option } = Select;
+import { getAllMineTypes } from '../Utils/moduleStorage';
+import { addNewMineType } from '../Utils/moduleStorage';
+import MapComponent from "../components/MapComponent";
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [addCompanyPopupOpen, setAddCompanyPopupOpen] = useState<boolean>(false);
-  const [orderedModuleNames] = useState<string[]>(getOrderedModuleNames());
+  const [allLibrariesName, setAllLibrariesName] = useState<any>([]);
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [mineTypeOptions, setMineTypeOptions] = useState<string[]>([]);
+  const initialLibrary = allLibrariesName[0]?.name;
+  const [selectedLibrary, setSelectedLibrary] = useState<any>(initialLibrary);
+  const [newCompany, setNewCompany] = useState<string>("");
+  const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
+  const [newMineType, setNewMineType] = useState<string>("");
+  const [shorthandCode, setShorthandCode] = useState<string>("");
+  const [_options, setOptions] = useState<string[]>([]);
   const steps = [
     { id: 1, title: "Project Parameters" },
     { id: 2, title: "Locations" },
     { id: 3, title: "Contractual Details" },
     { id: 4, title: "Initial Status" },
   ];
-  const [newCompany, setNewCompany] = useState<string>("");
   const [companyList, setCompanyList] = useState([
     { id: 1, name: "Company A" },
     { id: 2, name: "Company B" }
@@ -29,6 +38,15 @@ export const RegisterNewProject: React.FC = () => {
     const savedData = localStorage.getItem("projectFormData");
     return savedData ? JSON.parse(savedData) : [];
   });
+  const [selectedItems, setSelectedItems] = useState(
+    allLibrariesName.find((lib: any) => lib.name === initialLibrary)?.items || []
+  );
+  const requiredFields: { [key: number]: string[] } = {
+    1: ["companyName", "projectName", "mineral", "typeOfMine", "reserve", "netGeologicalReserve", "extractableReserve", "grade", "stripRatio", "peakCapacity", "mineLife", "totalCoalBlockArea"],
+    2: ["state", "district", "nearestTown", "nearestAirport", "nearestRailwayStation"],
+    3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
+    4: Object.values(allLibrariesName).map((moduleName: any) => moduleName)
+  };
 
   useEffect(() => {
     setFormData({});
@@ -38,6 +56,19 @@ export const RegisterNewProject: React.FC = () => {
       setCompanyList(JSON.parse(storedList));
     } else {
       setCompanyList([{ id: 1, name: "Company A" }, { id: 2, name: "Company B" }]);
+    }
+    const keys: any = getAllLibraries();
+    setAllLibrariesName(keys)
+  }, []);
+
+  useEffect(() => {
+    try {
+      const storedOptions = getAllMineTypes();
+      if (storedOptions.length > 0) {
+        setMineTypeOptions(storedOptions);
+      }
+    } catch (error) {
+      console.error("Error fetching mine types:", error);
     }
   }, []);
 
@@ -76,7 +107,7 @@ export const RegisterNewProject: React.FC = () => {
 
   const handleSubmit = () => {
     const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-
+    const initialDataVal = { library: selectedLibrary, items: selectedItems };
     if (!loggedInUser.id) {
       notification.error({
         message: "Error",
@@ -95,15 +126,10 @@ export const RegisterNewProject: React.FC = () => {
       projectParameters: finalData[0] || {},
       locations: finalData[1] || {},
       contractualDetails: finalData[2] || {},
-      initialStatus: finalData[3] || {},
+      initialStatus: initialDataVal || {},
     };
-
     const updatedProjects = [...storedProjects, newProject];
     localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
-
-    const projectName = newProject.projectParameters?.projectName;
-    eventBus.emit('newProjectAdded', projectName);
-
     notification.success({
       message: "Project Created Successfully",
       description: "All form data has been saved and cleared.",
@@ -115,18 +141,6 @@ export const RegisterNewProject: React.FC = () => {
     setCurrentStep(1);
     setIsModalVisible(false);
     clearFormData();
-  };
-
-  const handleRowChange = (value: string, key: string) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
-    setErrors((prev) => ({ ...prev, [key]: value ? "" : "Required" }));
-  };
-
-  const requiredFields: { [key: number]: string[] } = {
-    1: ["companyName", "projectName", "mineral", "typeOfMine", "reserve", "netGeologicalReserve", "extractableReserve", "grade", "stripRatio", "peakCapacity", "mineLife", "totalCoalBlockArea"],
-    2: ["state", "district", "nearestTown", "nearestAirport", "nearestRailwayStation"],
-    3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
-    4: orderedModuleNames.map((moduleName) => moduleName.replace(/\s+/g, "").toLowerCase())
   };
 
   const validateFields = (step: number): boolean => {
@@ -151,11 +165,9 @@ export const RegisterNewProject: React.FC = () => {
         });
         return;
       }
-
       const updatedData = Array.isArray(formStepsData) ? [...formStepsData] : [];
       updatedData[currentStep - 1] = { ...formData };
       setFormStepsData(updatedData);
-      // localStorage.setItem("projectFormData", JSON.stringify({ updatedData }));
       setCurrentStep(currentStep + 1);
       setFormData(updatedData[currentStep] || {});
     }
@@ -185,33 +197,111 @@ export const RegisterNewProject: React.FC = () => {
       cbdpaDate: null,
       vestingOrderDate: null,
       pbgAmount: "",
-      ...orderedModuleNames.reduce((acc: any, moduleName: any) => {
-        const key = moduleName.replace(/\s+/g, "").toLowerCase();
-        acc[key] = undefined;
-        return acc;
-      }, {}),
+      ...(Array.isArray(allLibrariesName) ? allLibrariesName : []).reduce(
+        (acc: any, moduleName: any) => {
+          if (typeof moduleName === "string") {
+            const key = moduleName.replace(/\s+/g, "").toLowerCase();
+            acc[key] = undefined;
+          }
+          return acc;
+        },
+        {}
+      ),
     });
-
     setErrors({});
+  };
+
+  const handleLibraryChange = (value: string) => {
+    setSelectedLibrary(value);
+    const selectedLib: any = allLibrariesName.find((lib: any) => lib.name === value);
+    setSelectedItems(selectedLib ? selectedLib.items : []);
+  };
+
+  const handleStatusChange = (index: number, value: string) => {
+    setSelectedItems((prevItems: any) =>
+      prevItems.map((item: any, i: any) => {
+        if (i < index) return item;
+        if (i === index) return { ...item, status: value === "Yes" ? "Completed" : "Pending" };
+        return { ...item, status: "Pending" };
+      })
+    );
+  };
+
+  const columns: any = [
+    {
+      title: "Module",
+      dataIndex: "moduleName",
+      key: "moduleName",
+      width: "60%",
+      align: "left",
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
+      width: "20%",
+      align: "center",
+      render: (_: any, record: any, index: number) => {
+        const isDisabled = index > 0 && selectedItems[index - 1].status !== "Completed";
+
+        return (
+          <Tooltip title={isDisabled ? "Complete the previous module first" : "Mark as Completed"}>
+            <Select
+              value={record.status === "Completed" ? "Yes" : "No"}
+              style={{ width: "100%" }}
+              onChange={(value) => handleStatusChange(index, value)}
+              disabled={isDisabled}
+            >
+              <Option value="No">No</Option>
+              <Option value="Yes">Yes</Option>
+            </Select>
+          </Tooltip>
+        );
+      },
+    },
+  ];
+
+  const generateShorthand = (input: string): string => {
+    return input
+      .split(" ")
+      .map((word) => word.charAt(0).toUpperCase())
+      .join("");
+  };
+
+  const handleAddNewMineType = () => {
+    if (newMineType) {
+      const updatedOptions = [...mineTypeOptions, shorthandCode];
+      addNewMineType(updatedOptions)
+      setOptions(updatedOptions);
+      setNewMineType("");
+      setShorthandCode("");
+      setMineTypePopupOpen(false);
+      setMineTypeOptions(getAllMineTypes());
+    }
+  };
+
+  const handleMineTypeChange = (value: string) => {
+    setNewMineType(value);
+    setShorthandCode(generateShorthand(value));
   };
 
   const renderStepForm = () => {
     switch (currentStep) {
       case 1:
         return (
-          <Form layout="horizontal">
+          <Form style={{ marginTop: "15px" }} layout="horizontal">
             <Row gutter={[16, 16]}>
               <Col span={24}>
                 <Form.Item
                   colon={false}
                   label="Company Name"
                   labelAlign="left"
-                  labelCol={{ span: 6 }}
-                  wrapperCol={{ span: 18 }}
+                  labelCol={{ span: 5 }}
+                  wrapperCol={{ span: 19 }}
                   validateStatus={errors.companyName ? "error" : ""}
                   help={errors.companyName ? "Company Name is required" : ""}
                 >
-                  <div style={{ display: 'flex', gap: "10px" }}>
+                  <div style={{ display: "flex", gap: "10px" }}>
                     <Select
                       value={formData.companyName || ""}
                       onChange={(value) => handleChange("companyName", value)}
@@ -222,68 +312,152 @@ export const RegisterNewProject: React.FC = () => {
                         </Select.Option>
                       ))}
                     </Select>
-                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => setAddCompanyPopupOpen(true)}></Button>
+                    <Button
+                      type="dashed"
+                      icon={<PlusOutlined />}
+                      onClick={() => setAddCompanyPopupOpen(true)}
+                    />
                   </div>
                 </Form.Item>
               </Col>
-
+              <Col span={24}>
+                <Form.Item
+                  colon={false}
+                  label="Project Name"
+                  labelAlign="left"
+                  labelCol={{ span: 5 }}
+                  wrapperCol={{ span: 19 }}
+                  validateStatus={errors.projectName ? "error" : ""}
+                  help={errors.projectName ? "Project Name is required" : ""}
+                >
+                  <Input
+                    type="text"
+                    value={formData.projectName || ""}
+                    onChange={(e) => handleChange("projectName", e.target.value)}
+                  />
+                </Form.Item>
+              </Col>
               {[
-                { label: "Project Name", key: "projectName" },
-                { label: "Reserve", key: "reserve" },
-                { label: "Net Geological Reserve (Mn T)", key: "netGeologicalReserve" },
-                { label: "Extractable Reserve (Mn T)", key: "extractableReserve" },
-                { label: "Strip Ratio (Cum / T)", key: "stripRatio" },
-                { label: "Peak Capacity (MTPA)", key: "peakCapacity" },
-                { label: "Mine Life (years)", key: "mineLife" },
-                { label: "Total Coal Block Area (Ha)", key: "totalCoalBlockArea" },
-              ].map(({ label, key }) => (
-                <Col span={24} key={key}>
+                { label: "Reserve", key: "reserve", type: "number" },
+                { label: "Net Geological Reserve", key: "netGeologicalReserve", type: "number" },
+                { label: "Extractable Reserve", key: "extractableReserve", type: "number" },
+                { label: "Strip Ratio", key: "stripRatio", type: "number" },
+                { label: "Peak Capacity", key: "peakCapacity", type: "number" },
+                { label: "Mine Life (years)", key: "mineLife", type: "number" },
+                { label: "Total Coal Block Area", key: "totalCoalBlockArea", type: "number" },
+              ].map(({ label, key, type }, index) => (
+                <Col span={12} key={key}>
                   <Form.Item
                     colon={false}
                     label={label}
                     labelAlign="left"
-                    labelCol={{ span: 6 }}
-                    wrapperCol={{ span: 18 }}
+                    labelCol={{ span: 10 }}
+                    wrapperCol={{ span: 14 }}
                     validateStatus={errors[key] ? "error" : ""}
                     help={errors[key] ? `${label} is required` : ""}
                   >
-                    <Input value={formData[key] || ""} onChange={(e) => handleChange(key, e.target.value)} />
+                    <Input
+                      style={{ marginLeft: index % 2 === 0 ? "4px" : "0", marginRight: index % 2 !== 0 ? "4px" : "0" }}
+                      type={type}
+                      value={formData[key] || ""}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                    />
                   </Form.Item>
                 </Col>
               ))}
-
-              {[
-                { label: "Mineral", key: "mineral", options: ["Coal", "Iron"] },
-                { label: "Type of Mine", key: "typeOfMine", options: ["Open Cast", "Underground"] },
-                { label: "Grade (in case of Coal)", key: "grade", options: ["Grade A", "Grade B"] },
-              ].map(({ label, key, options }) => (
-                <Col span={24} key={key}>
-                  <Form.Item
-                    colon={false}
-                    label={label}
-                    labelAlign="left"
-                    labelCol={{ span: 6 }}
-                    wrapperCol={{ span: 18 }}
-                    validateStatus={errors[key] ? "error" : ""}
-                    help={errors[key] ? `${label} is required` : ""}
-                  >
-                    <Select value={formData[key] || ""} onChange={(value) => handleChange(key, value)}>
-                      {options.map((option) => (
+              <Col span={12}>
+                <Form.Item
+                  colon={false}
+                  label="Mineral"
+                  labelAlign="left"
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
+                  validateStatus={errors.mineral ? "error" : ""}
+                  help={errors.mineral ? "Mineral is required" : ""}
+                >
+                  <Select value={formData.mineral || ""} onChange={(value) => handleChange("mineral", value)}>
+                    {["Coal", "Iron"].map((option) => (
+                      <Select.Option key={option} value={option}>
+                        {option}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  colon={false}
+                  label="Type of Mine"
+                  labelAlign="left"
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
+                  validateStatus={errors.typeOfMine ? "error" : ""}
+                  help={errors.typeOfMine ? "Type of Mine is required" : ""}
+                >
+                  <div style={{ display: 'flex', gap: "10px" }}>
+                    <Select
+                      value={formData.typeOfMine || ""}
+                      style={{ marginLeft: "4px" }}
+                      onChange={(value) => {
+                        handleChange("typeOfMine", value);
+                        const filteredLib = allLibrariesName.filter((group: any) => group.mineType === value);
+                        setAllLibrariesName(filteredLib);
+                        handleLibraryChange(filteredLib[0]?.name);
+                      }}
+                    >
+                      {mineTypeOptions.map((option) => (
                         <Select.Option key={option} value={option}>
                           {option}
                         </Select.Option>
                       ))}
                     </Select>
-                  </Form.Item>
-                </Col>
-              ))}
+                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => setMineTypePopupOpen(true)}></Button>
+                  </div>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  colon={false}
+                  label="Grade (in case of Coal)"
+                  labelAlign="left"
+                  labelCol={{ span: 10 }}
+                  wrapperCol={{ span: 14 }}
+                  validateStatus={errors.grade ? "error" : ""}
+                  help={errors.grade ? "Grade is required" : ""}
+                >
+                  <Select value={formData.grade || ""} onChange={(value) => handleChange("grade", value)}>
+                    {["Grade A", "Grade B"].map((option) => (
+                      <Select.Option key={option} value={option}>
+                        {option}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
             </Row>
           </Form>
         );
       case 2:
         return (
-          <Form layout="horizontal">
+          <Form style={{ marginTop: "15px" }} layout="horizontal">
             <Row gutter={[16, 16]}>
+              <Col span={24} key="mineLocation">
+                <Form.Item
+                  colon={false}
+                  label="Mine Location"
+                  labelAlign="left"
+                  labelCol={{ span: 6 }}
+                  wrapperCol={{ span: 18 }}
+                  validateStatus={errors["mineLocation"] ? "error" : ""}
+                  help={errors["mineLocation"] ? "Mine Location is required" : ""}
+                >
+                  <Input
+                    value={formData["mineLocation"] || ""}
+                    onChange={(e) => handleChange("mineLocation", e.target.value)}
+                  />
+                </Form.Item>
+              </Col>
+
               {[
                 { label: "State", key: "state" },
                 { label: "District", key: "district" },
@@ -301,7 +475,10 @@ export const RegisterNewProject: React.FC = () => {
                     validateStatus={errors[key] ? "error" : ""}
                     help={errors[key] ? `${label} is required` : ""}
                   >
-                    <Input value={formData[key] || ""} onChange={(e) => handleChange(key, e.target.value)} />
+                    <Input
+                      value={formData[key] || ""}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                    />
                   </Form.Item>
                 </Col>
               ))}
@@ -310,7 +487,7 @@ export const RegisterNewProject: React.FC = () => {
         );
       case 3:
         return (
-          <Form layout="horizontal">
+          <Form style={{ marginTop: "15px" }} layout="horizontal">
             <Row gutter={[16, 16]}>
               <Col span={24}>
                 <Form.Item
@@ -366,38 +543,42 @@ export const RegisterNewProject: React.FC = () => {
         );
       case 4:
         return (
-          <Form layout="horizontal">
-            <div>
-              <div className="module-list">
-                {orderedModuleNames.map((moduleName) => {
-                  const key = moduleName.replace(/\s+/g, "").toLowerCase();
-                  return (
-                    <Row key={key} className="module-item" gutter={16} align="middle">
-                      <Col span={6}>
-                        <label className="module-label" htmlFor={key}>
-                          {moduleName}
-                        </label>
-                      </Col>
-                      <Col span={18} style={{ marginBottom: "10px" }}>
-                        <Select
-                          className={`custom-select ${errors[key] ? "error" : ""}`}
-                          id={key}
-                          value={formData[key] || undefined}
-                          onChange={(value) => handleRowChange(value, key)}
-                          style={{ width: "100%" }}
-                          placeholder={`Select ${moduleName}`}
-                        >
-                          <Option value="Yes">Yes</Option>
-                          <Option value="No">No</Option>
-                        </Select>
-                        {errors[key] && <div className="error-text">{`${moduleName} selection is required`}</div>}
-                      </Col>
-                    </Row>
-                  );
-                })}
-              </div>
-            </div>
-          </Form>
+          <div>
+            <Form className="select-module-group" layout="horizontal">
+              <Row gutter={[16, 16]}>
+                <Col span={24}>
+                  <Form.Item
+                    colon={false}
+                    label="Select Group"
+                    labelAlign="left"
+                    labelCol={{ span: 6 }}
+                    wrapperCol={{ span: 18 }}
+                    style={{ fontSize: "18px", fontWeight: "400" }}
+
+                  >
+                    <Select
+                      value={selectedLibrary}
+                      onChange={handleLibraryChange}
+                      allowClear={true}
+                    >
+                      {allLibrariesName.map((lib: any) => (
+                        <Option key={lib.name} value={lib.name}>
+                          {lib.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+            </Form>
+            <Table
+              columns={columns}
+              dataSource={selectedItems}
+              pagination={false}
+              rowKey="moduleName"
+              className="project-timeline-table"
+            />
+          </div>
         );
       default:
         return null;
@@ -406,12 +587,10 @@ export const RegisterNewProject: React.FC = () => {
 
   return (
     <>
-      <div className="main-container-div">
-        <div>
+      <div className="registration-container">
+        <div className="step-registration-form">
           <div className="page-heading-main bg-secondary">
-            <span className="page-heading">
-              Register New Project
-            </span>
+            <span className="page-heading">Register New Project</span>
           </div>
           <div className="form-container-item-div">
             <div className="form-items">
@@ -420,12 +599,7 @@ export const RegisterNewProject: React.FC = () => {
                   {steps.map((step, index) => (
                     <li
                       key={step.id}
-                      className={`step ${((currentStep > index + 1))
-                        ? "completed"
-                        : currentStep === index + 1
-                          ? "active"
-                          : ""
-                        }`}
+                      className={`step ${currentStep > index + 1 ? "completed" : currentStep === index + 1 ? "active" : ""}`}
                     >
                       <span className="step-title">{step.title}</span>
                     </li>
@@ -439,30 +613,27 @@ export const RegisterNewProject: React.FC = () => {
               </div>
               <hr className="saparation-line" />
               <div className="form-buttons">
-                <Button
-                  variant="outlined"
-                  onClick={handlePrevious}
-                  className="bg-tertiary text-white"
-                  disabled={currentStep === 1}
-                >
+                <Button variant="outlined" onClick={handlePrevious} className="bg-tertiary text-white" disabled={currentStep === 1}>
                   Previous
                 </Button>
-                <Button
-                  className="bg-secondary text-white"
-                  onClick={currentStep === steps.length ? showConfirmationModal : handleNext}
-                >
+                <Button className="bg-secondary text-white" onClick={currentStep === steps.length ? showConfirmationModal : handleNext}>
                   {currentStep === steps.length ? "Submit" : "Next"}
                 </Button>
               </div>
             </div>
           </div>
         </div>
-
-        <div>
-          <ImageContainer imageUrl="/images/auths/m5.jpg" />
-        </div>
-
+        {currentStep == 2 ? (
+          <div className="maips-data">
+            <MapComponent />
+          </div>
+        ) : (
+          <div className="image-container">
+            <ImageContainer imageUrl={["/images/auths/m5.jpg", "/images/auths/m5.jpg"]} />
+          </div>
+        )}
       </div>
+
       <Modal
         title="Confirm Submission"
         open={isModalVisible}
@@ -474,8 +645,9 @@ export const RegisterNewProject: React.FC = () => {
         cancelButtonProps={{ className: "bg-tertiary" }}
         maskClosable={false}
         keyboard={false}
+        className="modal-container"
       >
-        <p>
+        <p className="modal-body-item-padding">
           <ExclamationCircleOutlined style={{ color: "red", marginRight: 8 }} />
           Are you sure you want to submit the form? Once submitted, all data will be cleared.
         </p>
@@ -490,13 +662,39 @@ export const RegisterNewProject: React.FC = () => {
         cancelButtonProps={{ className: "bg-tertiary" }}
         maskClosable={false}
         keyboard={false}
+        className="modal-container"
       >
-        <Input
-          placeholder="Enter Company Name"
-          value={newCompany}
-          onChange={(e) => setNewCompany(e.target.value)}
-          style={{ marginBottom: "10px" }}
-        />
+        <div className="modal-body-item-padding">
+          <Input
+            placeholder="Enter Company Name"
+            value={newCompany}
+            onChange={(e) => setNewCompany(e.target.value)}
+            style={{ marginBottom: "10px" }}
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        title="Add Mine Type"
+        open={mineTypePopupOpen}
+        onCancel={() => setMineTypePopupOpen(false)}
+        onOk={handleAddNewMineType}
+        okButtonProps={{ className: "bg-secondary" }}
+        cancelButtonProps={{ className: "bg-tertiary" }}
+        maskClosable={false}
+        keyboard={false}
+        className="modal-container"
+      >
+        <div className="modal-body-item-padding">
+          <Input
+            placeholder="Enter Mine Type"
+            value={newMineType}
+            onChange={(e) => handleMineTypeChange(e.target.value)}
+            style={{ marginBottom: "10px" }}
+          />
+
+          <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
+        </div>
       </Modal>
     </>
   );

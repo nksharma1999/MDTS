@@ -1,25 +1,22 @@
 .logo-sections {
-    background: white;
-    padding: 3px 0px 3px 5px;
-    border-radius: 6px;
-    border-right: 6px solid #e33b28;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease-in-out;
-
-    &:hover {
-        transform: scale(1.02);
-        box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.25);
-    }
+    padding: 6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
 }
 
 .logo-image {
-    height: 65px;
+    width: 55px;
+    height: 55px;
+    border-radius: 12px;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     object-fit: contain;
-    max-height: 100%;
+    background-color: white;
 }
+
 
 .heading-title {
     font-size: 22px;

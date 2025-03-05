@@ -37,7 +37,8 @@
 }
 
 .modules-items {
-    height: calc(100vh - 265px);
+    /* height: calc(100vh - 265px); */
+    height: calc(100vh - 195px);
     overflow-y: auto;
     overflow-x: hidden;
     border-radius: 4px;
@@ -167,4 +168,8 @@
     padding: 8px !important;
     font-weight: bold !important;
     color: white !important;
+}
+
+.ant-modal .ant-modal-footer {
+    padding: 0px 10px 10px 0px !important;
 }

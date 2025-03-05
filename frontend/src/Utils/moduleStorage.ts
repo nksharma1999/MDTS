@@ -4,6 +4,7 @@ const MODULE_KEY = "modules";
 const FORM_DATA = "formDatas";
 const MINE_TYPE_KEY = "mineTypes";
 const DOCUMENTS_KEY = " documents";
+const USERS = "users";
 
 // Get all modules from local storage
 export const getModules = () => {
@@ -257,21 +258,28 @@ export const updateDocument = (_id: Number, document: any) => {
 };
 
 // Delete a document from localStorage based on its index
-export const deleteDocument = (index: number) => {
+
+export const deleteDocument = (id: number): boolean => {
   const existingDocuments = getAllDocuments();
-  if (index < 0 || index >= existingDocuments.length) {
-    console.error("Invalid document index.");
+  if (!Array.isArray(existingDocuments)) {
+    console.error("Invalid document list.");
     return false;
   }
-  existingDocuments.splice(index, 1);
+  const documentExists = existingDocuments.some(doc => doc.id === id);
+  if (!documentExists) {
+    console.error("Document with the given ID does not exist.");
+    return false;
+  }
+  const updatedDocuments = existingDocuments.filter(doc => doc.id !== id);
   try {
-    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(existingDocuments));
+    localStorage.setItem(DOCUMENTS_KEY, JSON.stringify(updatedDocuments));
     return true;
   } catch (error) {
     console.error("Error deleting document from localStorage:", error);
     return false;
   }
 };
+
 
 export const addNewMineType = (mineTypes: any): void => {
   try {
@@ -299,6 +307,65 @@ export const getAllMineTypes = (): any[] => {
   } catch (error) {
     console.error("Error retrieving mine types:", error);
     return [];
+  }
+};
+
+export const getAllLibraries = (): any[] => {
+  try {
+    const userId = JSON.parse(localStorage.getItem("user") || "{}")?.id;
+    const savedLibraries = userId && localStorage.getItem(`libraries_${userId}`);
+    const parsedLibraries = JSON.parse(savedLibraries);
+    if (!parsedLibraries) return [];
+    return parsedLibraries;
+  } catch (error) {
+    console.error("Error retrieving mine types:", error);
+    return [];
+  }
+}
+
+export const getCurrentUser = (): any => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "{}");
+  } catch (error) {
+    console.error("Error retrieving current user:", error);
+    return null;
+  }
+};
+
+export const getCurrentUserId = (): string | null => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "{}")?.id || null;
+  } catch (error) {
+    console.error("Error retrieving current user ID:", error);
+    return null;
+  }
+};
+
+// Get all users from local storage
+export const getAllUsers = () => {
+  try {
+    const savedUsers = localStorage.getItem(USERS);
+    if (!savedUsers) {
+      console.warn("No users found in localStorage.");
+      return [];
+    }
+
+    const users = JSON.parse(savedUsers);
+    return users; // Return the parsed users directly
+  } catch (error) {
+    console.error("Error parsing users from localStorage:", error);
+    return [];
+  }
+};
+
+export const saveUsers = (userList: any) => {
+  try {
+    // Convert the user list to a JSON string
+    const usersString = JSON.stringify(userList);
+    // Save the JSON string to localStorage under the key "USERS"
+    localStorage.setItem(USERS, usersString);
+  } catch (error) {
+    console.error("Error saving users to localStorage:", error);
   }
 };
 

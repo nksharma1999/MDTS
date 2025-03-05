@@ -5,17 +5,19 @@ import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/ma
 import { useNavigate } from 'react-router-dom';
 import { addModule } from '../Utils/moduleStorage';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification } from 'antd';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
+import UserRolesPage from "./AssignRACI";
+import CreateNotification from "./CreateNotification";
 
 const Module = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
     const existingAcronyms = useState(["FC", "BP", "AM", "IM"])[0];
-    const moduleName = state?.moduleName ?? "Default Module";
-    const mineType = state?.mineType ?? "Default Type";
+    const moduleName = state?.moduleName ?? "";
+    const mineType = state?.mineType ?? "";
     const moduleCode = state?.moduleCode ?? null;
     const [openModal, setOpenModal] = useState<boolean>(false);
     const [selectedRow, setSelectedRow] = useState<any>(null);
@@ -23,36 +25,85 @@ const Module = () => {
     const parentModuleCode = moduleCode
         ? moduleCode
         : generateTwoLetterAcronym(moduleName, existingAcronyms);
-
+    const [openPopup, setOpenPopup] = useState<boolean>(false);
+    const [newModelName, setNewModelName] = useState<string>("");
+    const [selectedOption, setSelectedOption] = useState<string>("");
+    const [options, setOptions] = useState<string[]>([]);
+    const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
+    const [newMineType, setNewMineType] = useState<string>("");
+    const [shorthandCode, setShorthandCode] = useState<string>("");
+    const [moduleCodeName, setModuleCodeName] = useState<string>("");
+    const [filteredModuleData, setFilteredModuleData] = useState<any>(null);
+    const [isFocused, setIsFocused] = useState(false);
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
         moduleName: moduleName,
-        level: "L1",
+        level: "",
         mineType: mineType,
-        activities: []
+        duration: '',
+        activities: state?.activities || []
     });
+    const isEditing = !!state;
+
+    useEffect(() => {
+        if (state) {
+            setModuleData({
+                parentModuleCode: state.parentModuleCode,
+                moduleName: state.moduleName,
+                level: state.level,
+                mineType: state.mineType,
+                duration: state.duration,
+                activities: state.activities
+            });
+        }
+    }, [state]);
+
+    useEffect(() => {
+        try {
+            const storedOptions = getAllMineTypes();
+            if (storedOptions.length > 0) {
+                setOptions(storedOptions);
+            }
+        } catch (error) {
+            console.error("Error fetching mine types:", error);
+        }
+    }, []);
 
     const handleSaveModuleAndActivity = () => {
         try {
-            console.log('Inside handleSaveModuleAndActivity', moduleData)
-            addModule(moduleData);
-            notification.success({
-                message: "Modules saved successfully!",
-                duration: 3,
-            });
+            if (isEditing) {
+                const storedModulesString = localStorage.getItem("modules");
+                const storedModules = storedModulesString ? JSON.parse(storedModulesString) : [];
+                const updatedModules = storedModules.map((module: any) =>
+                    module.parentModuleCode === moduleData.parentModuleCode ? moduleData : module
+                );
+                localStorage.setItem("modules", JSON.stringify(updatedModules));
+                notification.success({
+                    message: "Module updated successfully!",
+                    duration: 3,
+                });
+            } else {
+                addModule(moduleData);
+                notification.success({
+                    message: "Module saved successfully!",
+                    duration: 3,
+                });
+            }
         } catch (error) {
-            console.error("Error while saving modules:", error);
-            notification.success({
-                message: "Failed to save modules.",
+            console.error("Error while saving/updating module:", error);
+            notification.error({
+                message: "Failed to save/update module.",
                 description: "Check the console for details.",
                 duration: 3,
             });
         }
+
         navigate('/create/module-library');
     };
 
     const addActivity = () => {
         if (!selectedRow) return;
+
         const isModuleSelected = selectedRow.level === "L1";
         const parentCode = isModuleSelected ? moduleData.parentModuleCode : selectedRow.code;
         const newLevel = isModuleSelected ? "L2" : selectedRow.level;
@@ -73,8 +124,8 @@ const Module = () => {
         const newActivity = {
             code: newCode,
             activityName: "New Activity " + timestamp,
-            duration: 10,
-            prerequisite: isModuleSelected ? "-" : selectedRow.code,
+            duration: 0,
+            prerequisite: isModuleSelected ? "" : selectedRow.code,
             level: newLevel
         };
 
@@ -99,12 +150,15 @@ const Module = () => {
             updatedActivities.push(newActivity);
         }
 
-        setModuleData((prev: any) => ({
-            ...prev,
-            activities: updatedActivities
-        }));
 
-        console.log("Updated Activities:", updatedActivities);
+        setModuleData((prev: any) => {
+            const newData = { ...prev, activities: updatedActivities };
+            return newData;
+        });
+
+        setTimeout(() => {
+            handlePrerequisite();
+        }, 0);
     };
 
     const deleteActivity = () => {
@@ -142,6 +196,7 @@ const Module = () => {
         });
 
         setSelectedRow(null);
+        handlePrerequisite();
     };
 
     const increaseLevel = () => {
@@ -160,7 +215,6 @@ const Module = () => {
                 aboveIndex--;
             }
 
-            console.log("Above index : ", aboveIndex)
             if (aboveIndex < 0) return prev;
             let aboveActivity = activities[aboveIndex];
 
@@ -188,19 +242,15 @@ const Module = () => {
             updatedActivities[activityIndex] = updatedActivity;
 
             let previousLevel = `L${currentLevel}`;
-            console.log("previousLevel : ", previousLevel);
             let siblings = updatedActivities.filter((a) => a.level === previousLevel && a.code !== activity.code);
-            console.log("siblings : ", siblings);
 
             if (siblings) {
                 let lastSiblingCode = aboveActivity.code;
-                console.log('lastSiblingCode : ', lastSiblingCode)
                 let lastSiblingPrefix = removeLastSegment(lastSiblingCode);
                 let count = 10;
 
                 siblings.forEach((sibling) => {
                     let newSiblingCode = `${lastSiblingPrefix}/${count}`;
-                    console.log("newSiblingCode : ", newSiblingCode);
                     sibling.code = newSiblingCode;
                     sibling.prerequisite = lastSiblingCode;
                     count += 10;
@@ -222,6 +272,7 @@ const Module = () => {
 
             return { ...prev, activities: updatedActivities };
         });
+        handlePrerequisite();
     };
 
     const removeLastSegment = (code: any) => {
@@ -243,6 +294,7 @@ const Module = () => {
             let activity = activities[activityIndex];
             let currentLevel = parseInt(activity.level.slice(1));
 
+            // Find the new parent activity (one level above)
             let aboveIndex = activityIndex - 1;
             let newParentCode = "";
             while (aboveIndex >= 0) {
@@ -258,11 +310,13 @@ const Module = () => {
 
             if (!newParentCode) return prev;
 
+            // Generate the new code for the updated activity
             let splited = newParentCode.split("/");
             let newNumber = parseInt(splited[splited.length - 1]) + 10;
             let newCode = `${removeLastSegment(newParentCode)}/${newNumber}`;
             let newLevel = `L${currentLevel - 1}`;
 
+            // Update the current activity
             let updatedActivity = {
                 ...activity,
                 code: newCode,
@@ -270,34 +324,39 @@ const Module = () => {
                 level: newLevel,
             };
 
+            // Update the activities array
             let updatedActivities = [...activities];
             updatedActivities[activityIndex] = updatedActivity;
-            console.log("updatedActivities : ", updatedActivities);
 
-            console.log("Selected row: ", selectedRow);
-            let startRow = activityIndex + 1;
-            let lastSiblingCode = newCode;
-            while (activities.length > startRow) {
-                newNumber += 10;
-                let siblingNumber = 10;
-                let tempActivity = activities[startRow];
-                if (tempActivity.level === selectedRow.level) {
-                    tempActivity.code = `${newCode}/${siblingNumber}`;
-                    siblingNumber += 10;
-                } else if (newLevel === activities[startRow].level) {
-                    tempActivity.code = `${removeLastSegment(newCode)}/${newNumber}`;
-                    newNumber += 10;
-                } else {
-                    break;
+            // Re-number sibling activities
+            let siblings = updatedActivities.filter((a) => a.level === newLevel && a.code.startsWith(removeLastSegment(newCode)));
+            siblings.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
+
+            let count = 10;
+            siblings.forEach((sibling, index) => {
+                let newSiblingCode = `${removeLastSegment(newCode)}/${count}`;
+                sibling.code = newSiblingCode;
+                if (index > 0) {
+                    sibling.prerequisite = siblings[index - 1].code;
                 }
-                tempActivity.prerequisite = lastSiblingCode;
-                activities[startRow] = tempActivity;
-                lastSiblingCode = tempActivity.code;
-                startRow++;
-            }
+                count += 10;
+            });
+
+            // Sort all activities by code to ensure correct order
+            updatedActivities.sort((a, b) => {
+                let aParts = a.code.split("/").map(Number);
+                let bParts = b.code.split("/").map(Number);
+                for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+                    let aPart = aParts[i] || 0;
+                    let bPart = bParts[i] || 0;
+                    if (aPart !== bPart) return aPart - bPart;
+                }
+                return 0;
+            });
 
             return { ...prev, activities: updatedActivities };
         });
+        handlePrerequisite();
     };
 
     const handleEdit = (field: any, value: any) => {
@@ -313,15 +372,8 @@ const Module = () => {
         }));
     };
 
-    const [openPopup, setOpenPopup] = useState<boolean>(false);
-    const [newModelName, setNewModelName] = useState<string>("");
-    const [selectedOption, setSelectedOption] = useState<string>("");
-    const [options, setOptions] = useState<string[]>([]);
-    const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
-    const [newMineType, setNewMineType] = useState<string>("");
-    const [shorthandCode, setShorthandCode] = useState<string>("");
-    const [moduleCodeName, setModuleCodeName] = useState<string>("");
     const handlePopupClose = () => setOpenPopup(false);
+
     const handleModulePlus = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
@@ -343,17 +395,6 @@ const Module = () => {
             console.error("Module Added Error:", { newModelName, selectedOption, moduleCode });
         }
     }
-
-    useEffect(() => {
-        try {
-            const storedOptions = getAllMineTypes();
-            if (storedOptions.length > 0) {
-                setOptions(storedOptions);
-            }
-        } catch (error) {
-            console.error("Error fetching mine types:", error);
-        }
-    }, []);
 
     const generateShorthand = (input: string): string => {
         return input
@@ -380,40 +421,105 @@ const Module = () => {
         setShorthandCode(generateShorthand(value));
     };
 
+    const getAllPrerequisites = () => {
+        return moduleData.activities
+            .filter((activity: any) => activity.level !== "L1")
+            .map((activity: any) => activity.code);
+    };
+
+    const handlePrerequisiteChange = (activityCode: any, value: any) => {
+        const updatedActivities = moduleData.activities.map((activity: any) =>
+            activity.code === activityCode ? { ...activity, prerequisite: value } : activity
+        );
+        setModuleData((prev: any) => ({ ...prev, activities: updatedActivities }));
+    };
+
+    const filterPrerequisites = (inputValue: string, option: any) => {
+        return option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1;
+    };
+
+    const handlePrerequisite = () => {
+        setModuleData((prev: any) => {
+            let parentCode: string = "";
+            let firstIndex = 0;
+
+            const updatedActivities = prev.activities.map((activity: any, index: number) => {
+                if (firstIndex === 0) {
+                    firstIndex = 1;
+                    parentCode = activity.code; // Set parentCode for the first activity
+                    return { ...activity, prerequisite: "" };
+                } else if (activity.level === "L2") {
+                    parentCode = activity.code; // Update parentCode when L2 is found
+                    return { ...activity, prerequisite: prev.activities[index - 1]?.code || "" };
+                } else if (activity.level !== "L1") {
+                    return { ...activity, prerequisite: parentCode };
+                }
+                return activity;
+            });
+
+            return { ...prev, activities: updatedActivities };
+        });
+    };
+
+    useEffect(() => {
+        if (moduleData.activities.length > 0) {
+            //handlePrerequisite();
+        }
+    }, [moduleData.activities]);
+
+    const handleAssignRACI = () => {
+        if (!selectedRow) {
+            notification.warning({
+                message: "Please select a row to assign RACI.",
+                duration: 3,
+            });
+            return;
+        }
+
+        // Filter activities to include only the selected activity
+        const filteredData = {
+            ...moduleData, // Copy all other properties
+            activities: moduleData.activities.filter(
+                (activity: any) => activity.code === selectedRow.code
+            ),
+        };
+
+        // Set the filtered data in state
+        setFilteredModuleData(filteredData);
+
+        // Open the modal
+        setOpenModal(true);
+    };
+
+    const [moduleType, setModuleType] = useState("custom");
+    const [selectedMTTSModule, setSelectedMTTSModule] = useState(null);
+    const mttsModules = ["MTTS-001", "MTTS-002", "MTTS-003"];
     return (
         <div>
             <div className="module-main">
 
                 <div className="top-item" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
-                    <div className="module-title">
+                    <div className="module-title" style={{ display: "flex", justifyContent: "space-between", gap: "100px", alignItems: "center" }}>
                         <span className="">Modules</span>
-                    </div>
-                    <div className="searching-and-create" style={{ display: "flex", justifyContent: "space-between", gap: "20px", alignItems: "center" }}>
-                        <Input
-                            placeholder="Search modules, activities, levels"
-                            size="small"
-                            className="search-input"
-                            style={{ height: "30px", fontSize: "14px" }}
-                            prefix={<SearchOutlined />}
-                        />
-                        <Tooltip title="Create New Module">
-                            <Button
-                                type="primary"
-                                onClick={handlePopupOpen}
-                                className="add-module-button"
-                                style={{ height: "28px", fontSize: "14px" }}
-                            >
-                                Create New Module
-                            </Button>
-                        </Tooltip>
+                        <div className="searching-and-create">
+                            <Input
+                                placeholder="Search modules, activities, levels"
+                                size="small"
+                                className="search-input"
+                                style={{
+                                    height: "30px",
+                                    fontSize: "14px",
+                                    boxShadow: isFocused ? "0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)" : "none",
+                                    transition: "box-shadow 0.3s ease-in-out",
+                                }}
+                                prefix={<SearchOutlined />}
+                                onFocus={() => setIsFocused(true)}
+                                onBlur={() => setIsFocused(false)}
+                            />
+                        </div>
                     </div>
                     <div className="toolbar-container">
                         <Row justify="space-between" align="middle">
-                            {/* <Col style={{ display: "flex" }}>
-                                <div className="toolbar-title">
-                                    <span>Toolbar</span>
-                                </div>
-                            </Col> */}
                             <Col>
                                 <Row gutter={16}>
                                     <Col>
@@ -452,29 +558,27 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
                                     <Col>
-                                        <Tooltip title="Add Activity">
-                                            <Button
-                                                type="primary"
-                                                onClick={addActivity}
-                                                className="add-button"
-                                            >
-                                                Add Activity
-                                            </Button>
-                                        </Tooltip>
-                                    </Col>
-                                    <Col>
                                         <Tooltip title="Assign RACI">
                                             <Button
                                                 icon={<UserOutlined />}
-                                                onClick={() => setOpenModal(true)}
+                                                onClick={handleAssignRACI}
                                                 className="icon-button blue"
+                                                disabled={!selectedRow}
                                             />
                                         </Tooltip>
                                         <Modal
-                                            visible={openModal}
+                                            title={<span style={{ fontWeight: "bold", fontSize: "20px" }}>Assign User Roles</span>}
+                                            open={openModal}
                                             onCancel={() => setOpenModal(false)}
-                                            footer={null}
+                                            footer={false}
+                                            width={"50%"}
                                         >
+                                            <UserRolesPage
+                                                open={openModal}
+                                                onClose={() => setOpenModal(false)}
+                                                selectedRow={selectedRow}
+                                                moduleData={filteredModuleData}
+                                            />
                                         </Modal>
                                     </Col>
                                     <Col>
@@ -486,17 +590,47 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                         <Modal
+                                            title="Notification Settings"
                                             visible={open}
                                             onCancel={() => setOpen(false)}
-                                            footer={null}
+                                            width={"70%"}
+                                            footer={false}
                                         >
+                                            <CreateNotification open={open} onClose={() => setOpen(false)} />
                                         </Modal>
                                     </Col>
+                                    <Col>
+                                        <Tooltip title="Add Activity">
+                                            <Button
+                                                type="primary"
+                                                onClick={addActivity}
+                                                className="add-button"
+                                                style={{ height: "30px", fontSize: "14px" }}
+                                            >
+                                                Add Activity
+                                            </Button>
+                                        </Tooltip>
+                                    </Col>
+
+                                    <Col>
+                                        <Tooltip title="Create New Module">
+                                            <Button
+                                                type="primary"
+                                                onClick={handlePopupOpen}
+                                                className="add-module-button"
+                                                style={{ height: "30px", fontSize: "14px" }}
+                                            >
+                                                Create New Module
+                                            </Button>
+                                        </Tooltip>
+                                    </Col>
+
                                 </Row>
                             </Col>
                         </Row>
                     </div>
                 </div>
+
                 <div className="modules-data">
                     <div className="modules-items">
                         <Paper elevation={3}>
@@ -536,13 +670,12 @@ const Module = () => {
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('duration', e.target.innerText)}
                                             sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
-                                        >
-                                            10
+                                        >{moduleData.duration}
                                         </TableCell>
                                         <TableCell contentEditable
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('', e.target.innerText)}
-                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>-</TableCell>
+                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}></TableCell>
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
                                     {moduleData.activities
@@ -572,12 +705,18 @@ const Module = () => {
                                                 >
                                                     {activity.duration}
                                                 </TableCell>
-                                                <TableCell contentEditable
-                                                    suppressContentEditableWarning
-                                                    onBlur={(e) => handleActivityEdit(activity.code, 'duration', e.target.innerText)}
-                                                    sx={{ cursor: 'text', outline: 'none', padding: '10px' }}>
-                                                    {(index === 0 && activity.level === 'L2') ? null : (sortedActivities[index - 1]?.code || "-")}
+                                                <TableCell sx={{ padding: '10px' }}>
+                                                    <AutoComplete
+                                                        value={activity.prerequisite || (index === 0 && activity.level === 'L2' ? "" : (sortedActivities[index - 1]?.code || ""))}
+                                                        options={getAllPrerequisites().map((code: string) => ({ value: code }))}
+                                                        onChange={(value) => handlePrerequisiteChange(activity.code, value)}
+                                                        filterOption={filterPrerequisites}
+                                                        placeholder="Select Prerequisite"
+                                                        style={{ width: '100%' }}
+                                                        allowClear
+                                                    />
                                                 </TableCell>
+
                                                 <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.level}</TableCell>
                                             </TableRow>
                                         ))}
@@ -586,10 +725,13 @@ const Module = () => {
                             </Table>
                         </Paper>
                     </div>
-                    <hr />
                     <div className="save-button-container">
-                        <Button type="primary" className="save-button" onClick={handleSaveModuleAndActivity}>
-                            Save <ArrowRightOutlined className="save-button-icon" />
+                        <Button
+                            type="primary"
+                            className="save-button"
+                            onClick={handleSaveModuleAndActivity}
+                        >
+                            {isEditing ? "Update" : "Save"} <ArrowRightOutlined className="save-button-icon" />
                         </Button>
                     </div>
                 </div>
@@ -603,35 +745,67 @@ const Module = () => {
                     cancelButtonProps={{ className: "bg-tertiary" }}
                     maskClosable={false}
                     keyboard={false}
+                    className="modal-container"
+                    style={{ marginBottom: "10px !important" }}
                 >
-                    <Input
-                        placeholder="Module Name"
-                        value={newModelName}
-                        onChange={(e) => setNewModelName(e.target.value)}
-                        style={{ marginBottom: "10px" }}
-                    />
-
-                    <div style={{ display: 'flex', gap: "10px" }}>
-                        <Select
-                            style={{ width: "100%", marginBottom: "10px" }}
-                            value={selectedOption || ""}
-                            onChange={setSelectedOption}
-                            placeholder="Select mine type..."
+                    <div className="modal-body-item-padding">
+                        <Radio.Group
+                            value={moduleType}
+                            onChange={(e) => setModuleType(e.target.value)}
+                            style={{ marginBottom: "10px" }}
                         >
-                            {options.map((option, index) => (
-                                <Option key={index} value={option}>{option}</Option>
-                            ))}
-                        </Select>
-                        <Button type="dashed" icon={<PlusOutlined />} onClick={() => setMineTypePopupOpen(true)}></Button>
+                            <Radio value="custom">Custom Module</Radio>
+                            <Radio value="mtts">MTTS Module</Radio>
+                        </Radio.Group>
+
+                        <div style={{ display: "flex", gap: "10px" }}>
+                            <Select
+                                style={{ width: "100%", marginBottom: "10px" }}
+                                value={selectedOption || undefined}
+                                onChange={setSelectedOption}
+                                placeholder="Select mine type"
+                            >
+                                {options.map((option, index) => (
+                                    <Option key={index} value={option}>
+                                        {option}
+                                    </Option>
+                                ))}
+                            </Select>
+                            <Button
+                                type="dashed"
+                                icon={<PlusOutlined />}
+                                onClick={() => setMineTypePopupOpen(true)}
+                            />
+                        </div>
+
+                        {moduleType === "custom" ? (
+                            <Input
+                                placeholder="Module Name"
+                                value={newModelName}
+                                onChange={(e) => setNewModelName(e.target.value)}
+                                style={{ marginBottom: "10px" }}
+                            />
+                        ) : (
+                            <Select
+                                style={{ width: "100%", marginBottom: "10px" }}
+                                value={selectedMTTSModule || undefined}
+                                onChange={setSelectedMTTSModule}
+                                placeholder="Select MTTS Module"
+                            >
+                                {mttsModules.map((module, index) => (
+                                    <Option key={index} value={module}>
+                                        {module}
+                                    </Option>
+                                ))}
+                            </Select>
+                        )}
+                        <Input
+                            placeholder="Module Code"
+                            value={moduleCodeName}
+                            onChange={(e) => setModuleCodeName(e.target.value)}
+                            style={{ marginBottom: "10px" }}
+                        />
                     </div>
-
-                    <Input
-                        placeholder="Module Code"
-                        value={moduleCodeName}
-                        onChange={(e) => setModuleCodeName(e.target.value)}
-                        style={{ marginBottom: "10px" }}
-                    />
-
                 </Modal>
 
                 <Modal
@@ -643,15 +817,18 @@ const Module = () => {
                     cancelButtonProps={{ className: "bg-tertiary" }}
                     maskClosable={false}
                     keyboard={false}
+                    className="modal-container"
                 >
-                    <Input
-                        placeholder="Enter Mine Type"
-                        value={newMineType}
-                        onChange={(e) => handleMineTypeChange(e.target.value)}
-                        style={{ marginBottom: "10px" }}
-                    />
+                    <div className="modal-body-item-padding">
+                        <Input
+                            placeholder="Enter Mine Type"
+                            value={newMineType}
+                            onChange={(e) => handleMineTypeChange(e.target.value)}
+                            style={{ marginBottom: "10px" }}
+                        />
 
-                    <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
+                        <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
+                    </div>
                 </Modal>
             </div>
         </div>

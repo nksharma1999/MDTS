@@ -1,12 +1,12 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "../layouts/NavbarItems";
 import "../styles/landing-page.css";
-import { Box } from "@mui/material";
+// import { Box } from "@mui/material";
 
 const LandingPage = () => {
     return (
         <>
-            <Box
+            {/* <Box
                 sx={{
                     background: "linear-gradient(135deg, #257180 20%, #e33b28 60%, #257180 80%)",
                     textAlign: "center",
@@ -27,7 +27,8 @@ const LandingPage = () => {
                     />
                 </div>
                 <p className="heading-title">Mine Development Tracking System</p>
-            </Box>
+            </Box> */}
+
 
             <div className="navbar-div" >
                 <Navbar />
