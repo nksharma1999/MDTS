@@ -5,9 +5,9 @@
     font-family: sans-serif !important;
 }
 
-.text-primary {
+/* .text-primary {
     color: #e33b28 !important;
-}
+} */
 
 .text-secondary {
     color: #257180 !important;
@@ -17,7 +17,7 @@
     color: #6c757d !important;
 }
 
-.bg-primary {
+/* .bg-primary {
     background-color: #e33b28 !important;
     color: white !important;
     transition: background-color 0.3s ease;
@@ -31,7 +31,7 @@
     background-color: #a0281a !important;
     color: #d3d3d3 !important;
     cursor: not-allowed !important;
-}
+} */
 
 .bg-secondary {
     background-color: #257180 !important;
