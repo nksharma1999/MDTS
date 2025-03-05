@@ -282,10 +282,10 @@ const ModuleLibrary = () => {
           <span>Modules</span>
         </div>
         <div className="heading-two">
-          <span>Libraries</span>
+          <span>Groups</span>
         </div>
         <div className="heading-three">
-          <span>Create Module Group</span>
+          <span>Create Group</span>
         </div>
       </div>
 
@@ -365,7 +365,7 @@ const ModuleLibrary = () => {
                     <div style={{ padding: "10px", fontSize: "12px", color: "#dddd", display: "flex", justifyContent: "center" }}>
                       No Module available. Please add a Module to get started.
                       <div style={{ marginLeft: "30px" }}>
-                        <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
+                        <Button size="small" style={{ backgroundColor: "#3C3D37", color: "#ddd" }} icon={<RobotOutlined />}>
                           <Link style={{ color: "inherit", textDecoration: "none" }} to={"/modules"}>New</Link>
                         </Button>
                       </div>
@@ -427,7 +427,7 @@ const ModuleLibrary = () => {
               </div>
             ) : (
               <div style={{ ...boxStyle, textAlign: "center", padding: "20px" }}>
-                <p>Please select a library from the right side or create a new one.</p>
+                <p>Please select a group from the right side or create a new one.</p>
               </div>
             )}
           </div>
@@ -445,7 +445,7 @@ const ModuleLibrary = () => {
 
         <div className="library-details">
           <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
-            <Select
+            {/* <Select
               size="small"
               value={libraryType}
               onChange={(value) => {
@@ -456,9 +456,16 @@ const ModuleLibrary = () => {
               disabled
               style={{ width: "100%", height: "26px", fontSize: "12px" }}
             >
-              {/* <Option value="project">Project Based Library</Option> */}
+              <Option value="project">Project Based Library</Option>
               <Option value="custom">Custom Library</Option>
-            </Select>
+            </Select> */}
+            <Input
+              size="small"
+              placeholder="Search..."
+              onChange={handleSearch}
+              prefix={<SearchOutlined />}
+              style={{ height: "26px", fontSize: "12px" }}
+            />
             <IconButton color="primary" style={{ padding: "0px" }}>
               <FilterList />
             </IconButton>
@@ -483,7 +490,7 @@ const ModuleLibrary = () => {
               ) : (
                 <Input
                   size="small"
-                  placeholder="Enter Library Name"
+                  placeholder="Enter Group Name"
                   type="text"
                   value={newLibraryName}
                   onChange={(e) => setNewLibraryName(e.target.value)}

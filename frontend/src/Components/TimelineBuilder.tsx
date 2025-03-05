@@ -9,7 +9,7 @@ const { Step } = Steps;
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
-import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, ToolOutlined } from "@ant-design/icons";
+import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
 import moment from 'moment';
 import { getCurrentUserId } from '../Utils/moduleStorage';
 import { useLocation } from "react-router-dom";
@@ -164,6 +164,7 @@ const TimeBuilder = () => {
       setSelectedProjectName(project.projectParameters.projectName);
       setSelectedProjectId(project.id);
       setSelectedProject(project);
+      setFinalHolidays(project.holidays);
 
       const selectedProjectLibrary = project.initialStatus.library || [];
       setLibraryName(selectedProjectLibrary);
@@ -617,36 +618,44 @@ const TimeBuilder = () => {
 
     if (projectIndex === -1) return console.error("Project not found.");
     storedProjects[projectIndex].projectTimeline = sequencedModules;
+    storedProjects[projectIndex].holidays = finalHolidays;
     localStorage.setItem(userProjectsKey, JSON.stringify(storedProjects));
-    message.success("Project timeline saved successfully!.");
+    message.success(isUpdateMode ? "Project timeline updated successfully!." : "Project timeline saved successfully!.");
   };
 
-  const holidayColumns: ColumnsType<HolidayData> = [
+  const [editingKey, setEditingKey] = useState(null);
+  const [editedImpact, setEditedImpact] = useState<any>({});
+
+  const holidayColumns: any = [
     {
       title: "From Date",
       dataIndex: "from",
       key: "from",
-      render: (text) => dayjs(text).format("DD-MM-YYYY"),
+      width: "10%",
+      render: (text: any) => dayjs(text).format("DD-MM-YYYY"),
     },
     {
       title: "To Date",
       dataIndex: "to",
       key: "to",
       align: "left",
-      render: (text) => dayjs(text).format("DD-MM-YYYY"),
+      width: "10%",
+      render: (text: any) => dayjs(text).format("DD-MM-YYYY"),
     },
     {
       title: "Holiday Name",
       dataIndex: "holiday",
       key: "holiday",
       align: "left",
+      width: "25%",
     },
     {
       title: "Module Name",
       dataIndex: "module",
       key: "module",
       align: "left",
-      render: (modules) => (
+      width: "25%",
+      render: (modules: any) => (
         <div>
           {modules.map((module: any, index: any) => (
             <div key={index}>{module}</div>
@@ -659,24 +668,117 @@ const TimeBuilder = () => {
       dataIndex: "impact",
       key: "impact",
       align: "left",
-      render: (impact) => (
-        <div>
-          {Object.values(impact).map((item: any, index: any) => (
-            <div key={index}>{item}<span style={{ fontSize: "10px", marginLeft: "2px" }}>%</span></div>
-          ))}
-        </div>
-      ),
+      width: "20%",
+      render: (impact: any, record: any) =>
+        editingKey === record.key ? (
+          <div style={{
+            backgroundColor: editingKey === record.key ? "#9AA6B2" : "transparent",
+            padding: "5px",
+            borderRadius: "4px",
+          }}>
+            {Object.keys(impact).map((module: any, index: any) => (
+              <div key={index}>
+                <Input
+                  value={editedImpact[module]}
+                  onChange={(e) => handleImpactChange(module, e.target.value)}
+                  style={{ width: "60px", marginRight: "5px", marginBottom: "2px" }}
+                />
+                <span style={{ fontSize: "10px", marginLeft: "2px" }}>%</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            {Object.values(impact).map((value: any, index: any) => (
+              <div key={index}>
+                {value}
+                <span style={{ fontSize: "10px", marginLeft: "2px" }}>%</span>
+              </div>
+            ))}
+          </div>
+        ),
     },
     {
       title: "✔",
       key: "checkbox",
-      width: 50,
+      width: "5%",
       align: "center",
-      render: (_, record) => (
-        <Checkbox checked={selected[record.key]} onChange={() => toggleCheckbox(record.key)} />
+      render: (_: any, record: any) => (
+        <Checkbox
+          checked={selected[record.key]}
+          onChange={() => toggleCheckbox(record.key)}
+        />
       ),
     },
+    {
+      title: "Action",
+      key: "action",
+      align: "center",
+      width: "5%",
+      render: (_: any, record: any) =>
+        editingKey === record.key ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+            <Button
+              type="link"
+              icon={<SaveOutlined />}
+              className="bg-secondary"
+              onClick={() => handleSaveHoliday(record.key)}
+            />
+            <Button
+              type="link"
+              className="bg-tertiary"
+              icon={<CloseOutlined />}
+              onClick={handleCancel}
+            />
+          </div>
+        ) : (
+          <Button
+            type="link"
+            className="bg-info text-white"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record.key, record.impact)}
+          />
+        ),
+    },
   ];
+
+  const handleSaveHoliday = (key: any) => {
+    const updatedHolidays: any = finalHolidays?.map((item) =>
+      item.key === key ? { ...item, impact: { ...editedImpact } } : item
+    );
+
+    const userId = getCurrentUserId();
+    const userProjectsKey = `projects_${userId}`;
+    const projects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+    const projectIndex = projects.findIndex((proj: any) => proj.id === selectedProjectId);
+
+    if (projectIndex !== -1) {
+      projects[projectIndex].holidays = updatedHolidays;
+      localStorage.setItem(userProjectsKey, JSON.stringify(projects));
+    }
+
+    setFinalHolidays([...updatedHolidays]);
+    setHolidayData([...updatedHolidays]);
+    setEditingKey(null);
+    console.log(updatedHolidays);
+
+  };
+
+  const handleImpactChange = (module: any, value: any) => {
+    if (!isNaN(value) && value >= 0 && value <= 100) {
+      setEditedImpact((prev: any) => ({ ...prev, [module]: Number(value) }));
+    }
+  };
+
+  const handleEdit = (key: any, impact: any) => {
+    setEditingKey(key);
+    setEditedImpact({ ...impact });
+  };
+
+  const handleCancel = () => {
+    setEditingKey(null);
+    setEditedImpact({});
+  };
 
   const finalColumns: ColumnsType = [
     { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
@@ -1074,11 +1176,18 @@ const TimeBuilder = () => {
                           </div>
                           <div className="add-new-holiday">
                             <Button type="primary" className="bg-secondary" size="small" onClick={() => navigate("/create/non-working-days")}>
-                              Add New Holiday
+                              Manage Holiday
                             </Button>
                           </div>
                         </div>
-                        <Table className="project-timeline-table" dataSource={holidayData} columns={holidayColumns} pagination={false} scroll={{ y: 'calc(100vh - 350px)' }} />
+                        {/* <Table className="project-timeline-table" dataSource={holidayData} columns={holidayColumns} pagination={false} scroll={{ y: 'calc(100vh - 350px)' }} /> */}
+                        <Table
+                          className="project-timeline-table"
+                          dataSource={isUpdateMode ? finalHolidays : holidayData}
+                          columns={holidayColumns}
+                          pagination={false}
+                          scroll={{ y: "calc(100vh - 350px)" }}
+                        />
                       </>
 
                     ) : (
@@ -1270,37 +1379,60 @@ const TimeBuilder = () => {
         title="Link Existing Project Timeline"
         visible={openExistingTimelineModal}
         onCancel={() => setOpenExistingTimelineModal(false)}
-        onOk={handleSaveProjectTimeline}
-        okText="Save"
         className="modal-container"
-        okButtonProps={{ className: "bg-secondary" }}
+        footer={
+          allProjectsTimelines.length > 0 ? (
+            <Button
+              key="save"
+              onClick={handleSaveProjectTimeline}
+              className="bg-secondary"
+            >
+              Save
+            </Button>
+          ) : (
+            <Button
+              key="create"
+              onClick={() => { setIsMenualTimeline(true); setOpenExistingTimelineModal(false) }}
+              type="primary"
+              className="bg-secondary"
+            >
+              Create Manually
+            </Button>
+          )
+        }
       >
         <div style={{ padding: "0px 10px 10px 5px" }}>
-          <span style={{ marginLeft: "10px", fontSize: "16px", fontWeight: "400" }}>Select Project</span>
           <div className="filters" style={{ marginTop: "8px" }}>
-            <Select
-              placeholder="Select Project"
-              disabled={isUpdateMode}
-              value={selectedExistingProjectId}
-              onChange={handleExistingProjectChange}
-              style={{ width: "100%" }}
-              allowClear={true}
-            >
-              {allProjectsTimelines.map((project) => (
-                <Option key={project.id} value={project.id}>
-                  {project.projectParameters.projectName}
-                </Option>
-              ))}
-            </Select>
-            <Button
-              type="primary"
-              disabled={!selectedExistingProjectId}
-              icon={<ToolOutlined />}
-              onClick={() => navigate("/create/project-timeline", { state: { selectedExistingProject } })}
-              style={{ marginLeft: "15px", backgroundColor: "#d35400" }}
-            >
-              View Timeline
-            </Button>
+            {allProjectsTimelines.length > 0 ? (
+              <>
+                <span style={{ marginLeft: "10px", fontSize: "16px", fontWeight: "400" }}>Select Project</span>
+                <Select
+                  placeholder="Select Project"
+                  disabled={isUpdateMode}
+                  value={selectedExistingProjectId}
+                  onChange={handleExistingProjectChange}
+                  style={{ width: "100%" }}
+                  allowClear={true}
+                >
+                  {allProjectsTimelines.map((project) => (
+                    <Option key={project.id} value={project.id}>
+                      {project.projectParameters.projectName}
+                    </Option>
+                  ))}
+                </Select>
+                <Button
+                  type="primary"
+                  disabled={!selectedExistingProjectId}
+                  icon={<ToolOutlined />}
+                  onClick={() => navigate("/create/project-timeline", { state: { selectedExistingProject } })}
+                  style={{ marginLeft: "15px", backgroundColor: "#d35400" }}
+                >
+                  View Timeline
+                </Button>
+              </>
+            ) : (
+              <p style={{ marginLeft: "10px", marginTop: "10px" }}>No existing project timelines found.</p>
+            )}
           </div>
         </div>
         <hr />

@@ -5,7 +5,7 @@ import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/ma
 import { useNavigate } from 'react-router-dom';
 import { addModule } from '../Utils/moduleStorage';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete } from 'antd';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
@@ -34,7 +34,7 @@ const Module = () => {
     const [shorthandCode, setShorthandCode] = useState<string>("");
     const [moduleCodeName, setModuleCodeName] = useState<string>("");
     const [filteredModuleData, setFilteredModuleData] = useState<any>(null);
-
+    const [isFocused, setIsFocused] = useState(false);
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
         moduleName: moduleName,
@@ -160,7 +160,6 @@ const Module = () => {
             handlePrerequisite();
         }, 0);
     };
-
 
     const deleteActivity = () => {
         if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
@@ -462,7 +461,6 @@ const Module = () => {
         });
     };
 
-
     useEffect(() => {
         if (moduleData.activities.length > 0) {
             //handlePrerequisite();
@@ -493,33 +491,32 @@ const Module = () => {
         setOpenModal(true);
     };
 
-
+    const [moduleType, setModuleType] = useState("custom");
+    const [selectedMTTSModule, setSelectedMTTSModule] = useState(null);
+    const mttsModules = ["MTTS-001", "MTTS-002", "MTTS-003"];
     return (
         <div>
             <div className="module-main">
 
                 <div className="top-item" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
-                    <div className="module-title">
+                    <div className="module-title" style={{ display: "flex", justifyContent: "space-between", gap: "100px", alignItems: "center" }}>
                         <span className="">Modules</span>
-                    </div>
-                    <div className="searching-and-create" style={{ display: "flex", justifyContent: "space-between", gap: "20px", alignItems: "center" }}>
-                        <Input
-                            placeholder="Search modules, activities, levels"
-                            size="small"
-                            className="search-input"
-                            style={{ height: "30px", fontSize: "14px" }}
-                            prefix={<SearchOutlined />}
-                        />
-                        <Tooltip title="Create New Module">
-                            <Button
-                                type="primary"
-                                onClick={handlePopupOpen}
-                                className="add-module-button"
-                                style={{ height: "28px", fontSize: "14px" }}
-                            >
-                                Create New Module
-                            </Button>
-                        </Tooltip>
+                        <div className="searching-and-create">
+                            <Input
+                                placeholder="Search modules, activities, levels"
+                                size="small"
+                                className="search-input"
+                                style={{
+                                    height: "30px",
+                                    fontSize: "14px",
+                                    boxShadow: isFocused ? "0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)" : "none",
+                                    transition: "box-shadow 0.3s ease-in-out",
+                                }}
+                                prefix={<SearchOutlined />}
+                                onFocus={() => setIsFocused(true)}
+                                onBlur={() => setIsFocused(false)}
+                            />
+                        </div>
                     </div>
                     <div className="toolbar-container">
                         <Row justify="space-between" align="middle">
@@ -561,17 +558,6 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
                                     <Col>
-                                        <Tooltip title="Add Activity">
-                                            <Button
-                                                type="primary"
-                                                onClick={addActivity}
-                                                className="add-button"
-                                            >
-                                                Add Activity
-                                            </Button>
-                                        </Tooltip>
-                                    </Col>
-                                    <Col>
                                         <Tooltip title="Assign RACI">
                                             <Button
                                                 icon={<UserOutlined />}
@@ -590,8 +576,8 @@ const Module = () => {
                                             <UserRolesPage
                                                 open={openModal}
                                                 onClose={() => setOpenModal(false)}
-                                                selectedRow={selectedRow} // Pass selectedRow
-                                                moduleData={filteredModuleData} // Pass filtered moduleData from state
+                                                selectedRow={selectedRow}
+                                                moduleData={filteredModuleData}
                                             />
                                         </Modal>
                                     </Col>
@@ -613,12 +599,38 @@ const Module = () => {
                                             <CreateNotification open={open} onClose={() => setOpen(false)} />
                                         </Modal>
                                     </Col>
+                                    <Col>
+                                        <Tooltip title="Add Activity">
+                                            <Button
+                                                type="primary"
+                                                onClick={addActivity}
+                                                className="add-button"
+                                                style={{ height: "30px", fontSize: "14px" }}
+                                            >
+                                                Add Activity
+                                            </Button>
+                                        </Tooltip>
+                                    </Col>
+
+                                    <Col>
+                                        <Tooltip title="Create New Module">
+                                            <Button
+                                                type="primary"
+                                                onClick={handlePopupOpen}
+                                                className="add-module-button"
+                                                style={{ height: "30px", fontSize: "14px" }}
+                                            >
+                                                Create New Module
+                                            </Button>
+                                        </Tooltip>
+                                    </Col>
 
                                 </Row>
                             </Col>
                         </Row>
                     </div>
                 </div>
+
                 <div className="modules-data">
                     <div className="modules-items">
                         <Paper elevation={3}>
@@ -737,14 +749,16 @@ const Module = () => {
                     style={{ marginBottom: "10px !important" }}
                 >
                     <div className="modal-body-item-padding">
-                        <Input
-                            placeholder="Module Name"
-                            value={newModelName}
-                            onChange={(e) => setNewModelName(e.target.value)}
+                        <Radio.Group
+                            value={moduleType}
+                            onChange={(e) => setModuleType(e.target.value)}
                             style={{ marginBottom: "10px" }}
-                        />
+                        >
+                            <Radio value="custom">Custom Module</Radio>
+                            <Radio value="mtts">MTTS Module</Radio>
+                        </Radio.Group>
 
-                        <div style={{ display: 'flex', gap: "10px" }}>
+                        <div style={{ display: "flex", gap: "10px" }}>
                             <Select
                                 style={{ width: "100%", marginBottom: "10px" }}
                                 value={selectedOption || undefined}
@@ -752,12 +766,39 @@ const Module = () => {
                                 placeholder="Select mine type"
                             >
                                 {options.map((option, index) => (
-                                    <Option key={index} value={option}>{option}</Option>
+                                    <Option key={index} value={option}>
+                                        {option}
+                                    </Option>
                                 ))}
                             </Select>
-                            <Button type="dashed" icon={<PlusOutlined />} onClick={() => setMineTypePopupOpen(true)}></Button>
+                            <Button
+                                type="dashed"
+                                icon={<PlusOutlined />}
+                                onClick={() => setMineTypePopupOpen(true)}
+                            />
                         </div>
 
+                        {moduleType === "custom" ? (
+                            <Input
+                                placeholder="Module Name"
+                                value={newModelName}
+                                onChange={(e) => setNewModelName(e.target.value)}
+                                style={{ marginBottom: "10px" }}
+                            />
+                        ) : (
+                            <Select
+                                style={{ width: "100%", marginBottom: "10px" }}
+                                value={selectedMTTSModule || undefined}
+                                onChange={setSelectedMTTSModule}
+                                placeholder="Select MTTS Module"
+                            >
+                                {mttsModules.map((module, index) => (
+                                    <Option key={index} value={module}>
+                                        {module}
+                                    </Option>
+                                ))}
+                            </Select>
+                        )}
                         <Input
                             placeholder="Module Code"
                             value={moduleCodeName}
@@ -765,7 +806,6 @@ const Module = () => {
                             style={{ marginBottom: "10px" }}
                         />
                     </div>
-
                 </Modal>
 
                 <Modal

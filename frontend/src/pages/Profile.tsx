@@ -34,7 +34,7 @@ const Profile = () => {
             }[];
         }[]
     });
-    
+
     const [selectedTab, setSelectedTab] = useState("Profile Information");
     const [image, setImage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -360,7 +360,7 @@ const Profile = () => {
                     </div>
                 );
             case "Team Members":
-                return <div className=""><ManageUser /></div>;
+                return <div className=""><ManageUser options={{ isAddMember: true, isToolbar: true, title: "Team Members" }} /></div>;
             case "Projects":
                 return <div className="card">Projects Section</div>;
             default:
