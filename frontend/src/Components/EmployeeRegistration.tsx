@@ -27,7 +27,7 @@ export const EmployeeRegistration = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isEdit }: LocationState = location.state || { user: null, isEdit: false };
-
+  const designationOptions = ['Mining Engineer', 'Geologist', 'Operations Manager'];
   const [formData, setFormData] = useState<EmployeeData>({
     name: user?.name || "",
     company: user?.company || "",
@@ -40,7 +40,6 @@ export const EmployeeRegistration = () => {
     designation: user?.designation || "",
     password: user?.password || "",
   });
-
   const roleOptions = ["Editor", "Viewer"];
   const companyOptions = ["Mining Corp", "Deep Earth Industries", "Rock Minerals Ltd"];
   const [passwordVisible, _setPasswordVissible] = useState(false);
@@ -48,7 +47,6 @@ export const EmployeeRegistration = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  const designationOptions = ['Mining Engineer', 'Geologist', 'Operations Manager'];
 
   const handlePhotoUpload = (file: any) => {
     setFormData((prev) => ({ ...prev, photo: URL.createObjectURL(file.originFileObj) }));
@@ -63,7 +61,6 @@ export const EmployeeRegistration = () => {
         emp.email === formData.email ? { ...emp, ...formData } : emp
       );
       localStorage.setItem("users", JSON.stringify(updatedEmployees));
-      console.log("Updating user:", formData);
     } else {
       const newEmployee = {
         id: Date.now(),
@@ -76,12 +73,10 @@ export const EmployeeRegistration = () => {
 
       const updatedEmployees = [...existingEmployees, newEmployee];
       localStorage.setItem("users", JSON.stringify(updatedEmployees));
-      console.log("Saving new user:", newEmployee);
     }
 
     navigate("/create/raci-alert-notification");
   };
-
 
   return (
     <>
@@ -236,7 +231,7 @@ export const EmployeeRegistration = () => {
                   </Col>
                 </Row>
 
-                {/* <Row gutter={[16, 16]} className="form-row" align="middle">
+                <Row gutter={[16, 16]} className="form-row" align="middle">
                   <Col span={6} style={{ textAlign: 'left' }}>
                     <label>Upload Photo</label>
                   </Col>
@@ -253,7 +248,7 @@ export const EmployeeRegistration = () => {
                       <img src={formData.photo} alt="Uploaded" className="uploaded-photo" />
                     )}
                   </Col>
-                </Row> */}
+                </Row>
               </Form>
               <hr />
               <div className="button-group">

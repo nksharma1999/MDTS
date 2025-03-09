@@ -1,6 +1,7 @@
 .registration-container {
     display: flex;
     gap: 5px;
+    width: 99.5%;
 
     .step-registration-form {
         flex: 7;
@@ -13,11 +14,12 @@
     .image-container {
         flex: 3;
         height: calc(100vh - 96px);
-        overflow-y: scroll;
+        overflow-y: auto;
         overflow-x: hidden;
         margin-top: 10px;
         border-radius: 5px;
         border: 1px solid #ddd;
+        width: 100%;
     }
 
     .maips-data {
@@ -30,6 +32,17 @@
         border: 1px solid #ddd;
     }
 
+}
+
+.contractual-upload-body {
+    padding: 10px;
+    height: calc(100vh - 185px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.contractual-upload-doc-container {
+    overflow: hidden;
 }
 
 .form-items {

@@ -9,8 +9,8 @@ import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notificati
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
-import UserRolesPage from "./AssignRACI";
 import CreateNotification from "./CreateNotification";
+import UserRolesPage from "./AssignRACI";
 
 const Module = () => {
     const { state } = useLocation();

@@ -1,42 +1,17 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
-import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
-  Switch,
-  Button,
-  IconButton,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Toolbar,
-  Tooltip,
-} from "@mui/material";
-import { getAllUsers } from "../Utils/moduleStorage";
+import { Switch, IconButton, Toolbar, Tooltip, } from "@mui/material";
+import { getAllUsers, saveUsers, updateUser, getCurrentUser } from "../Utils/moduleStorage";
 import { useNavigate } from "react-router-dom";
 import { getModules } from "../Utils/moduleStorage";
 import "../styles/user-management.css";
-import { Visibility, Archive, Notifications, Edit } from "@mui/icons-material";
-import Assignment from "@mui/icons-material/Assignment";
-import { Col, Form, Input, List, Modal, Row, Select, Typography } from "antd";
+import { Notifications, DeleteOutlined } from "@mui/icons-material";
+import { Button, Col, Form, Input, List, message, Modal, Row, Select, Table, Typography } from "antd";
 const { Option } = Select;
 const { Text } = Typography;
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 
 interface Module {
   parentModuleCode: string;
-}
-
-interface RACI {
-  responsible?: boolean;
-  accountable?: boolean;
-  consulted?: boolean;
-  informed?: boolean;
 }
 
 interface NotificationSettings {
@@ -84,6 +59,8 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [openRACIModal, setOpenRACIModal] = useState<boolean>(false);
   const [_isRACIValid, _setIsRACIValid] = useState<boolean>(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isEditModalVisible, setEditIsModalVisible] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
@@ -94,14 +71,14 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [form] = Form.useForm();
   const [selectedEmails, setSelectedEmails] = useState<any>([]);
 
-  const [_selectedUserFor, setSelectedUserFor] = useState<any>({
-    raci: {},
-  });
+  const [currentUser, setCurrentUser] = useState<any>({});
 
   useEffect(() => {
     const fetchData = () => {
       const allUsers = getAllUsers();
       setUsers(allUsers);
+      setCurrentUser(getCurrentUser());
+      console.log("Called", currentUser);
 
       const uniqueModules: any = [];
       allUsers.forEach((user: User) => {
@@ -122,32 +99,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       fetchData();
     }
   }, [openRACIModal]);
-
-  const getRACIAssignments = (user: any, moduleCode: any) => {
-    const module = user.assignedModules?.find((m: any) => m.moduleCode === moduleCode);
-    if (module) {
-      return {
-        responsible: module.responsibilitiesOnActivities?.some((a: any) =>
-          a.responsibilities.includes("Responsible")
-        ),
-        accountable: module.responsibilitiesOnActivities?.some((a: any) =>
-          a.responsibilities.includes("Accountable")
-        ),
-        consulted: module.responsibilitiesOnActivities?.some((a: any) =>
-          a.responsibilities.includes("Consulted")
-        ),
-        informed: module.responsibilitiesOnActivities?.some((a: any) =>
-          a.responsibilities.includes("Informed")
-        ),
-      };
-    }
-    return {
-      responsible: false,
-      accountable: false,
-      consulted: false,
-      informed: false,
-    };
-  };
 
   useEffect(() => {
     const storedUsers = localStorage.getItem("users");
@@ -173,6 +124,11 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     setModules(savedModules);
   }, []);
 
+  useEffect(() => {
+    const savedModules = getModules();
+    setModules(savedModules || []);
+  }, []);
+
   const handleRowClick = (user: User) => {
     setSelectedUser(user);
   };
@@ -189,47 +145,8 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     }));
   };
 
-  const handleRACIChange = (event: ChangeEvent<HTMLInputElement>, moduleCode: string, type: keyof RACI) => {
-    setSelectedUserFor((prev: any) => ({
-      ...prev,
-      raci: {
-        ...prev.raci,
-        [moduleCode]: {
-          ...prev.raci[moduleCode],
-          [type]: event.target.checked,
-        },
-      },
-    }));
-  };
-
-  useEffect(() => {
-    const savedModules = getModules();
-    setModules(savedModules || []);
-  }, []);
-
-  const handleEditUser = () => {
-    if (selectedUser) {
-      navigate("/employee-registration", {
-        state: { user: selectedUser, isEdit: true },
-      });
-    }
-  };
-
-  const handleArchiveUser = () => {
-    if (selectedUser && window.confirm("Are you sure you want to archive this user?")) {
-      setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === selectedUser.id ? { ...user, archived: true } : user
-        )
-      );
-      setSelectedUser(null);
-    }
-  };
-
   const handleViewUser = () => {
     setSelectedUser(selectedUser);
-    console.log(selectedUser);
-
     setIsModalVisible(true);
   };
 
@@ -272,166 +189,234 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
 
   const handleClose = () => {
     setAddMemberModalVisible(false);
+    setEditIsModalVisible(false);
   };
+
+  const handleRemoveUser = () => {
+    setIsDeleteModalVisible(true);
+  }
+
+  const dataSource: any = users.map((user, index) => ({
+    ...user,
+    key: user.id,
+    serialNumber: index + 1,
+  }));
+
+  const handleRoleChange = (userId: string, newRole: string) => {
+    setUsers((prevUsers: any) => {
+      return prevUsers.map((user: any) => {
+        if (user.id === userId) {
+          const updatedUser = { ...user, role: newRole };
+          updateUser(userId, updatedUser);
+          message.success("Role updated successfully.");
+          return updatedUser;
+        }
+        return user;
+      });
+    });
+  };
+
+  const columns: any = [
+    {
+      title: "S.No",
+      dataIndex: "serialNumber",
+      key: "serialNumber",
+      align: "center",
+    },
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      align: "center",
+    },
+    {
+      title: "Company",
+      dataIndex: "company",
+      key: "company",
+      align: "center",
+    },
+    {
+      title: "Designation",
+      dataIndex: "designation",
+      key: "designation",
+      align: "center",
+    },
+    {
+      title: "Role",
+      dataIndex: "role",
+      key: "role",
+      align: "center",
+      render: (role: string, record: any) => (
+        <Select
+          value={role}
+          onChange={(value: any) => handleRoleChange(record.id, value)}
+          style={{ width: 120 }}
+        >
+          <Option value="Editor">Editor</Option>
+          <Option value="Viewer">Viewer</Option>
+        </Select>
+      ),
+    },
+    {
+      title: "Mobile",
+      dataIndex: "mobile",
+      key: "mobile",
+      align: "center",
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      align: "center",
+    },
+    {
+      title: "WhatsApp",
+      dataIndex: "whatsapp",
+      key: "whatsapp",
+      align: "center",
+    },
+  ];
 
   return (
     <div className="page-container">
-      <div style={{ background: "none", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0px" }}>
-        <div className="" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
           <div className="holiday-page-heading" style={{ marginLeft: "10px" }}>
-            {options?.title ? options.title : "RACI, Alert & Notification"}
+            {options?.title || "RACI, Alert & Notification"}
           </div>
           {options?.isAddMember && (
-            <div className="searching-and-create" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <Tooltip title="Add new member">
-                <Button style={{ fontSize: "14px", textTransform: "none", padding: "0px 10px" }} size="small" onClick={() => { setAddMemberModalVisible(true) }} className="add-member-button bg-secondary">
-                  Add Member
-                </Button>
-              </Tooltip>
-            </div>
+            <Tooltip title="Add new member">
+              <Button
+                style={{ fontSize: "14px", textTransform: "none", padding: "0px 10px" }}
+                size="small"
+                onClick={() => setAddMemberModalVisible(true)}
+                className="add-member-button bg-secondary"
+              >
+                Add Member
+              </Button>
+            </Tooltip>
           )}
         </div>
-        {options?.isToolbar != false && (
+        {options?.isToolbar !== false && (
           <Toolbar className="toolbar" style={{ paddingRight: "5px" }}>
-            <div className="toolbar-buttons">
-              {[
-                { title: "View", icon: <Visibility sx={{ color: "#1976d2" }} />, action: handleViewUser },
-                { title: "Edit", icon: <Edit sx={{ color: "#2e7d32" }} />, action: handleEditUser },
-                { title: "Archive", icon: <Archive sx={{ color: "#ff9800" }} />, action: handleArchiveUser }
-              ].map(({ title, icon, action }, index) => (
-                <Tooltip key={index} title={title}>
-                  <IconButton
-                    onClick={action}
-                    disabled={!selectedUser}
-                    className={`toolbar-icon ${selectedUser ? "enabled" : "disabled"}`}
-                  >
-                    {icon}
-                  </IconButton>
-                </Tooltip>
-              ))}
-
-              <Tooltip title="Assign RACI">
+            {[
+              { title: "Delete User", icon: <DeleteOutlined style={{ color: "red" }} />, action: () => setIsDeleteModalVisible(true) },
+              { title: "Alerts", icon: <Notifications sx={{ color: "#d32f2f" }} />, action: () => setOpenAlertModal(true) }
+            ].map(({ title, icon, action }, index) => (
+              <Tooltip key={index} title={title}>
                 <IconButton
-                  disabled={!selectedUser}
-                  onClick={() => setOpenRACIModal(true)}
-                  className="toolbar-icon"
+                  onClick={action}
+                  disabled={!selectedUser && title !== "Add new member"}
+                  className={`toolbar-icon ${selectedUser ? "enabled" : "disabled"}`}
                 >
-                  <Assignment sx={{ color: "#9c27b0" }} />
+                  {icon}
                 </IconButton>
               </Tooltip>
-
-              <Tooltip title="Alerts">
-                <IconButton
-                  disabled={!selectedUser}
-                  onClick={() => setOpenAlertModal(true)}
-                  className="toolbar-icon"
-                >
-                  <Notifications sx={{ color: "#d32f2f" }} />
-                </IconButton>
-              </Tooltip>
-            </div>
+            ))}
           </Toolbar>
         )}
       </div>
-
       <hr style={{ marginTop: "5px" }} />
+      <Table
+        columns={columns}
+        dataSource={dataSource}
+        rowClassName={(record: any) =>
+          selectedUser?.id === record.id ? "selected-row-active" : "selected-row"
+        }
+        style={{ marginTop: "5px" }}
+        onRow={(record) => {
+          let clickTimer: NodeJS.Timeout | null = null;
 
-      <TableContainer component={Paper} className="table-container">
-        <Table>
-          <TableHead style={{ backgroundColor: "#258790" }}>
-            <TableRow className="table-header">
-              <TableCell className="header-cell">S.No</TableCell>
-              <TableCell className="header-cell">Name</TableCell>
-              <TableCell className="header-cell">Company</TableCell>
-              <TableCell className="header-cell">Designation</TableCell>
-              <TableCell className="header-cell">Role</TableCell>
-              <TableCell className="header-cell">Mobile</TableCell>
-              <TableCell className="header-cell">Email</TableCell>
-              <TableCell className="header-cell">WhatsApp</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user, index) => (
-              <TableRow
-                key={user.id}
-                className={`table-row ${selectedUser?.id === user.id ? "selected-row" : ""}`}
-                onClick={() => handleRowClick(user)}
-              >
-                <TableCell className="table-cell-item">{index + 1}</TableCell>
-                <TableCell className="table-cell-item">{user.name}</TableCell>
-                <TableCell className="table-cell-item">{user.company}</TableCell>
-                <TableCell className="table-cell-item">{user.designation}</TableCell>
-                <TableCell className="table-cell-item">{user.role}</TableCell>
-                <TableCell className="table-cell-item">{user.mobile}</TableCell>
-                <TableCell className="table-cell-item">{user.email}</TableCell>
-                <TableCell className="table-cell-item">{user.whatsapp}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          return {
+            onClick: () => {
+              if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+                handleViewUser();
+              } else {
+                clickTimer = setTimeout(() => {
+                  handleRowClick(record);
+                  clickTimer = null;
+                }, 250);
+              }
+            },
+          };
+        }}
+        pagination={{ pageSize: 10 }}
+        bordered
+      />
 
-      <Dialog open={openAlertModal} onClose={handleCloseModal} className="dialog-alert">
-        <div className="dialog-arrow"></div>
-        <DialogTitle>Notification Preferences</DialogTitle>
-        <DialogContent>
-          <div>
-            <FormControlLabel
-              control={<Switch checked={notificationSettings.email} onChange={handleToggle} name="email" />}
-              label="Email"
-            />
-            <FormControlLabel
-              control={<Switch checked={notificationSettings.whatsapp} onChange={handleToggle} name="whatsapp" />}
-              label="WhatsApp"
-            />
-            <FormControlLabel
-              control={<Switch checked={notificationSettings.text} onChange={handleToggle} name="text" />}
-              label="Text"
-            />
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} className="close-button">
+      <Modal
+        title="Notification Preferences"
+        open={openAlertModal}
+        onCancel={handleCloseModal}
+        centered
+        className="modal-container"
+        footer={[
+          <Button key="close" onClick={handleCloseModal} className="close-button">
             Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+          </Button>,
+        ]}
+      >
+        <div style={{
+          display: "flex",
+          gap: "10px",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "10px",
+        }}>
+          <div>
+            <Switch checked={notificationSettings.email} onChange={handleToggle} name="email" /> Email
+          </div>
+          <div>
+            <Switch checked={notificationSettings.whatsapp} onChange={handleToggle} name="whatsapp" /> WhatsApp
+          </div>
+          <div>
+            <Switch checked={notificationSettings.text} onChange={handleToggle} name="text" /> Text
+          </div>
+        </div>
+      </Modal>
 
-      <Dialog open={openRACIModal} onClose={handleCloseModal} maxWidth="lg" fullWidth className="raci-dialog">
-        <DialogTitle className="raci-dialog-title">RACI Module Assignments</DialogTitle>
-        <DialogContent className="raci-dialog-content">
-          {selectedUser && (
-            <div>
-              <div className="raci-table-container">
-                <table className="raci-table">
-                  <thead>
-                    <tr>
-                      <th className="raci-table-header">Module</th>
-                      <th className="raci-table-header">Activity</th>
-                      <th className="raci-table-header">Responsibilities</th>
+      <Modal
+        title="RACI Module Assignments"
+        open={openRACIModal}
+        onCancel={handleCloseModal}
+        className="modal-container"
+        footer={[
+          <Button key="close" onClick={handleCloseModal} className="raci-button raci-close-button">
+            Close
+          </Button>,
+          <Button key="save" type="primary" onClick={handleCloseModal} className="raci-button raci-save-button">
+            Save
+          </Button>,
+        ]}
+        width={800}
+      >
+        {selectedUser && (
+          <div className="raci-table-container">
+            <table className="raci-table">
+              <thead>
+                <tr>
+                  <th className="raci-table-header">Module</th>
+                  <th className="raci-table-header">Activity</th>
+                  <th className="raci-table-header">Responsibilities</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedUser.assignedModules?.map((module) =>
+                  module.responsibilitiesOnActivities.map((activity) => (
+                    <tr key={`${module.moduleCode}-${activity.activityCode}`} className="raci-table-row">
+                      <td className="raci-table-cell">{module.moduleName}</td>
+                      <td className="raci-table-cell">{activity.activityCode}</td>
+                      <td className="raci-table-cell">{activity.responsibilities.join(", ")}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {selectedUser.assignedModules?.map((module) =>
-                      module.responsibilitiesOnActivities.map((activity) => (
-                        <tr key={`${module.moduleCode}-${activity.activityCode}`} className="raci-table-row">
-                          <td className="raci-table-cell">{module.moduleName}</td>
-                          <td className="raci-table-cell">{activity.activityCode}</td>
-                          <td className="raci-table-cell">{activity.responsibilities.join(", ")}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-        <DialogActions className="raci-dialog-actions">
-          <Button onClick={handleCloseModal} className="raci-button raci-close-button">Close</Button>
-          <Button onClick={handleCloseModal} className="raci-button raci-save-button">Save</Button>
-        </DialogActions>
-      </Dialog>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         title=""
@@ -567,7 +552,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
             <Button
               size="small"
               className="bg-secondary"
-              sx={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
+              style={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
               onClick={() => navigate("/employee-registration")}
             >
               Create Member Manually
@@ -609,7 +594,82 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           </div>
         </div>
       </Modal>
-    </div>
+
+      <Modal
+        visible={isEditModalVisible}
+        onCancel={handleClose}
+        onOk={saveUsers}
+        okText="Update Member"
+        okButtonProps={{ className: "bg-primary" }}
+        cancelButtonProps={{ className: "bg-tertiary" }}
+        closable={false}
+        width={"50%"}
+        className="modal-container"
+      >
+        <div className="modal-body" style={{ padding: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Text strong style={{ fontSize: "16px" }}>Update Member</Text>
+            <Button
+              size="small"
+              className="bg-secondary"
+              style={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
+              onClick={() => navigate("/employee-registration")}
+            >
+              Manage Members
+            </Button>
+          </div>
+          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+            <Form.Item
+              name="permissionProfile"
+              label="Set permission profile"
+              rules={[{ required: true, message: 'Please select a permission profile!' }]}
+            >
+              <Select placeholder="Select...">
+                <Option value="admin">Admin</Option>
+                <Option value="manager">Manager</Option>
+                <Option value="employee">Employee</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label="Email Address"
+              rules={[
+                { required: true, message: "Email is required!" },
+                { type: "email", message: "Enter a valid email!" },
+              ]}
+            >
+              <Input placeholder="Enter email address" />
+            </Form.Item>
+
+            <Form.Item name="name" label="Member Name">
+              <Input placeholder="Enter member name" />
+            </Form.Item>
+          </Form>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Confirm Delete"
+        visible={isDeleteModalVisible}
+        onOk={handleRemoveUser}
+        onCancel={() => setIsDeleteModalVisible(false)}
+        okText="Delete"
+        cancelText="Cancel"
+        okType="danger"
+        width={"45%"}
+        className="modal-container"
+        centered
+      >
+        <div style={{ padding: "0px 10px" }}>
+          <p>
+            <ExclamationCircleOutlined style={{ color: "red", marginRight: "8px" }} />
+            Are you sure you want to Remove this user? This action cannot be undone.
+          </p>
+        </div>
+      </Modal >
+
+    </div >
   );
 };
 

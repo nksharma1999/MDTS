@@ -1,14 +1,27 @@
 import "../styles/register-new-project.css";
 import { useEffect, useState } from "react";
-import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification, Table, Tooltip, Typography } from "antd";
+import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification, Table, Tooltip, Typography, List } from "antd";
 import "../styles/register-new-project.css";
-import { ExclamationCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { CloseCircleOutlined, DownloadOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import ImageContainer from "../components/ImageContainer";
 import { getAllLibraries } from "../Utils/moduleStorage";
 const { Option } = Select;
 import { getAllMineTypes } from '../Utils/moduleStorage';
 import { addNewMineType } from '../Utils/moduleStorage';
 import MapComponent from "../components/MapComponent";
+import { useLocation } from "react-router-dom";
+import { saveDocument, updateDocument } from "../Utils/moduleStorage";
+interface DocumentData {
+  id: number;
+  documentName: string;
+  files: string[];
+  uploadedAt: string;
+}
+
+import { Accept, useDropzone } from "react-dropzone";
+import { message } from "antd";
+import "../styles/documents.css"
+const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -585,6 +598,77 @@ export const RegisterNewProject: React.FC = () => {
     }
   };
 
+  const location = useLocation();
+  const documentToEdit = location.state?.documentToEdit as DocumentData | undefined;
+  const [documentName, setDocumentName] = useState<any>(null);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const onDrop = (acceptedFiles: File[]) => {
+    setFiles((prevFiles) => {
+      const newFiles = acceptedFiles.filter(
+        (file) => !prevFiles.some((existingFile) => existingFile.name === file.name)
+      );
+
+      if (newFiles.length < acceptedFiles.length) {
+        message.warning("Some files were already uploaded and were not added again.");
+      }
+
+      return [...prevFiles, ...newFiles];
+    });
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: 'image/*,application/pdf' as unknown as Accept,
+    multiple: true,
+  });
+
+  const handleSave = () => {
+    if (!documentName || files.length === 0) {
+      message.error("Please fill all fields and upload files.");
+      return;
+    }
+
+    const newDocument: DocumentData = {
+      id: Math.floor(Math.random() * (100 - 10 + 1) + 10),
+      documentName,
+      files: files.map((file) => file.name),
+      uploadedAt: documentToEdit ? documentToEdit.uploadedAt : new Date().toISOString(),
+    };
+
+    if (documentToEdit) {
+      updateDocument(documentToEdit.id, newDocument);
+      message.success("Document updated successfully!");
+    } else {
+      const isSaved = saveDocument(newDocument);
+      if (isSaved) {
+        message.success("Document saved successfully!");
+      } else {
+        message.error("Failed to save the document. Please try again.");
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setDocumentName(null);
+    setFiles([]);
+  };
+
+  const handleRemoveFile = (indexToRemove: number) => {
+    setFiles((prevFiles) => prevFiles.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleDownloadFile = (file: any) => {
+    const url = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <div className="registration-container">
@@ -626,6 +710,92 @@ export const RegisterNewProject: React.FC = () => {
         {currentStep == 2 ? (
           <div className="maips-data">
             <MapComponent />
+          </div>
+        ) : currentStep == 3 ? (
+          <div className="image-container">
+            <div className="bg-secondary create-doc-heading">
+              <div style={{ margin: "0px 0px 10px 0px", padding: "5px" }}>Attach Document</div>
+            </div>
+            <div className="contractual-upload-doc-container">
+              <div className="contractual-upload-body">
+                <Form.Item
+                  label={<span style={{ textAlign: "left" }}> Contractual File Name </span>}
+                  name="documentName"
+                  rules={[{ required: true, message: "Contractual File Name is required" }]}
+                  labelAlign="left"
+                  colon={false}
+                >
+                  <Input
+                    placeholder="Enter file name"
+                    value={documentName}
+                    style={{ marginBottom: "15px" }}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  label={<span style={{ textAlign: "left" }}> Upload Files </span>}
+                  name="files"
+                  rules={[{ required: files.length === 0, message: "Please upload at least one file" }]}
+                  labelAlign="left"
+                  colon={false}
+                >
+                  <div
+                    {...getRootProps()}
+                    style={{
+                      border: "2px dashed #d9d9d9",
+                      padding: 16,
+                      textAlign: "center",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      background: isDragActive ? "#f0f8ff" : "#fafafa",
+                    }}
+                  >
+                    <input {...getInputProps()} />
+                    <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
+                    <Text style={{ display: "block", marginTop: 8 }}>
+                      {isDragActive
+                        ? "Drop the files here..."
+                        : "Drag and drop files here, or click to select files"}
+                    </Text>
+                  </div>
+                </Form.Item>
+
+                {/* Display Uploaded Files */}
+                {files.length > 0 && (
+                  <List
+                    dataSource={files}
+                    renderItem={(file, index) => (
+                      <List.Item
+                        actions={[
+                          <DownloadOutlined
+                            key="download"
+                            onClick={() => handleDownloadFile(file)}
+                            style={{ color: "green", fontSize: "18px", cursor: "pointer" }}
+                          />,
+                          <CloseCircleOutlined
+                            key="remove"
+                            onClick={() => handleRemoveFile(index)}
+                            style={{ color: "red", fontSize: "18px", cursor: "pointer" }}
+                          />,
+                        ]}
+                      >
+                        <Text>{file.name}</Text>
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </div>
+              <hr />
+              <div className="action-buttons" style={{ display: "flex", justifyContent: "space-between" }}>
+                <Button onClick={handleCancel} className="bg-tertiary" style={{ width: "45%" }}>
+                  Clear
+                </Button>
+                <Button type="primary" onClick={handleSave} className="bg-secondary" htmlType="submit" style={{ width: "45%" }}>
+                  Save
+                </Button>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="image-container">

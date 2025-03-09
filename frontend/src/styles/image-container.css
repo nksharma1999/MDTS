@@ -5,10 +5,34 @@
     align-items: center;
     font-family: 'Roboto', sans-serif;
 
+    .text-primary {
+        color: #e33b28 !important;
+    }
+
+    .bg-primary {
+        background-color: #e33b28 !important;
+        color: white !important;
+        transition: background-color 0.3s ease;
+    }
+
+    .bg-primary:hover {
+        background-color: #c5301f !important;
+    }
+
+    .bg-primary:disabled {
+        background-color: #a0281a !important;
+        color: #d3d3d3 !important;
+        cursor: not-allowed !important;
+    }
+
+    .text-secondary {
+        color: #257180 !important;
+    }
+
 }
 
 .custom-card {
-    width: 23rem;
+    width: 25.5rem;
     height: 26rem;
     border-radius: 5px;
     overflow: hidden;
@@ -36,6 +60,7 @@
     transition: inset .3s .3s ease-out;
     font-family: 'Roboto Condensed', sans-serif;
     font-weight: normal;
+    color: #fff;
     text-transform: uppercase;
 }
 

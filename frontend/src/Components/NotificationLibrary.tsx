@@ -1,18 +1,5 @@
-import React, { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  IconButton,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-} from "@mui/material";
+import { useState } from "react";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, IconButton, Accordion, AccordionSummary, AccordionDetails, } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
@@ -20,22 +7,22 @@ const data = [
   {
     module: "Contract Formulation",
     activities: [
-      { name: "Declaration as H1 Bidder", notification: "TRUE", status: "Completed", message: "This is my message" , default: "This is my new message"},
-      { name: "Signing of CBDPA", notification: "FALSE", status: "", message: "" ,default: ""},
+      { name: "Declaration as H1 Bidder", notification: "TRUE", status: "Completed", message: "This is my message", default: "This is my new message" },
+      { name: "Signing of CBDPA", notification: "FALSE", status: "", message: "", default: "" },
     ],
   },
   {
     module: "Budgetary Planning",
     activities: [
-      { name: "Approval of Interim Budget", notification: "TRUE", status: "delayed", message: "",default: "" },
-      { name: "Preparation of DPR", notification: "", status: "", message: "",default: "" },
+      { name: "Approval of Interim Budget", notification: "TRUE", status: "delayed", message: "", default: "" },
+      { name: "Preparation of DPR", notification: "", status: "", message: "", default: "" },
     ],
   },
   {
     module: "Boundary Coordinate Certification by CMPDI",
     activities: [
-      { name: "Survey by CMPDI to ascertain boundary coordinates", notification: "TRUE", status: "Completed", message: "",default: "" },
-      { name: "Receipt of Certified Boundary Coordinates by CMPDI", notification: "FALSE", status: "", message: "" ,default: ""},
+      { name: "Survey by CMPDI to ascertain boundary coordinates", notification: "TRUE", status: "Completed", message: "", default: "" },
+      { name: "Receipt of Certified Boundary Coordinates by CMPDI", notification: "FALSE", status: "", message: "", default: "" },
     ],
   },
 ];
@@ -43,7 +30,7 @@ const data = [
 const NotificationLibrary = () => {
   const [expanded, setExpanded] = useState(null);
 
-  const handleAccordionChange = (panel:any) => {
+  const handleAccordionChange = (panel: any) => {
     setExpanded(expanded === panel ? null : panel);
   };
 
@@ -61,11 +48,11 @@ const NotificationLibrary = () => {
         >
           <AccordionSummary
             expandIcon={
-              <Typography style={{ fontWeight: "bold", fontSize: "30px" ,color:"black"}}>
+              <Typography style={{ fontWeight: "bold", fontSize: "30px", color: "black" }}>
                 {expanded === index ? "-" : "+"}
               </Typography>
             }
-            style={{ backgroundColor: "#4F7942",color:"white" }}
+            style={{ backgroundColor: "#4F7942", color: "white" }}
           >
             <Typography variant="h6" style={{ fontWeight: "bold" }}>
               {section.module}

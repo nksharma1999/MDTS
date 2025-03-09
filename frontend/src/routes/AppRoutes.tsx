@@ -29,6 +29,7 @@ import StatusUpdate from "../Components/StatusUpdate";
 import TimelineBuilder from "../Components/TimelineBuilder";
 import ViewDocumentPage from "../Components/ViewDocumentPage";
 import ViewUser from "../Components/ViewUser";
+import CreateNotification from "../Components/CreateNotification";
 
 
 const AppRoutes = () => {
@@ -65,9 +66,9 @@ const AppRoutes = () => {
                     <Route path="/modules" element={<Module />} />
                     <Route path="/knowledge-center" element={<KnowledgeCenter />} />
                     <Route path="/document" element={<Document />} />
+                    <Route path="/create/notification" element={<CreateNotification />} />
                     <Route path="*" element={<Navigate to="/not-found" replace />} />
                 </Route>
-
             </Routes>
         </Router>
     );

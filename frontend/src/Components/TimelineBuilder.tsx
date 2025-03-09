@@ -1042,6 +1042,9 @@ const TimeBuilder = () => {
     setIsCancelEditModalVisiblVisible(false)
     setIsUpdateMode(false);
     setSelectedProject(null);
+    setSelectedProjectMineType("");
+    setLibraryName("");
+
     setSelectedProjectId(null);
     setIsMenualTimeline(false);
     defaultSetup();
