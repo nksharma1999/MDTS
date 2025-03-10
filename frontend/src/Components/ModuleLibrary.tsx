@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, Box, IconButton } from "@mui/material";
 import { FilterList } from "@mui/icons-material";
 import { Select, Input, Button, Typography, message, Modal } from "antd";
-import { SearchOutlined, DeleteOutlined, RobotOutlined } from "@ant-design/icons";
+import { SearchOutlined, DeleteOutlined, RobotOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import "../styles/module-library.css";
 import { Link } from "react-router-dom";
 import { getCurrentUserId } from '../Utils/moduleStorage';
@@ -53,6 +53,8 @@ const ModuleLibrary = () => {
   const [allProjects, setAllProjects] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
   const [mineTypes, setMineTypes] = useState<any>([]);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [selectedLibrryId, setSelectedLibraryId] = useState<any>()
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -157,6 +159,27 @@ const ModuleLibrary = () => {
     }
   };
 
+  const deleteLibraryFromLocalStorage = (libraryId: number) => {
+    try {
+      const userId = getCurrentUserId();
+      if (!userId) {
+        console.error("User ID not found. Cannot delete library.");
+        return;
+      }
+
+      const storageKey = `libraries_${userId}`;
+      const storedLibraries = localStorage.getItem(storageKey);
+      let librariesArr: Library[] = storedLibraries ? JSON.parse(storedLibraries) : [];
+
+      const updatedLibraries = librariesArr.filter((lib: any) => lib.id !== libraryId);
+
+      localStorage.setItem(storageKey, JSON.stringify(updatedLibraries));
+    } catch (error) {
+      console.error("Error deleting library from localStorage:", error);
+    }
+  };
+
+
   const handleModuleClick = (module: Module) => {
     navigate('/modules', { state: module });
   };
@@ -232,7 +255,6 @@ const ModuleLibrary = () => {
     updateLibraryInLocalStorage(updatedLibrary);
   };
 
-
   const handleDeleteModule = (modIndex: number) => {
     if (!selectedLibrary) return;
     Modal.confirm({
@@ -269,6 +291,16 @@ const ModuleLibrary = () => {
     const selected: any = allProjects.find((project: any) => project.projectParameters.projectName === value);
     setNewLibraryMineType(selected?.projectParameters.typeOfMine || null);
     setNewLibraryName(value);
+  };
+
+  const handleDeleteLibrary = () => {
+    const updatedLibraries: any = libraries.filter(library => library.id !== selectedLibrryId);
+    setLibraries(updatedLibraries);
+    deleteLibraryFromLocalStorage(selectedLibrryId)
+    setIsDeleteModalVisible(false);
+    if (selectedLibrary && selectedLibrary.id === selectedLibrryId) {
+      setSelectedLibrary(null);
+    }
   };
 
   return (
@@ -517,7 +549,7 @@ const ModuleLibrary = () => {
               </Button>
             </div>
 
-            <div style={{ marginTop: "24px", flexWrap: "wrap" }}>
+            {/* <div style={{ marginTop: "24px", flexWrap: "wrap" }}>
               {libraries.map((library) => (
                 <Typography.Text
                   onClick={() => setSelectedLibrary(library)}
@@ -534,10 +566,55 @@ const ModuleLibrary = () => {
                   {library.name} ({library.mineType})
                 </Typography.Text>
               ))}
+            </div> */}
+            <div style={{ marginTop: "24px", flexWrap: "wrap" }}>
+              {libraries.map((library) => (
+                <div
+                  key={library.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "5px 10px",
+                    borderRadius: "5px",
+                    marginBottom: "5px",
+                    cursor: "pointer",
+                    background: selectedLibrary && selectedLibrary.id === library.id ? "#d0ebff" : "#eee",
+                  }}
+                >
+                  <Typography.Text onClick={() => setSelectedLibrary(library)}>
+                    {library.name} ({library.mineType})
+                  </Typography.Text>
+                  <DeleteOutlined
+                    onClick={() => { setIsDeleteModalVisible(true); setSelectedLibraryId(library.id) }}
+                    style={{ color: "red", cursor: "pointer", marginLeft: "10px" }}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </Box>
+
+      <Modal
+        title="Confirm Delete"
+        visible={isDeleteModalVisible}
+        onOk={handleDeleteLibrary}
+        onCancel={() => setIsDeleteModalVisible(false)}
+        okText="Delete"
+        cancelText="Cancel"
+        okType="danger"
+        width={"45%"}
+        className="modal-container"
+        centered
+      >
+        <div style={{ padding: "0px 10px" }}>
+          <p>
+            <ExclamationCircleOutlined style={{ color: "red", marginRight: "8px" }} />
+            Are you sure you want to Remove this library? This action cannot be undone.
+          </p>
+        </div>
+      </Modal >
     </>
   );
 };
