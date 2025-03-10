@@ -8,6 +8,7 @@ import "../styles/module-library.css";
 import { Link } from "react-router-dom";
 import { getCurrentUserId } from '../Utils/moduleStorage';
 const { Option } = Select;
+import { deleteModuleById, getModules } from '../Utils/moduleStorage';
 
 interface Activity {
   code: string;
@@ -21,6 +22,7 @@ interface Module {
   parentModuleCode: string;
   moduleName: string;
   level: string;
+  id: any;
   mineType: string;
   activities: Activity[];
   duration?: string;
@@ -51,10 +53,12 @@ const ModuleLibrary = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [projects, setProjects] = useState<string[]>([]);
   const [allProjects, setAllProjects] = useState<string[]>([]);
-  const [selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
+  const [_selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
   const [mineTypes, setMineTypes] = useState<any>([]);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-  const [selectedLibrryId, setSelectedLibraryId] = useState<any>()
+  const [isDeleteModuleModalVisible, setIsDeleteModuleModalVisible] = useState(false);
+  const [selectedLibrryId, setSelectedLibraryId] = useState<any>();
+  const [selectedModuleId, setSelectedModuleId] = useState<any>();
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
@@ -90,19 +94,6 @@ const ModuleLibrary = () => {
   }, []);
 
   useEffect(() => {
-    const storedModules = localStorage.getItem("modules");
-    if (storedModules) {
-      try {
-        const parsedModules = JSON.parse(storedModules);
-        setModulesData(parsedModules);
-        setFilteredData(parsedModules);
-      } catch (error) {
-        console.error("Error parsing modules from localStorage:", error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
     if (currentUser) {
       try {
         const storageKey = `libraries_${currentUser.id}`;
@@ -121,10 +112,16 @@ const ModuleLibrary = () => {
   }, [currentUser]);
 
   useEffect(() => {
+    extractModules();
     const storedMineTypes = localStorage.getItem("mineTypes");
     const parsedMineTypes: string[] = storedMineTypes ? JSON.parse(storedMineTypes) : [];
     setMineTypes(parsedMineTypes);
   }, []);
+
+  const extractModules = () => {
+    setModulesData(getModules());
+    setFilteredData(getModules());
+  }
 
   const updateLibraryInLocalStorage = (updatedLibrary: Library) => {
     try {
@@ -178,7 +175,6 @@ const ModuleLibrary = () => {
       console.error("Error deleting library from localStorage:", error);
     }
   };
-
 
   const handleModuleClick = (module: Module) => {
     navigate('/modules', { state: module });
@@ -303,6 +299,12 @@ const ModuleLibrary = () => {
     }
   };
 
+  const handleCompleteModuleDelete = () => {
+    deleteModuleById(selectedModuleId);
+    setIsDeleteModuleModalVisible(false);
+    extractModules();
+  }
+
   return (
     <>
       <div className="page-heading-module-library">
@@ -363,13 +365,15 @@ const ModuleLibrary = () => {
               </IconButton>
             </Box>
             <hr style={{ margin: 0, marginBottom: "8px" }} />
+            
             <TableContainer component={Paper} style={{ marginTop: "5px" }}>
               <Table>
                 <TableHead style={{ display: "block", background: "#258790", color: "white" }}>
                   <TableRow style={{ display: "flex", width: "100%" }}>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 30%", padding: "5px 10px" }}>Module Code</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 40%", padding: "5px 10px" }}>Module Name</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 30%", textAlign: "center", padding: "5px 10px" }}>Mine Type</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 25%", padding: "5px 10px" }}>Module Code</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 35%", padding: "5px 10px" }}>Module Name</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 20%", textAlign: "center", padding: "5px 10px" }}>Mine Type</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 20%", textAlign: "center", padding: "5px 10px" }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
 
@@ -381,23 +385,26 @@ const ModuleLibrary = () => {
                         draggable
                         onDragStart={(e) => handleDragStart(e, module)}
                         onClick={() => handleModuleClick(module)}
-                        style={{ cursor: "grab", display: "flex", width: "100%" }}
-                        sx={{
-                          "&:hover": {
-                            backgroundColor: "#e3f2fd",
-                          },
-                        }}
+                        style={{ display: "flex", width: "100%", cursor: "grab" }}
                       >
-                        <TableCell style={{ flex: "0 0 30%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
-                        <TableCell style={{ flex: "0 0 40%", padding: "8px" }}>{module.moduleName}</TableCell>
-                        <TableCell style={{ flex: "0 0 30%", padding: "8px", textAlign: "center" }}>{module.mineType}</TableCell>
+                        <TableCell style={{ flex: "0 0 25%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
+                        <TableCell style={{ flex: "0 0 35%", padding: "8px" }}>{module.moduleName}</TableCell>
+                        <TableCell style={{ flex: "0 0 20%", padding: "8px", textAlign: "center" }}>{module.mineType}</TableCell>
+                        <TableCell style={{ flex: "0 0 20%", padding: "8px", textAlign: "center" }}>
+                          <Button type="primary" danger size="small" onClick={(e) => {
+                            e.stopPropagation();
+                            setIsDeleteModuleModalVisible(true); setSelectedModuleId(module.id)
+                          }}>
+                            Delete
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <div style={{ padding: "10px", fontSize: "12px", color: "#dddd", display: "flex", justifyContent: "center" }}>
                       No Module available. Please add a Module to get started.
                       <div style={{ marginLeft: "30px" }}>
-                        <Button size="small" style={{ backgroundColor: "#3C3D37", color: "#ddd" }} icon={<RobotOutlined />}>
+                        <Button type="default" size="small" style={{ backgroundColor: "#3C3D37", color: "#ddd" }} icon={<RobotOutlined />}>
                           <Link style={{ color: "inherit", textDecoration: "none" }} to={"/modules"}>New</Link>
                         </Button>
                       </div>
@@ -405,7 +412,6 @@ const ModuleLibrary = () => {
                   )}
                 </TableBody>
               </Table>
-
             </TableContainer>
 
             {/* <TablePagination
@@ -612,6 +618,26 @@ const ModuleLibrary = () => {
           <p>
             <ExclamationCircleOutlined style={{ color: "red", marginRight: "8px" }} />
             Are you sure you want to Remove this library? This action cannot be undone.
+          </p>
+        </div>
+      </Modal >
+
+      <Modal
+        title="Confirm Delete"
+        visible={isDeleteModuleModalVisible}
+        onOk={handleCompleteModuleDelete}
+        onCancel={() => setIsDeleteModuleModalVisible(false)}
+        okText="Delete"
+        cancelText="Cancel"
+        okType="danger"
+        width={"45%"}
+        className="modal-container"
+        centered
+      >
+        <div style={{ padding: "0px 10px" }}>
+          <p>
+            <ExclamationCircleOutlined style={{ color: "red", marginRight: "8px" }} />
+            Are you sure you want to Remove this module? This action cannot be undone.
           </p>
         </div>
       </Modal >

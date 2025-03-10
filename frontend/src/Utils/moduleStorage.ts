@@ -30,7 +30,6 @@ export const addModule = (newModule: any) => {
 };
 
 export const updateModule = (newModule: any) => {
-  console.log('New Module:', newModule);
   let modules = getModules();
   const moduleIndex = modules.findIndex(
     (mod: any) =>
@@ -344,4 +343,8 @@ export const updateUser = (userId: any, updatedData: any) => {
   saveUsers(users);
 }
 
+export const deleteModuleById = (id: any) => {
+  const updatedModules:any = getModules().filter((module:any) => module.id !== id);
+  saveModules(updatedModules);
+}
 
