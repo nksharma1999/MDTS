@@ -492,8 +492,8 @@ const Module = () => {
     };
 
     const [moduleType, setModuleType] = useState("custom");
-    const [selectedMTTSModule, setSelectedMTTSModule] = useState(null);
-    const mttsModules = ["MTTS-001", "MTTS-002", "MTTS-003"];
+    const [selectedMDTSModule, setSelectedMDTSModule] = useState(null);
+    const mdtsModules = ["MDTS-001", "MDTS-002", "MDTS-003"];
     return (
         <div>
             <div className="module-main">
@@ -755,7 +755,7 @@ const Module = () => {
                             style={{ marginBottom: "10px" }}
                         >
                             <Radio value="custom">Custom Module</Radio>
-                            <Radio value="mtts">MTTS Module</Radio>
+                            <Radio value="mdts">MDTS Module</Radio>
                         </Radio.Group>
 
                         <div style={{ display: "flex", gap: "10px" }}>
@@ -788,11 +788,11 @@ const Module = () => {
                         ) : (
                             <Select
                                 style={{ width: "100%", marginBottom: "10px" }}
-                                value={selectedMTTSModule || undefined}
-                                onChange={setSelectedMTTSModule}
-                                placeholder="Select MTTS Module"
+                                value={selectedMDTSModule || undefined}
+                                onChange={setSelectedMDTSModule}
+                                placeholder="Select MDTS Module"
                             >
-                                {mttsModules.map((module, index) => (
+                                {mdtsModules.map((module, index) => (
                                     <Option key={index} value={module}>
                                         {module}
                                     </Option>

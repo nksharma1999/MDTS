@@ -505,7 +505,7 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {['Profile Information', 'Team Members'].map((tab) => {
+                    {['Profile Information', 'Team Members', "Accessibility"].map((tab) => {
                         if (tab === 'Team Members' && formData.role !== 'admin') {
                             return null;
                         }

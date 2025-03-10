@@ -21,12 +21,9 @@ interface Notifications {
 }
 
 const ViewUser: React.FC = () => {
+
   const location = useLocation();
   const { user } = location.state as { user?: User };
-
-  console.log(user);
-
-
   const [notifications, _setNotifications] = useState<Notifications>({
     mobile: true,
     email: false,

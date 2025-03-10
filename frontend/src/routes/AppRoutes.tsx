@@ -8,7 +8,7 @@ import KnowledgeCenter from "../pages/KnowledgeCenter";
 import Document from "../pages/Document";
 import DataMaster from "../pages/DataMaster";
 import NotFound from "../pages/NotFound";
-import MainLayout from "../layouts/MainLayout";
+import MainLayout from "../Layout/MainLayout";
 import ProtectedRoute from "./ProtectedRoutes";
 import Profile from "../pages/Profile";
 import Module from "../Components/Module";

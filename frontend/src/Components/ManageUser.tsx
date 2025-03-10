@@ -145,8 +145,8 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     }));
   };
 
-  const handleViewUser = () => {
-    setSelectedUser(selectedUser);
+  const handleViewUser = (record: any) => {
+    setSelectedUser(record);
     setIsModalVisible(true);
   };
 
@@ -326,13 +326,12 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         style={{ marginTop: "5px" }}
         onRow={(record) => {
           let clickTimer: NodeJS.Timeout | null = null;
-
           return {
             onClick: () => {
               if (clickTimer) {
                 clearTimeout(clickTimer);
                 clickTimer = null;
-                handleViewUser();
+                handleViewUser(record);
               } else {
                 clickTimer = setTimeout(() => {
                   handleRowClick(record);
