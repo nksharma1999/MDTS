@@ -26,6 +26,7 @@ const Module = () => {
         ? moduleCode
         : generateTwoLetterAcronym(moduleName, existingAcronyms);
     const [openPopup, setOpenPopup] = useState<boolean>(false);
+    const [openCancelUpdateModulePopup, setOpenCancelUpdateModulePopup] = useState<boolean>(false);
     const [newModelName, setNewModelName] = useState<string>("");
     const [selectedOption, setSelectedOption] = useState<string>("");
     const [options, setOptions] = useState<string[]>([]);
@@ -538,6 +539,11 @@ const Module = () => {
         setOpenModal(true);
     };
 
+    const handleCancelUpdateModule = () => {
+        setOpenCancelUpdateModulePopup(false);
+        navigate('/create/module-library');
+    }
+
     return (
         <div>
             <div className="module-main">
@@ -660,19 +666,35 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    <Col>
-                                        <Tooltip title="Create New Module">
-                                            <Button
-                                                type="primary"
-                                                onClick={() => setOpenPopup(true)}
-                                                className="add-module-button"
-                                                style={{ height: "30px", fontSize: "14px" }}
-                                            >
-                                                Create New Module
-                                            </Button>
-                                        </Tooltip>
-                                    </Col>
+                                    {!isEditing && (
+                                        <Col>
+                                            <Tooltip title="Create New Module">
+                                                <Button
+                                                    type="primary"
+                                                    onClick={() => setOpenPopup(true)}
+                                                    className="add-module-button"
+                                                    style={{ height: "30px", fontSize: "14px" }}
+                                                >
+                                                    Create New Module
+                                                </Button>
+                                            </Tooltip>
+                                        </Col>
+                                    )}
 
+                                    {isEditing && (
+                                        <Col>
+                                            <Tooltip title="Create New Module">
+                                                <Button
+                                                    type="primary"
+                                                    onClick={() => setOpenCancelUpdateModulePopup(true)}
+                                                    className="bg-tertiary"
+                                                    style={{ height: "30px", fontSize: "14px" }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            </Tooltip>
+                                        </Col>
+                                    )}
                                 </Row>
                             </Col>
                         </Row>
@@ -700,13 +722,12 @@ const Module = () => {
                                         onClick={() => setSelectedRow(moduleData)}
                                         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                     >
-                                        <TableCell contentEditable
+                                        <TableCell
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
                                             sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
                                         >{moduleData.parentModuleCode}</TableCell>
                                         <TableCell
-                                            contentEditable
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('moduleName', e.target.innerText)}
                                             sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
@@ -905,6 +926,23 @@ const Module = () => {
                             {selectedRow?.parentModuleCode
                                 ? "Are you sure you want to delete this module? All associated activities will also be removed. This action cannot be undone."
                                 : "Are you sure you want to remove this activity? This action cannot be undone."}
+                        </p>
+                    </div>
+                </Modal >
+
+                <Modal
+                    title="Confirm Cancel"
+                    visible={openCancelUpdateModulePopup}
+                    onOk={handleCancelUpdateModule}
+                    onCancel={() => setOpenCancelUpdateModulePopup(false)}
+                    okText="Yes Discard"
+                    cancelText="Cancel"
+                    okType="danger"
+                    className="modal-container"
+                >
+                    <div style={{ padding: "0px 10px" }}>
+                        <p>
+                            Are you sure you want to cancel?
                         </p>
                     </div>
                 </Modal >
