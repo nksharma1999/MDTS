@@ -401,7 +401,7 @@ const ModuleLibrary = () => {
                       </TableRow>
                     ))
                   ) : (
-                    <div style={{ padding: "10px", fontSize: "12px", color: "#dddd", display: "flex", justifyContent: "center" }}>
+                    <div style={{ padding: "10px", fontSize: "12px", color: "grey", display: "flex", justifyContent: "center" }}>
                       No Module available. Please add a Module to get started.
                       <div style={{ marginLeft: "30px" }}>
                         <Button type="default" size="small" style={{ backgroundColor: "#3C3D37", color: "#ddd" }} icon={<RobotOutlined />}>

@@ -44,11 +44,12 @@ const Module = () => {
         duration: '',
         activities: state?.activities || []
     });
-    const isEditing = !!state;
+    let isEditing = !!state;
     const [moduleType, setModuleType] = useState("custom");
     const [selectedMDTSModule, setSelectedMDTSModule] = useState(null);
     const mdtsModules = ["MDTS-001", "MDTS-002", "MDTS-003"];
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+    const [discardEditByCreating, setDiscardEditByCreating] = useState(false);
     useEffect(() => {
         if (state) {
             setModuleData({
@@ -73,8 +74,22 @@ const Module = () => {
         }
     }, []);
 
+    useEffect(() => {
+        if (moduleData.activities.length > 0) {
+            //handlePrerequisite();
+        }
+    }, [moduleData.activities]);
+
     const handleSaveModuleAndActivity = () => {
         try {
+            if (!moduleData || Object.keys(moduleData).length === 0 || !moduleData.parentModuleCode) {
+                notification.error({
+                    message: "Module data is empty or missing required fields..",
+                    description: "",
+                    duration: 3,
+                });
+                return;
+            }
             if (isEditing) {
                 const storedModulesString = localStorage.getItem("modules");
                 const storedModules = storedModulesString ? JSON.parse(storedModulesString) : [];
@@ -129,7 +144,7 @@ const Module = () => {
         const newActivity = {
             code: newCode,
             activityName: "New Activity " + timestamp,
-            duration: 0,
+            duration: 1,
             prerequisite: isModuleSelected ? "" : selectedRow.code,
             level: newLevel
         };
@@ -204,6 +219,7 @@ const Module = () => {
         // handlePrerequisite();
         // setIsDeleteModalVisible(false);
 
+        console.log(selectedRow);
 
 
         if (!selectedRow) return;
@@ -509,12 +525,6 @@ const Module = () => {
         });
     };
 
-    useEffect(() => {
-        if (moduleData.activities.length > 0) {
-            //handlePrerequisite();
-        }
-    }, [moduleData.activities]);
-
     const handleAssignRACI = () => {
         if (!selectedRow) {
             notification.warning({
@@ -541,7 +551,32 @@ const Module = () => {
 
     const handleCancelUpdateModule = () => {
         setOpenCancelUpdateModulePopup(false);
-        navigate('/create/module-library');
+
+        if (!discardEditByCreating) {
+            navigate('/create/module-library');
+        }
+        else {
+            setModuleData({
+                parentModuleCode: "",
+                moduleName: "",
+                level: "",
+                mineType: "",
+                duration: "",
+                activities: []
+            })
+            isEditing = false;
+            setTimeout(() => navigate(".", { replace: true }), 0);
+        }
+    }
+
+    const handleCreateNewModule = () => {
+        if (isEditing) {
+            setDiscardEditByCreating(true);
+            setOpenCancelUpdateModulePopup(true);
+        }
+        else {
+            setOpenPopup(true)
+        }
     }
 
     return (
@@ -591,16 +626,19 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                     </Col>
-                                    <Col>
-                                        <Tooltip title="Delete">
-                                            <Button
-                                                icon={<DeleteOutlined />}
-                                                className="icon-button red"
-                                                onClick={() => setIsDeleteModalVisible(true)}
-                                                disabled={!selectedRow}
-                                            />
-                                        </Tooltip>
-                                    </Col>
+
+                                    {!isEditing && (
+                                        <Col>
+                                            <Tooltip title="Delete">
+                                                <Button
+                                                    icon={<DeleteOutlined />}
+                                                    className="icon-button red"
+                                                    onClick={() => setIsDeleteModalVisible(true)}
+                                                    disabled={!selectedRow}
+                                                />
+                                            </Tooltip>
+                                        </Col>
+                                    )}
                                     <Col>
                                         <Tooltip title="Filter">
                                             <Button
@@ -666,24 +704,24 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    {!isEditing && (
-                                        <Col>
-                                            <Tooltip title="Create New Module">
-                                                <Button
-                                                    type="primary"
-                                                    onClick={() => setOpenPopup(true)}
-                                                    className="add-module-button"
-                                                    style={{ height: "30px", fontSize: "14px" }}
-                                                >
-                                                    Create New Module
-                                                </Button>
-                                            </Tooltip>
-                                        </Col>
-                                    )}
+                                    <Col>
+                                        <Tooltip title="Create New Module">
+                                            <Button
+                                                type="primary"
+                                                onClick={() => handleCreateNewModule()}
+                                                className="add-module-button"
+                                                style={{ height: "30px", fontSize: "14px" }}
+                                            >
+                                                Create New Module
+                                            </Button>
+                                        </Tooltip>
+                                    </Col>
+                                    {/* {!isEditing && (
+                                    )} */}
 
                                     {isEditing && (
                                         <Col>
-                                            <Tooltip title="Create New Module">
+                                            <Tooltip title="Update Module">
                                                 <Button
                                                     type="primary"
                                                     onClick={() => setOpenCancelUpdateModulePopup(true)}
@@ -807,6 +845,7 @@ const Module = () => {
                             type="primary"
                             className="save-button"
                             onClick={handleSaveModuleAndActivity}
+                            disabled={!moduleData.parentModuleCode}
                         >
                             {isEditing ? "Update" : "Save"} <ArrowRightOutlined className="save-button-icon" />
                         </Button>
