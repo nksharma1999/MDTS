@@ -377,7 +377,7 @@ const ModuleLibrary = () => {
                   </TableRow>
                 </TableHead>
 
-                <TableBody style={{ display: "block", overflowY: "auto", maxHeight: "calc(100vh - 244px)" }}>
+                <TableBody style={{ display: "block", overflowY: "auto", maxHeight: "calc(100vh - 269px)" }}>
                   {modulesData.length > 0 ? (
                     modulesData.map((module, index) => (
                       <TableRow

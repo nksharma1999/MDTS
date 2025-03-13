@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { addModule } from '../Utils/moduleStorage';
 import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
 import CreateNotification from "./CreateNotification";
@@ -50,6 +50,8 @@ const Module = () => {
     const mdtsModules = ["MDTS-001", "MDTS-002", "MDTS-003"];
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [discardEditByCreating, setDiscardEditByCreating] = useState(false);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
+
     useEffect(() => {
         if (state) {
             setModuleData({
@@ -218,9 +220,6 @@ const Module = () => {
         // setSelectedRow(null);
         // handlePrerequisite();
         // setIsDeleteModalVisible(false);
-
-        console.log(selectedRow);
-
 
         if (!selectedRow) return;
         setModuleData((prev: any) => {
@@ -579,6 +578,58 @@ const Module = () => {
         }
     }
 
+    // const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
+    //     const activitiesCopy = [...moduleData.activities];
+
+    //     let sortedActivities;
+    //     if (order === "asc") {
+    //         sortedActivities = [...activitiesCopy].sort((a, b) => a.level.localeCompare(b.level));
+    //     } else if (order === "desc") {
+    //         sortedActivities = [...activitiesCopy].sort((a, b) => b.level.localeCompare(a.level));
+    //     } else {
+    //         sortedActivities = [...moduleData.activities];
+    //     }
+
+    //     console.log("Sorted Activities:", order, sortedActivities);
+    // };
+
+    const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
+        const activitiesCopy = [...moduleData.activities];
+    
+        let sortedActivities;
+        if (order === "asc") {
+            sortedActivities = [...activitiesCopy].sort((a, b) => a.level.localeCompare(b.level));
+        } else if (order === "desc") {
+            sortedActivities = [...activitiesCopy].sort((a, b) => b.level.localeCompare(a.level));
+        } else {
+            sortedActivities = state?.activities || [];  // Reset to original state if available
+        }
+        
+        console.log("Sorted Activities:", order, sortedActivities);
+    
+        // **Update moduleData state with sorted activities**
+        setModuleData((prev: any) => ({
+            ...prev,
+            activities: sortedActivities
+        }));
+    };
+    
+    useEffect(() => {
+        handleSortModule(sortOrder);
+    }, [sortOrder]); 
+    
+
+    const toggleSortOrder = () => {
+        const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
+        setSortOrder(newOrder);  // Triggers useEffect which calls handleSortModule
+    };
+
+    const getSortIcon = () => {
+        if (sortOrder === 'asc') return <SortAscendingOutlined />;
+        if (sortOrder === 'desc') return <SortDescendingOutlined />;
+        return <ReloadOutlined />;
+    };
+
     return (
         <div>
             <div className="module-main">
@@ -627,24 +678,20 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    {!isEditing && (
-                                        <Col>
-                                            <Tooltip title="Delete">
-                                                <Button
-                                                    icon={<DeleteOutlined />}
-                                                    className="icon-button red"
-                                                    onClick={() => setIsDeleteModalVisible(true)}
-                                                    disabled={!selectedRow}
-                                                />
-                                            </Tooltip>
-                                        </Col>
-                                    )}
                                     <Col>
-                                        <Tooltip title="Filter">
+                                        <Tooltip title="Delete">
                                             <Button
-                                                icon={<FilterOutlined />}
-                                                className="icon-button blue"
+                                                icon={<DeleteOutlined />}
+                                                className="icon-button red"
+                                                onClick={() => setIsDeleteModalVisible(true)}
+                                                disabled={!selectedRow}
                                             />
+                                        </Tooltip>
+                                    </Col>
+
+                                    <Col>
+                                        <Tooltip title={`${sortOrder.toUpperCase()}`}>
+                                            <Button onClick={toggleSortOrder} icon={getSortIcon()} disabled={moduleData.activities.length == 0} className="icon-button blue" />
                                         </Tooltip>
                                     </Col>
                                     <Col>
@@ -716,8 +763,6 @@ const Module = () => {
                                             </Button>
                                         </Tooltip>
                                     </Col>
-                                    {/* {!isEditing && (
-                                    )} */}
 
                                     {isEditing && (
                                         <Col>
