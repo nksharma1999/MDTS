@@ -50,29 +50,29 @@ export const StatusUpdate = () => {
     setEmail("");
   };
 
-  // useEffect(() => {
-  //   try {
-  //     const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-  //     const userId = loggedInUser?.id;
-  //     if (!userId) return;
+  useEffect(() => {
+    try {
+      const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const userId = loggedInUser?.id;
+      if (!userId) return;
 
-  //     const userProjectsKey = `projects_${userId}`;
-  //     const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+      const userProjectsKey = `projects_${userId}`;
+      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
 
-  //     if (Array.isArray(storedData)) {
-  //       const updatedData = storedData.map((project, index) => {
-  //         if (index === 1 || index === 2) {
-  //           const { projectTimeline, ...rest } = project;
-  //           return rest;
-  //         }
-  //         return project;
-  //       });
-  //       localStorage.setItem(userProjectsKey, JSON.stringify(updatedData));
-  //     }
-  //   } catch (error) {
-  //     console.error("An unexpected error occurred while fetching projects:", error);
-  //   }
-  // }, []);
+      if (Array.isArray(storedData)) {
+        const updatedData = storedData.map((project, index) => {
+          if (index === 1 || index === 2) {
+            const { projectTimeline, ...rest } = project;
+            return rest;
+          }
+          return project;
+        });
+        localStorage.setItem(userProjectsKey, JSON.stringify(updatedData));
+      }
+    } catch (error) {
+      console.error("An unexpected error occurred while fetching projects:", error);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -113,6 +113,54 @@ export const StatusUpdate = () => {
     }
   }, []);
 
+  // useEffect(() => {
+  //   try {
+  //     const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+  //     const userId = loggedInUser?.id;
+  //     if (!userId) return;
+  
+  //     const userProjectsKey = `projects_${userId}`;
+  //     const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]").filter(
+  //       (item: any) => item.projectTimeline !== undefined
+  //     );
+  
+  //     if (!Array.isArray(storedData) || storedData.length === 0) {
+  //       setAllProjects([]);
+  //       return;
+  //     }
+  
+  //     setAllProjects(storedData);
+  
+  //     // Retrieve last opened project
+  //     const lastOpenedProjectId = localStorage.getItem(`lastOpenedProject_${userId}`);
+  
+  //     // Find the last opened project or fallback to the first available
+  //     let selectedProject = storedData.find((project: any) => project.id === lastOpenedProjectId) || storedData[0];
+  
+  //     if (selectedProject?.id) {
+  //       setSelectedProjectId(selectedProject.id);
+  //       setSelectedProject(selectedProject);
+  
+  //       // Save selected project as last opened
+  //       localStorage.setItem(`lastOpenedProject_${userId}`, selectedProject.id);
+  
+  //       if (selectedProject?.projectTimeline && Array.isArray(selectedProject.projectTimeline)) {
+  //         handleLibraryChange(selectedProject.projectTimeline);
+  //       } else if (selectedProject?.initialStatus?.items && Array.isArray(selectedProject.initialStatus.items)) {
+  //         handleLibraryChange(
+  //           selectedProject.initialStatus.items.filter(
+  //             (item: any) => item?.status?.toLowerCase() !== "completed"
+  //           )
+  //         );
+  //       } else {
+  //         handleLibraryChange([]);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("An unexpected error occurred while fetching projects:", error);
+  //   }
+  // }, []);
+  
   useEffect(() => {
     if (location.state && location.state.currentProject) {
       const selectedActiveProject = location.state.currentProject;

@@ -3,14 +3,14 @@ import { generateTwoLetterAcronym } from "../Utils/generateTwoLetterAcronym";
 import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
-import { addModule } from '../Utils/moduleStorage';
 import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 const { Option } = Select;
-import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
-import CreateNotification from "./CreateNotification";
+import { addModule } from '../Utils/moduleStorage';
+import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
+import { db } from "../Utils/dataStorege.ts";
 
 const Module = () => {
     const { state } = useLocation();
@@ -55,6 +55,7 @@ const Module = () => {
     useEffect(() => {
         if (state) {
             setModuleData({
+                id: state.id,
                 parentModuleCode: state.parentModuleCode,
                 moduleName: state.moduleName,
                 level: state.level,
@@ -66,14 +67,15 @@ const Module = () => {
     }, [state]);
 
     useEffect(() => {
-        try {
-            const storedOptions = getAllMineTypes();
-            if (storedOptions.length > 0) {
+        const fetchMineTypes = async () => {
+            try {
+                const storedOptions: any = await db.getAllMineTypes();
                 setOptions(storedOptions);
+            } catch (error) {
+                console.error("Error fetching mine types:", error);
             }
-        } catch (error) {
-            console.error("Error fetching mine types:", error);
-        }
+        };
+        fetchMineTypes();
     }, []);
 
     useEffect(() => {
@@ -82,35 +84,64 @@ const Module = () => {
         }
     }, [moduleData.activities]);
 
-    const handleSaveModuleAndActivity = () => {
+    const handleSaveModuleAndActivity = async () => {
         try {
             if (!moduleData || Object.keys(moduleData).length === 0 || !moduleData.parentModuleCode) {
                 notification.error({
-                    message: "Module data is empty or missing required fields..",
-                    description: "",
+                    message: "Module data is empty or missing required fields.",
                     duration: 3,
                 });
                 return;
             }
+            
             if (isEditing) {
-                const storedModulesString = localStorage.getItem("modules");
-                const storedModules = storedModulesString ? JSON.parse(storedModulesString) : [];
-                const updatedModules = storedModules.map((module: any) =>
-                    module.parentModuleCode === moduleData.parentModuleCode ? moduleData : module
-                );
-                localStorage.setItem("modules", JSON.stringify(updatedModules));
-                notification.success({
-                    message: "Module updated successfully!",
-                    duration: 3,
-                });
+                console.log("Updating Module - moduleData:", moduleData);
+
+                if (!moduleData.id || typeof moduleData.id !== "number") {
+                    notification.error({
+                        message: "Invalid module ID. Unable to update module.",
+                        duration: 3,
+                    });
+                    return;
+                }
+
+                const existingModule = await db.modules.get(moduleData.id);
+
+                if (existingModule) {
+                    const updatedCount = await db.modules.update(moduleData.id, {
+                        ...existingModule,
+                        ...moduleData
+                    });
+
+                    if (updatedCount) {
+                        notification.success({
+                            message: "Module updated successfully!",
+                            duration: 3,
+                        });
+                        navigate('/create/module-library');
+                    } else {
+                        notification.error({
+                            message: "Module update failed. No changes detected.",
+                            duration: 3,
+                        });
+                    }
+                } else {
+                    notification.error({
+                        message: "Module not found in IndexedDB.",
+                        duration: 3,
+                    });
+                }
             } else {
-                const newModule = { ...moduleData, id: moduleData.id || Date.now() };
-                addModule(newModule);
+                await db.addModule(moduleData);
+                addModule(moduleData);
+
                 notification.success({
                     message: "Module saved successfully!",
                     duration: 3,
                 });
+
             }
+            navigate('/create/module-library');
         } catch (error) {
             console.error("Error while saving/updating module:", error);
             notification.error({
@@ -119,8 +150,6 @@ const Module = () => {
                 duration: 3,
             });
         }
-
-        navigate('/create/module-library');
     };
 
     const addActivity = () => {
@@ -468,14 +497,18 @@ const Module = () => {
             .join("");
     };
 
-    const handleAddNewMineType = () => {
-        if (newMineType) {
-            const updatedOptions = [...options, shorthandCode];
-            addNewMineType(updatedOptions)
-            setOptions(updatedOptions);
-            setNewMineType("");
-            setShorthandCode("");
-            setMineTypePopupOpen(false);
+    const handleAddNewMineType = async () => {
+        if (newMineType && shorthandCode) {
+            try {
+                const mineTypeData: any = { type: shorthandCode, description: newMineType };
+                const id = await db.addMineType(mineTypeData);
+                setOptions([...options, { id, ...mineTypeData }]);
+                setNewMineType("");
+                setShorthandCode("");
+                setMineTypePopupOpen(false);
+            } catch (error) {
+                console.error("Error adding mine type:", error);
+            }
         }
     };
 
@@ -578,50 +611,30 @@ const Module = () => {
         }
     }
 
-    // const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
-    //     const activitiesCopy = [...moduleData.activities];
-
-    //     let sortedActivities;
-    //     if (order === "asc") {
-    //         sortedActivities = [...activitiesCopy].sort((a, b) => a.level.localeCompare(b.level));
-    //     } else if (order === "desc") {
-    //         sortedActivities = [...activitiesCopy].sort((a, b) => b.level.localeCompare(a.level));
-    //     } else {
-    //         sortedActivities = [...moduleData.activities];
-    //     }
-
-    //     console.log("Sorted Activities:", order, sortedActivities);
-    // };
-
     const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
         const activitiesCopy = [...moduleData.activities];
-    
+
         let sortedActivities;
         if (order === "asc") {
             sortedActivities = [...activitiesCopy].sort((a, b) => a.level.localeCompare(b.level));
         } else if (order === "desc") {
             sortedActivities = [...activitiesCopy].sort((a, b) => b.level.localeCompare(a.level));
         } else {
-            sortedActivities = state?.activities || [];  // Reset to original state if available
+            sortedActivities = state?.activities || [];
         }
-        
-        console.log("Sorted Activities:", order, sortedActivities);
-    
-        // **Update moduleData state with sorted activities**
         setModuleData((prev: any) => ({
             ...prev,
             activities: sortedActivities
         }));
     };
-    
+
     useEffect(() => {
         handleSortModule(sortOrder);
-    }, [sortOrder]); 
-    
+    }, [sortOrder]);
 
     const toggleSortOrder = () => {
         const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
-        setSortOrder(newOrder);  // Triggers useEffect which calls handleSortModule
+        setSortOrder(newOrder);
     };
 
     const getSortIcon = () => {
@@ -926,9 +939,9 @@ const Module = () => {
                                 onChange={setSelectedOption}
                                 placeholder="Select mine type"
                             >
-                                {options.map((option, index) => (
-                                    <Option key={index} value={option}>
-                                        {option}
+                                {options.map((option: any, index) => (
+                                    <Option key={index} value={option.type}>
+                                        {option.type}
                                     </Option>
                                 ))}
                             </Select>

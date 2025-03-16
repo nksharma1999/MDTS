@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, message, Result } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, message, Result, Dropdown, Menu } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import type { ColumnsType } from "antd/es/table";
@@ -9,7 +9,7 @@ const { Step } = Steps;
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
-import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
+import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, DownOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
 import moment from 'moment';
 import { getCurrentUserId } from '../Utils/moduleStorage';
 import { useLocation } from "react-router-dom";
@@ -42,7 +42,7 @@ interface HolidayData {
 }
 
 interface Column {
-  title: string;
+  title: any;
   width?: string;
   dataIndex: string;
   key: string;
@@ -81,6 +81,10 @@ const TimeBuilder = () => {
   const [openExistingTimelineModal, setOpenExistingTimelineModal] = useState(false);
   const [selectedExistingProjectId, setSelectedExistingProjectId] = useState(null);
   const [selectedExistingProject, setSelectedExistigProject] = useState<any>(null);
+  const [editingKey, setEditingKey] = useState(null);
+  const [editedImpact, setEditedImpact] = useState<any>({});
+  const [restoreDropdownVisible, setRestoreDropdownVisible] = useState(false);
+  const [deletedModules, setDeletedModules] = useState<any>([]);
   useEffect(() => {
     defaultSetup();
   }, []);
@@ -159,6 +163,8 @@ const TimeBuilder = () => {
 
   useEffect(() => {
     if (location.state && location.state.selectedProject) {
+      console.log(location.state.selectedProject);
+
       const project = location.state.selectedProject;
       setIsUpdateMode(true);
       setSelectedProjectName(project.projectParameters.projectName);
@@ -623,9 +629,6 @@ const TimeBuilder = () => {
     message.success(isUpdateMode ? "Project timeline updated successfully!." : "Project timeline saved successfully!.");
   };
 
-  const [editingKey, setEditingKey] = useState(null);
-  const [editedImpact, setEditedImpact] = useState<any>({});
-
   const holidayColumns: any = [
     {
       title: "From Date",
@@ -979,6 +982,57 @@ const TimeBuilder = () => {
       });
     }
 
+    if (currentStep == 1) {
+      columns.push({
+        title: (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+            <span>Actions</span>
+            {deletedModules.length > 0 && (
+              <div style={{ position: "absolute", right: 0 }}>
+                <Dropdown
+                  overlay={(
+                    <Menu>
+                      {deletedModules.map((module: any) => (
+                        <Menu.Item key={module.parentModuleCode} onClick={() => restoreDeletedModule(module.parentModuleCode)}>
+                          {module.moduleName}
+                        </Menu.Item>
+                      ))}
+                    </Menu>
+                  )}
+                  trigger={["click"]}
+                  visible={restoreDropdownVisible}
+                  onVisibleChange={(visible) => setRestoreDropdownVisible(visible)}
+                >
+                  <Button icon={<DownOutlined />} />
+                </Dropdown>
+              </div>
+            )}
+          </div>
+        ),
+        dataIndex: "actions",
+        key: "actions",
+        align: "center",
+        render: (_text: any, record: any) => (
+          <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
+            <Button
+              type="primary"
+              danger
+              onClick={() => handleModuleSelection(record.parentModuleCode, false)}
+              icon={<DeleteOutlined />}
+              size="small"
+              style={{
+                padding: "6px 10px",
+                borderRadius: "4px",
+              }}
+            >
+              Delete
+            </Button>
+          </div>
+
+        ),
+      });
+    }
+
     return columns;
   };
 
@@ -997,46 +1051,190 @@ const TimeBuilder = () => {
         message.warning("Please select a project first.");
         return;
       }
-
+  
       const userId = getCurrentUserId();
       const userProjectsKey = `projects_${userId}`;
       const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
+  
       const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
       const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
-
+  
+      console.log("Selected Project:", selectedProject);
+      console.log("Current Project:", currentProject);
+  
       if (!selectedProject || !currentProject) {
         message.error("Invalid project selection.");
         return;
       }
-
+  
       const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
       const selectedLibrary = selectedProject?.initialStatus?.library;
       const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
       const currentLibrary = currentProject?.initialStatus?.library;
-
+  
       if (selectedMineType !== currentMineType || selectedLibrary !== currentLibrary) {
         message.warning("Selected project must have the same Mine Type and Library.");
         return;
       }
-
-      if (selectedProject.projectTimeline) {
-        currentProject.projectTimeline = selectedProject.projectTimeline;
-        localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
-
-        message.success("Project timeline linked successfully!");
-        setTimeout(() => {
-          navigate("/create/project-timeline", { state: { currentProject } });
-        }, 1000);
-        setOpenExistingTimelineModal(false);
-      } else {
+  
+      if (!selectedProject.projectTimeline || selectedProject.projectTimeline.length === 0) {
         message.warning("Selected project does not have a timeline.");
+        return;
       }
+  
+      // Deep copy to avoid direct mutations
+      const updatedProjectTimeline = selectedProject.projectTimeline.map((module: any) => ({
+        ...module,
+        activities: module.activities.map((activity: any) => ({
+          ...activity,
+          start: null,
+          end: null,
+        })),
+      }));
+  
+      currentProject.projectTimeline = updatedProjectTimeline;
+  
+      // Ensure storedAllProjects reflects the update
+      const projectIndex = storedAllProjects.findIndex((p: any) => p.id === selectedProjectId);
+      if (projectIndex !== -1) {
+        storedAllProjects[projectIndex] = { ...currentProject };
+      }
+  
+      console.log("Updated storedAllProjects:", storedAllProjects);
+  
+      localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
+  
+      message.success("Project timeline linked successfully!");
+      setTimeout(() => {
+        navigate("/create/project-timeline", { state: { currentProject } });
+      }, 1000);
+      setOpenExistingTimelineModal(false);
     } catch (error) {
       console.error("Error updating project timeline:", error);
       message.error("Failed to link project timeline. Please try again.");
     }
   };
+
+  // const handleSaveProjectTimeline = () => {
+  //   try {
+  //     if (!selectedExistingProjectId) {
+  //       message.warning("Please select a project first.");
+  //       return;
+  //     }
+
+  //     const userId = getCurrentUserId();
+  //     const userProjectsKey = `projects_${userId}`;
+  //     const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+
+  //     const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
+  //     const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
+
+  //     if (!selectedProject || !currentProject) {
+  //       message.error("Invalid project selection.");
+  //       return;
+  //     }
+
+  //     const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
+  //     const selectedLibrary = selectedProject?.initialStatus?.library;
+  //     const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
+  //     const currentLibrary = currentProject?.initialStatus?.library;
+
+  //     if (selectedMineType !== currentMineType || selectedLibrary !== currentLibrary) {
+  //       message.warning("Selected project must have the same Mine Type and Library.");
+  //       return;
+  //     }
+
+  //     if (selectedProject.projectTimeline) {
+  //       const updatedProjectTimeline = selectedProject.projectTimeline.map((module:any) => ({
+  //         ...module,
+  //         activities: module.activities.map((activity:any) => ({
+  //           ...activity,
+  //           start: null,
+  //           end: null,
+  //         })),
+  //       }));
+  //       currentProject.projectTimeline = updatedProjectTimeline;
+  //       localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
+
+  //       message.success("Project timeline linked successfully!");
+  //       setTimeout(() => {
+  //         navigate("/create/project-timeline", { state: { currentProject } });
+  //       }, 1000);
+  //       setOpenExistingTimelineModal(false);
+  //     } else {
+  //       message.warning("Selected project does not have a timeline.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating project timeline:", error);
+  //     message.error("Failed to link project timeline. Please try again.");
+  //   }
+  // };
+
+  // const handleSaveProjectTimeline = () => {
+  //   try {
+  //     if (!selectedExistingProjectId) {
+  //       message.warning("Please select a project first.");
+  //       return;
+  //     }
+
+  //     const userId = getCurrentUserId();
+  //     const userProjectsKey = `projects_${userId}`;
+  //     const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+
+  //     const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
+  //     const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
+
+  //     if (!selectedProject || !currentProject) {
+  //       message.error("Invalid project selection.");
+  //       return;
+  //     }
+
+  //     const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
+  //     const selectedLibrary = selectedProject?.initialStatus?.library;
+  //     const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
+  //     const currentLibrary = currentProject?.initialStatus?.library;
+
+  //     let mismatchMessages: string[] = [];
+
+  //     if (selectedMineType !== currentMineType) {
+  //       mismatchMessages.push(`Mine Type mismatch (Selected: ${selectedMineType}, Current: ${currentMineType})`);
+  //     }
+
+  //     if (selectedLibrary !== currentLibrary) {
+  //       mismatchMessages.push(`Library mismatch (Selected: ${selectedLibrary}, Current: ${currentLibrary})`);
+  //     }
+
+  //     if (mismatchMessages.length > 0) {
+  //       message.warning(`Selected project must have the same Mine Type and Library:\n${mismatchMessages.join("\n")}`);
+  //       return;
+  //     }
+
+  //     if (selectedProject.projectTimeline) {
+  //       const updatedProjectTimeline = selectedProject.projectTimeline.map((module: any) => ({
+  //         ...module,
+  //         activities: module.activities.map((activity: any) => ({
+  //           ...activity,
+  //           start: null,
+  //           end: null,
+  //         })),
+  //       }));
+
+  //       currentProject.projectTimeline = updatedProjectTimeline;
+  //       localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
+
+  //       message.success("Project timeline linked successfully!");
+  //       setTimeout(() => {
+  //         navigate("/create/project-timeline", { state: { currentProject } });
+  //       }, 1000);
+  //       setOpenExistingTimelineModal(false);
+  //     } else {
+  //       message.warning("Selected project does not have a timeline.");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error updating project timeline:", error);
+  //     message.error("Failed to link project timeline. Please try again.");
+  //   }
+  // };
 
   const handleCancelUpdateProjectTimeline = () => {
     setIsCancelEditModalVisiblVisible(false)
@@ -1044,10 +1242,45 @@ const TimeBuilder = () => {
     setSelectedProject(null);
     setSelectedProjectMineType("");
     setLibraryName("");
-
     setSelectedProjectId(null);
     setIsMenualTimeline(false);
     defaultSetup();
+  };
+
+  const isNextStepAllowed = () => {
+    if (currentStep == 4) {
+      return sequencedModules.every((module: any) =>
+        module.activities.every((activity: any) => {
+          if (!activity.prerequisite) {
+            return Boolean(activity.start);
+          }
+          return true;
+        })
+      );
+    }
+    return true;
+  };
+
+  const handleModuleSelection = (moduleCode: any, isChecked: any) => {
+    setSequencedModules((prevModules) => {
+      if (!isChecked) {
+        const removedModule = prevModules.find((module) => module.parentModuleCode === moduleCode);
+        setDeletedModules((prevDeleted: any) => [...prevDeleted, removedModule]);
+        return prevModules.filter((module) => module.parentModuleCode !== moduleCode);
+      }
+      return prevModules;
+    });
+  };
+
+  const restoreDeletedModule = (moduleCode: any) => {
+    setDeletedModules((prevDeleted: any) => {
+      const restoredModule = prevDeleted.find((module: any) => module.parentModuleCode === moduleCode);
+      if (restoredModule) {
+        setSequencedModules((prevModules) => [...prevModules, restoredModule]);
+        return prevDeleted.filter((module: any) => module.parentModuleCode !== moduleCode);
+      }
+      return prevDeleted;
+    });
   };
 
   return (
@@ -1183,7 +1416,6 @@ const TimeBuilder = () => {
                             </Button>
                           </div>
                         </div>
-                        {/* <Table className="project-timeline-table" dataSource={holidayData} columns={holidayColumns} pagination={false} scroll={{ y: 'calc(100vh - 350px)' }} /> */}
                         <Table
                           className="project-timeline-table"
                           dataSource={isUpdateMode ? finalHolidays : holidayData}
@@ -1192,7 +1424,6 @@ const TimeBuilder = () => {
                           scroll={{ y: "calc(100vh - 350px)" }}
                         />
                       </>
-
                     ) : (
                       <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                         <Result
@@ -1236,40 +1467,40 @@ const TimeBuilder = () => {
                     />
                   </div>
                 ) : (
-                  <Table
-                    columns={getOuterTableColumns(currentStep)}
-                    className="project-timeline-table"
-                    dataSource={sequencedModules}
-                    pagination={false}
-                    sticky={{ offsetHeader: 0 }}
-                    rowClassName={(record) => (record.activities ? "module-heading" : "")}
-                    expandedRowKeys={expandedRowKeys}
-                    onExpand={(expanded, record) => {
-                      if (expanded) {
-                        setExpandedRowKeys([...expandedRowKeys, record.parentModuleCode]);
-                      } else {
-                        setExpandedRowKeys(expandedRowKeys.filter((key) => key !== record.parentModuleCode));
-                      }
-                    }}
-                    expandable={{
-                      expandedRowRender: (module) => (
-                        <Table
-                          columns={getColumnsForStep(currentStep)}
-                          dataSource={module.activities}
-                          pagination={false}
-                          showHeader={false}
-                          bordered
-                          sticky
-                          style={{ marginBottom: "10px" }}
-                          scroll={{ x: "hidden" }}
-                        />
-                      ),
-                      rowExpandable: (module) => module.activities.length > 0,
-                    }}
-                    scroll={{ y: 290, x: "hidden" }}
-                    style={{ overflowX: "hidden" }}
-                    rowKey="parentModuleCode"
-                  />
+                  <div>
+                    <Table
+                      columns={getOuterTableColumns(currentStep)}
+                      className="project-timeline-table"
+                      dataSource={sequencedModules}
+                      pagination={false}
+                      sticky={{ offsetHeader: 0 }}
+                      rowClassName={(record) => (record.activities ? "module-heading" : "")}
+                      expandedRowKeys={expandedRowKeys}
+                      onExpand={(expanded, record) => {
+                        setExpandedRowKeys(expanded
+                          ? [...expandedRowKeys, record.parentModuleCode]
+                          : expandedRowKeys.filter((key) => key !== record.parentModuleCode)
+                        );
+                      }}
+                      expandable={{
+                        expandedRowRender: (module) => (
+                          <Table
+                            columns={getColumnsForStep(currentStep)}
+                            dataSource={module.activities}
+                            pagination={false}
+                            showHeader={false}
+                            bordered
+                            sticky
+                            style={{ overflowX: "hidden" }}
+                          />
+                        ),
+                        rowExpandable: (module) => module.activities.length > 0,
+                      }}
+                      scroll={{ y: `${window.innerHeight - 300}px`, x: "hidden" }}
+                      style={{ overflowX: "hidden" }}
+                      rowKey="parentModuleCode"
+                    />
+                  </div>
                 )}
               </div>
               <hr />
@@ -1280,7 +1511,7 @@ const TimeBuilder = () => {
                   </Button>
                 )}
                 <Button
-                  disabled={selectedProjectId == null}
+                  disabled={selectedProjectId == null || !isNextStepAllowed()}
                   className="bg-secondary"
                   onClick={handleNext}
                   type="primary"
@@ -1417,6 +1648,12 @@ const TimeBuilder = () => {
                   style={{ width: "100%" }}
                   allowClear={true}
                 >
+                  {/* {(allProjectsTimelines.filter((projects: any) => projects.projectParameters.typeOfMine === selectedProject?.projectParameters?.typeOfMine &&
+                    projects.initialStatus.library === selectedProject?.projects?.initialStatus?.library)).map((project) => (
+                      <Option key={project.id} value={project.id}>
+                        {project.projectParameters.projectName}
+                      </Option>
+                    ))} */}
                   {allProjectsTimelines.map((project) => (
                     <Option key={project.id} value={project.id}>
                       {project.projectParameters.projectName}

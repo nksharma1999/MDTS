@@ -347,4 +347,3 @@ export const deleteModuleById = (id: any) => {
   const updatedModules:any = getModules().filter((module:any) => module.id !== id);
   saveModules(updatedModules);
 }
-

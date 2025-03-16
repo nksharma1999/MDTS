@@ -4,13 +4,11 @@ import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification,
 import "../styles/register-new-project.css";
 import { CloseCircleOutlined, DownloadOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 import ImageContainer from "../components/ImageContainer";
-import { getAllLibraries } from "../Utils/moduleStorage";
 const { Option } = Select;
-import { getAllMineTypes } from '../Utils/moduleStorage';
-import { addNewMineType } from '../Utils/moduleStorage';
 import MapComponent from "../components/MapComponent";
 import { useLocation } from "react-router-dom";
-import { saveDocument, updateDocument } from "../Utils/moduleStorage";
+import { saveDocument, updateDocument, getAllLibraries, getAllMineTypes, addNewMineType, getCurrentUser } from "../Utils/moduleStorage";
+import { db } from "../Utils/dataStorege.ts";
 interface DocumentData {
   id: number;
   documentName: string;
@@ -32,25 +30,24 @@ export const RegisterNewProject: React.FC = () => {
   const [mineTypeOptions, setMineTypeOptions] = useState<string[]>([]);
   const initialLibrary = allLibrariesName[0]?.name;
   const [selectedLibrary, setSelectedLibrary] = useState<any>(initialLibrary);
-  const [newCompany, setNewCompany] = useState<string>("");
   const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
   const [newMineType, setNewMineType] = useState<string>("");
   const [shorthandCode, setShorthandCode] = useState<string>("");
-  const [_options, setOptions] = useState<string[]>([]);
+  const [options, setOptions] = useState<string[]>([]);
   const steps = [
     { id: 1, title: "Project Parameters" },
     { id: 2, title: "Locations" },
     { id: 3, title: "Contractual Details" },
     { id: 4, title: "Initial Status" },
   ];
-  const [companyList, setCompanyList] = useState([
-    { id: 1, name: "Company A" },
-    { id: 2, name: "Company B" }
-  ]);
   const [formStepsData, setFormStepsData] = useState<any[]>(() => {
     const savedData = localStorage.getItem("projectFormData");
     return savedData ? JSON.parse(savedData) : [];
   });
+  const location = useLocation();
+  const documentToEdit = location.state?.documentToEdit as DocumentData | undefined;
+  const [documentName, setDocumentName] = useState<any>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [selectedItems, setSelectedItems] = useState(
     allLibrariesName.find((lib: any) => lib.name === initialLibrary)?.items || []
   );
@@ -60,30 +57,38 @@ export const RegisterNewProject: React.FC = () => {
     3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
     4: Object.values(allLibrariesName).map((moduleName: any) => moduleName)
   };
+  const [companyList, setCompanyList] = useState([
+    { id: 1, name: "Company A" },
+    { id: 2, name: "Company B" }
+  ]);
 
   useEffect(() => {
     setFormData({});
     clearFormData();
-    const storedList = localStorage.getItem('companyList');
-    if (storedList) {
-      setCompanyList(JSON.parse(storedList));
-    } else {
-      setCompanyList([{ id: 1, name: "Company A" }, { id: 2, name: "Company B" }]);
-    }
     const keys: any = getAllLibraries();
     setAllLibrariesName(keys)
   }, []);
 
   useEffect(() => {
+    fetchCompanyName();
+    fetchMineTypes();
+  }, []);
+
+  const fetchMineTypes = async () => {
     try {
-      const storedOptions = getAllMineTypes();
-      if (storedOptions.length > 0) {
-        setMineTypeOptions(storedOptions);
-      }
+      const storedOptions: any = await db.getAllMineTypes();
+      setMineTypeOptions(storedOptions);
     } catch (error) {
       console.error("Error fetching mine types:", error);
     }
-  }, []);
+  };
+
+  const fetchCompanyName = () => {
+    const userData = getCurrentUser();
+    if (userData) {
+      setFormData((prev) => ({ ...prev, companyName: userData.company }));
+    }
+  }
 
   const handlePrevious = () => {
     if (currentStep > 1) {
@@ -104,22 +109,8 @@ export const RegisterNewProject: React.FC = () => {
     setIsModalVisible(false);
   };
 
-  const handleAddCompany = () => {
-    if (newCompany.trim()) {
-      const newId = companyList.length > 0 ? Math.max(...companyList.map((company) => company.id)) + 1 : 1;
-      const updatedList = [
-        ...companyList,
-        { id: newId, name: newCompany }
-      ];
-      setCompanyList(updatedList);
-      localStorage.setItem('companyList', JSON.stringify(updatedList));
-      setNewCompany("");
-      setAddCompanyPopupOpen(false);
-    }
-  };
-
-  const handleSubmit = () => {
-    const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const handleSubmit = async () => {
+    const loggedInUser = getCurrentUser();
     const initialDataVal = { library: selectedLibrary, items: selectedItems };
     if (!loggedInUser.id) {
       notification.error({
@@ -129,20 +120,20 @@ export const RegisterNewProject: React.FC = () => {
       });
       return;
     }
-    const userId = loggedInUser.id;
-    const userProjectsKey = `projects_${userId}`;
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
-    const storedProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
     const newProject = {
-      id: storedProjects.length + 1,
+      id: Date.now().toString(),
       projectParameters: finalData[0] || {},
       locations: finalData[1] || {},
       contractualDetails: finalData[2] || {},
       initialStatus: initialDataVal || {},
     };
-    const updatedProjects = [...storedProjects, newProject];
-    localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
+    try {
+      await db.addProject(newProject);
+    } catch {
+      throw new Error("Failed to save library to database.");
+    }
     notification.success({
       message: "Project Created Successfully",
       description: "All form data has been saved and cleared.",
@@ -154,18 +145,20 @@ export const RegisterNewProject: React.FC = () => {
     setCurrentStep(1);
     setIsModalVisible(false);
     clearFormData();
+    fetchCompanyName();
   };
 
   const validateFields = (step: number): boolean => {
-    let newErrors: { [key: string]: string } = {};
-    requiredFields[step].forEach((field) => {
-      const fieldValue = formData[field];
-      if (fieldValue === undefined || fieldValue === null || (typeof fieldValue === 'string' && fieldValue.trim() === "") || (typeof fieldValue === 'number' && isNaN(fieldValue))) {
-        newErrors[field] = "This field is required.";
-      }
-    });
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // let newErrors: { [key: string]: string } = {};
+    // requiredFields[step].forEach((field) => {
+    //   const fieldValue = formData[field];
+    //   if (fieldValue === undefined || fieldValue === null || (typeof fieldValue === 'string' && fieldValue.trim() === "") || (typeof fieldValue === 'number' && isNaN(fieldValue))) {
+    //     newErrors[field] = "This field is required.";
+    //   }
+    // });
+    // setErrors(newErrors);
+    // return Object.keys(newErrors).length === 0;
+    return true;
   };
 
   const handleNext = () => {
@@ -281,7 +274,7 @@ export const RegisterNewProject: React.FC = () => {
       .join("");
   };
 
-  const handleAddNewMineType = () => {
+  const handleAddNewMineTypes = () => {
     if (newMineType) {
       const updatedOptions = [...mineTypeOptions, shorthandCode];
       addNewMineType(updatedOptions)
@@ -290,6 +283,22 @@ export const RegisterNewProject: React.FC = () => {
       setShorthandCode("");
       setMineTypePopupOpen(false);
       setMineTypeOptions(getAllMineTypes());
+    }
+  };
+
+  const handleAddNewMineType = async () => {
+    if (newMineType && shorthandCode) {
+      try {
+        const mineTypeData: any = { type: shorthandCode, description: newMineType };
+        const id = await db.addMineType(mineTypeData);
+        setOptions([...options, { id, ...mineTypeData }]);
+        setNewMineType("");
+        setShorthandCode("");
+        setMineTypePopupOpen(false);
+        fetchMineTypes();
+      } catch (error) {
+        console.error("Error adding mine type:", error);
+      }
     }
   };
 
@@ -315,8 +324,8 @@ export const RegisterNewProject: React.FC = () => {
                   help={errors.companyName ? "Company Name is required" : ""}
                 >
                   <div style={{ display: "flex", gap: "10px" }}>
-                    <Select
-                      value={formData.companyName || ""}
+                    <Select disabled
+                      value={formData.companyName || "jj"}
                       onChange={(value) => handleChange("companyName", value)}
                     >
                       {companyList.map((company) => (
@@ -418,9 +427,9 @@ export const RegisterNewProject: React.FC = () => {
                         handleLibraryChange(filteredLib[0]?.name);
                       }}
                     >
-                      {mineTypeOptions.map((option) => (
-                        <Select.Option key={option} value={option}>
-                          {option}
+                      {mineTypeOptions.map((option: any) => (
+                        <Select.Option key={option.type} value={option.type}>
+                          {option.type}
                         </Select.Option>
                       ))}
                     </Select>
@@ -597,11 +606,6 @@ export const RegisterNewProject: React.FC = () => {
         return null;
     }
   };
-
-  const location = useLocation();
-  const documentToEdit = location.state?.documentToEdit as DocumentData | undefined;
-  const [documentName, setDocumentName] = useState<any>(null);
-  const [files, setFiles] = useState<File[]>([]);
 
   const onDrop = (acceptedFiles: File[]) => {
     setFiles((prevFiles) => {
@@ -821,27 +825,6 @@ export const RegisterNewProject: React.FC = () => {
           <ExclamationCircleOutlined style={{ color: "red", marginRight: 8 }} />
           Are you sure you want to submit the form? Once submitted, all data will be cleared.
         </p>
-      </Modal>
-
-      <Modal
-        title="Add Company"
-        open={addCompanyPopupOpen}
-        onCancel={() => setAddCompanyPopupOpen(false)}
-        onOk={handleAddCompany}
-        okButtonProps={{ className: "bg-secondary" }}
-        cancelButtonProps={{ className: "bg-tertiary" }}
-        maskClosable={false}
-        keyboard={false}
-        className="modal-container"
-      >
-        <div className="modal-body-item-padding">
-          <Input
-            placeholder="Enter Company Name"
-            value={newCompany}
-            onChange={(e) => setNewCompany(e.target.value)}
-            style={{ marginBottom: "10px" }}
-          />
-        </div>
       </Modal>
 
       <Modal
