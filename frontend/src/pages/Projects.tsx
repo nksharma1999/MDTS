@@ -6,6 +6,7 @@ import ImageContainer from "../components/ImageContainer";
 import { SearchOutlined } from "@mui/icons-material";
 import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
 import { Collapse, Table, Typography } from "antd";
+import { db } from "../Utils/dataStorege.ts";
 const { Panel } = Collapse;
 const { Title } = Typography;
 interface LocationDetails {
@@ -72,14 +73,10 @@ const Projects = () => {
     const [addedMembers, setAddedMembers] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<any>(null);
-
-    useEffect(() => {
+    
+    const getAllProjects = async () => {
         try {
-            const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-            const userId = loggedInUser.id;
-            const userProjectsKey = `projects_${userId}`;
-            const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
+            const storedData = await db.getProjects();
             if (!Array.isArray(storedData) || storedData.length === 0) {
                 console.warn("No projects found.");
                 setAllProjects([]);
@@ -93,6 +90,9 @@ const Projects = () => {
         } catch (error) {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
+    }
+    useEffect(() => {
+        getAllProjects();
     }, []);
 
     if (!projectDetails) {
@@ -105,6 +105,7 @@ const Projects = () => {
             </div>
         </div>;
     }
+
 
     const { projectParameters, locations, contractualDetails, initialStatus }: any = projectDetails;
 
