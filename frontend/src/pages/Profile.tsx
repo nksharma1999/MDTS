@@ -126,7 +126,7 @@ const Profile = () => {
             }
             
             if (currentUser.id) {
-                const updatedUser = { ...users[currentUser.id], ...formData };
+                const updatedUser = { ...users[currentUser.id], ...formData,isTempPassword:false };
                 await db.updateUsers(updatedUser.id, updatedUser);
                 localStorage.setItem("user", JSON.stringify(updatedUser));
     

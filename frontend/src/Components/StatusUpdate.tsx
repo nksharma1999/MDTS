@@ -410,12 +410,12 @@ export const StatusUpdate = () => {
               <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
               {allProjects.length === 0 ? (
                 <>
-                  <h3>No Projects Found</h3>
+                  <h3>No Projects Timeline Found</h3>
                   <p>You need to create a project for defining a timeline.</p>
                   <button onClick={() => {
                     eventBus.emit("updateTab", "/create/register-new-project");
-                    navigate("/create/register-new-project");
-                  }}>Create Project</button>
+                    navigate("/create/timeline-builder");
+                  }}>Create Project Timeline</button>
                 </>
               ) : (
                 <>
