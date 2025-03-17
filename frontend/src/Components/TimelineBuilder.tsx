@@ -13,7 +13,6 @@ import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlin
 import moment from 'moment';
 import { useLocation } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
-import { getCurrentUserId } from '../Utils/moduleStorage';
 interface Activity {
   code: string;
   activityName: string;
@@ -623,6 +622,11 @@ const TimeBuilder = () => {
         ? "Project timeline updated successfully!"
         : "Project timeline saved successfully!"
       );
+      localStorage.setItem('selectedProjectId', selectedProjectId);
+      setSelectedProject(null);
+      setSelectedProjectId(null);
+      setIsMenualTimeline(false);
+      defaultSetup();
     } catch (error) {
       console.error("Error saving project timeline:", error);
       message.error("Failed to save project timeline. Please try again.");
@@ -1032,73 +1036,37 @@ const TimeBuilder = () => {
     return columns;
   };
 
-  const handleExistingProjectChange = (projectId: any) => {
+  const handleExistingProjectChange = async (projectId: any) => {
     setSelectedExistingProjectId(projectId);
-    const userId = getCurrentUserId();
-    const userProjectsKey = `projects_${userId}`;
-    const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
+    const storedAllProjects = await db.getProjects();
     const selectedExProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
     setSelectedExistigProject(selectedExProject);
   };
 
-  const handleSaveProjectTimeline = () => {
+  const handleLinkProjectTimeline = async () => {
     try {
-      if (!selectedExistingProjectId) {
-        message.warning("Please select a project first.");
-        return;
+      const storedAllProjects = await db.getProjects();
+      const selectedExProject = storedAllProjects.find((p: any) => p.id == selectedExistingProjectId);
+  
+      if (!selectedExistingProjectId) return;
+  
+      if (selectedExProject?.initialStatus.library === selectedProject.initialStatus.library &&
+          selectedExProject?.projectParameters.typeOfMine === selectedProject.projectParameters.typeOfMine) {
+        
+        const updatedProjectWithTimeline = { ...selectedProject, projectTimeline: selectedExProject.projectTimeline };
+        await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
+        localStorage.setItem('selectedProjectId', selectedProject.id);
+  
+        setTimeout(() => message.success("Project timeline linked successfully!"), 0); // Fix for React 18
+        navigate("/create/project-timeline");
+      } else {
+        setTimeout(() => message.error("Selected project and existing project do not match library and mine type!"), 0);
       }
-
-      const userId = getCurrentUserId();
-      const userProjectsKey = `projects_${userId}`;
-      const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
-      const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
-      const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
-      if (!selectedProject || !currentProject) {
-        message.error("Invalid project selection.");
-        return;
-      }
-
-      const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
-      const selectedLibrary = selectedProject?.initialStatus?.library;
-      const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
-      const currentLibrary = currentProject?.initialStatus?.library;
-
-      if (selectedMineType !== currentMineType || selectedLibrary !== currentLibrary) {
-        message.warning("Selected project must have the same Mine Type and Library.");
-        return;
-      }
-
-      if (!selectedProject.projectTimeline || selectedProject.projectTimeline.length === 0) {
-        message.warning("Selected project does not have a timeline.");
-        return;
-      }
-      const updatedProjectTimeline = selectedProject.projectTimeline.map((module: any) => ({
-        ...module,
-        activities: module.activities.map((activity: any) => ({
-          ...activity,
-          start: null,
-          end: null,
-        })),
-      }));
-
-      currentProject.projectTimeline = updatedProjectTimeline;
-      const projectIndex = storedAllProjects.findIndex((p: any) => p.id === selectedProjectId);
-      if (projectIndex !== -1) {
-        storedAllProjects[projectIndex] = { ...currentProject };
-      }
-      localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
-
-      message.success("Project timeline linked successfully!");
-      setTimeout(() => {
-        navigate("/create/project-timeline", { state: { currentProject } });
-      }, 1000);
-      setOpenExistingTimelineModal(false);
-    } catch (error) {
-      console.error("Error updating project timeline:", error);
-      message.error("Failed to link project timeline. Please try again.");
+    } catch (error: any) {
+      setTimeout(() => message.warning(error.message || "An error occurred"), 0);
     }
   };
+  
 
   const handleCancelUpdateProjectTimeline = () => {
     setIsCancelEditModalVisiblVisible(false)
@@ -1482,7 +1450,7 @@ const TimeBuilder = () => {
           allProjectsTimelines.length > 0 ? (
             <Button
               key="save"
-              onClick={handleSaveProjectTimeline}
+              onClick={handleLinkProjectTimeline}
               className="bg-secondary"
             >
               Save

@@ -407,10 +407,15 @@ export const RegisterNewProject: React.FC = () => {
                       style={{ marginLeft: "4px" }}
                       onChange={(value) => {
                         handleChange("typeOfMine", value);
-                        const UpdatedLibraries = allLibrariesName.filter((name: any) => name.mineType == value);
-                        setAllLibrariesName(UpdatedLibraries);
-                        setSelectedLibrary(value);
-                        if (allLibrariesName.length == 1) setSelectedLibrary(allLibrariesName[0]);
+                        const updatedLibraries = allLibrariesName.filter((name: any) => name.mineType === value);
+                        setAllLibrariesName(updatedLibraries);
+                        if (updatedLibraries.length > 0) {
+                          setSelectedLibrary(updatedLibraries[0].name);
+                          setSelectedItems(updatedLibraries[0].items);
+                          
+                        } else {
+                          setSelectedLibrary(null);
+                        }
                       }}
                     >
                       {mineTypeOptions.map((option: any) => (
@@ -433,7 +438,7 @@ export const RegisterNewProject: React.FC = () => {
                   validateStatus={errors.grade ? "error" : ""}
                   help={errors.grade ? "Grade is required" : ""}
                 >
-                  <Select value={formData.grade || ""} onChange={(value) => handleChange("grade", value)}>
+                  <Select allowClear={false} value={formData.grade || ""} onChange={(value) => handleChange("grade", value)}>
                     {["Grade A", "Grade B"].map((option) => (
                       <Select.Option key={option} value={option}>
                         {option}
@@ -566,13 +571,13 @@ export const RegisterNewProject: React.FC = () => {
                   >
                     <Select
                       value={selectedLibrary}
-                      onChange={handleLibraryChange}
+                      onChange={(value) => setSelectedLibrary(value)}
                       allowClear={true}
                     >
                       {allLibrariesName.map((lib: any) => (
-                        <Option key={lib.name} value={lib.name}>
+                        <Select.Option key={lib.name} value={lib.name}>
                           {lib.name}
-                        </Option>
+                        </Select.Option>
                       ))}
                     </Select>
                   </Form.Item>

@@ -9,7 +9,7 @@
     text-decoration: none;
     color: white;
     font-weight: 500 !important;
-    font-size: 16px !important;
+    font-size: 13px !important;
     transition: all 0.3s ease-in-out;
     background-color: transparent !important;
 }
@@ -30,7 +30,7 @@
     text-decoration: none;
     color: white;
     font-weight: 600 !important;
-    font-size: 16px !important;
+    font-size: 13px !important;
     transition: all 0.3s ease-in-out;
     background-color: transparent !important;
 }
@@ -71,7 +71,7 @@
     }
 
     .nav-menu {
-        font-size: 16px !important;
+        font-size: 13px !important;
     }
 }
 
@@ -96,7 +96,7 @@
     }
 
     .nav-menu {
-        font-size: 16px !important;
+        font-size: 13px !important;
     }
 }
 
@@ -121,7 +121,7 @@
     border-radius: 5px;
     padding-top: 0px !important;
     padding-bottom: 0px !important;
-    font-size: 16px !important;
+    font-size: 13px !important;
     cursor: pointer;
     position: relative;
     transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
