@@ -7,7 +7,7 @@ import ImageContainer from "../components/ImageContainer";
 const { Option } = Select;
 import MapComponent from "../components/MapComponent";
 import { useLocation } from "react-router-dom";
-import { saveDocument, updateDocument, getAllLibraries, getAllMineTypes, addNewMineType, getCurrentUser } from "../Utils/moduleStorage";
+import { saveDocument, updateDocument, getCurrentUser } from "../Utils/moduleStorage";
 import { db } from "../Utils/dataStorege.ts";
 interface DocumentData {
   id: number;
@@ -23,7 +23,6 @@ const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [addCompanyPopupOpen, setAddCompanyPopupOpen] = useState<boolean>(false);
   const [allLibrariesName, setAllLibrariesName] = useState<any>([]);
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -57,19 +56,11 @@ export const RegisterNewProject: React.FC = () => {
     3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
     4: Object.values(allLibrariesName).map((moduleName: any) => moduleName)
   };
-  const [companyList, setCompanyList] = useState([
-    { id: 1, name: "Company A" },
-    { id: 2, name: "Company B" }
-  ]);
 
   useEffect(() => {
     setFormData({});
     clearFormData();
-    const keys: any = getAllLibraries();
-    setAllLibrariesName(keys)
-  }, []);
-
-  useEffect(() => {
+    fetchAllLibrary();
     fetchCompanyName();
     fetchMineTypes();
   }, []);
@@ -82,6 +73,15 @@ export const RegisterNewProject: React.FC = () => {
       console.error("Error fetching mine types:", error);
     }
   };
+
+  const fetchAllLibrary = async () => {
+    try {
+      const storedLibraries: any = await db.getAllLibraries();
+      setAllLibrariesName(storedLibraries);
+    } catch (error) {
+      console.error("Error fetching libraries:", error);
+    }
+  }
 
   const fetchCompanyName = () => {
     const userData = getCurrentUser();
@@ -146,6 +146,7 @@ export const RegisterNewProject: React.FC = () => {
     setIsModalVisible(false);
     clearFormData();
     fetchCompanyName();
+    fetchAllLibrary();
   };
 
   const validateFields = (step: number): boolean => {
@@ -274,18 +275,6 @@ export const RegisterNewProject: React.FC = () => {
       .join("");
   };
 
-  const handleAddNewMineTypes = () => {
-    if (newMineType) {
-      const updatedOptions = [...mineTypeOptions, shorthandCode];
-      addNewMineType(updatedOptions)
-      setOptions(updatedOptions);
-      setNewMineType("");
-      setShorthandCode("");
-      setMineTypePopupOpen(false);
-      setMineTypeOptions(getAllMineTypes());
-    }
-  };
-
   const handleAddNewMineType = async () => {
     if (newMineType && shorthandCode) {
       try {
@@ -324,21 +313,17 @@ export const RegisterNewProject: React.FC = () => {
                   help={errors.companyName ? "Company Name is required" : ""}
                 >
                   <div style={{ display: "flex", gap: "10px" }}>
-                    <Select disabled
-                      value={formData.companyName || "jj"}
-                      onChange={(value) => handleChange("companyName", value)}
-                    >
-                      {companyList.map((company) => (
-                        <Select.Option key={company.id} value={company.name}>
-                          {company.name}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                    <Button
+                    <Input
+                      type="text"
+                      disabled
+                      key={formData.companyName} value={formData.companyName || ""}
+                      onChange={(e) => handleChange("projectName", e.target.value)}
+                    />
+                    {/* <Button
                       type="dashed"
                       icon={<PlusOutlined />}
                       onClick={() => setAddCompanyPopupOpen(true)}
-                    />
+                    /> */}
                   </div>
                 </Form.Item>
               </Col>
@@ -422,9 +407,10 @@ export const RegisterNewProject: React.FC = () => {
                       style={{ marginLeft: "4px" }}
                       onChange={(value) => {
                         handleChange("typeOfMine", value);
-                        const filteredLib = allLibrariesName.filter((group: any) => group.mineType === value);
-                        setAllLibrariesName(filteredLib);
-                        handleLibraryChange(filteredLib[0]?.name);
+                        const UpdatedLibraries = allLibrariesName.filter((name: any) => name.mineType == value);
+                        setAllLibrariesName(UpdatedLibraries);
+                        setSelectedLibrary(value);
+                        if (allLibrariesName.length == 1) setSelectedLibrary(allLibrariesName[0]);
                       }}
                     >
                       {mineTypeOptions.map((option: any) => (

@@ -1,15 +1,15 @@
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { Switch, IconButton, Toolbar, Tooltip, } from "@mui/material";
-import { getAllUsers, saveUsers, updateUser, getCurrentUser } from "../Utils/moduleStorage";
+import { getCurrentUser } from "../Utils/moduleStorage";
 import { useNavigate } from "react-router-dom";
-import { getModules } from "../Utils/moduleStorage";
 import "../styles/user-management.css";
 import { Notifications, DeleteOutlined } from "@mui/icons-material";
 import { Button, Col, Form, Input, List, message, Modal, Row, Select, Table, Typography } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
+import { db } from "../Utils/dataStorege.ts";
+
 const { Option } = Select;
 const { Text } = Typography;
-import { ExclamationCircleOutlined } from "@ant-design/icons";
-
 interface Module {
   parentModuleCode: string;
 }
@@ -74,12 +74,9 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [currentUser, setCurrentUser] = useState<any>({});
 
   useEffect(() => {
-    const fetchData = () => {
-      const allUsers = getAllUsers();
+    const fetchData = async () => {
+      const allUsers = await db.getUsers();
       setUsers(allUsers);
-      setCurrentUser(getCurrentUser());
-      console.log("Called", currentUser);
-
       const uniqueModules: any = [];
       allUsers.forEach((user: User) => {
         user.assignedModules?.forEach((module) => {
@@ -91,7 +88,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           }
         });
       });
-
       setModules(uniqueModules);
     };
 
@@ -101,9 +97,20 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   }, [openRACIModal]);
 
   useEffect(() => {
-    const storedUsers = localStorage.getItem("users");
+    setCurrentUser(getCurrentUser());
+    saveModulesData();
+    getAllUsersData();
+  }, []);
+
+  const saveModulesData = async () => {
+    const savedModules: Module[] = await db.getModules();
+    setModules(savedModules);
+  }
+
+  const getAllUsersData = async () => {
+    const storedUsers: any = await db.getUsers();
     if (storedUsers) {
-      const parsedUsers: User[] = JSON.parse(storedUsers).map((user: any) => ({
+      const parsedUsers: User[] = storedUsers.map((user: any) => ({
         id: user.id,
         name: user.name || "N/A",
         company: user.company || "N/A",
@@ -117,17 +124,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       }));
       setUsers(parsedUsers);
     }
-  }, []);
-
-  useEffect(() => {
-    const savedModules: Module[] = getModules();
-    setModules(savedModules);
-  }, []);
-
-  useEffect(() => {
-    const savedModules = getModules();
-    setModules(savedModules || []);
-  }, []);
+  }
 
   const handleRowClick = (user: User) => {
     setSelectedUser(user);
@@ -202,18 +199,15 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     serialNumber: index + 1,
   }));
 
-  const handleRoleChange = (userId: string, newRole: string) => {
-    setUsers((prevUsers: any) => {
-      return prevUsers.map((user: any) => {
-        if (user.id === userId) {
-          const updatedUser = { ...user, role: newRole };
-          updateUser(userId, updatedUser);
-          message.success("Role updated successfully.");
-          return updatedUser;
-        }
-        return user;
-      });
-    });
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      const selectedUser=await db.getUserById(userId);
+      const updatedUser = {...selectedUser, role: newRole };
+      await db.updateUsers(userId, updatedUser);
+      message.success("Role updated successfully.");
+    } catch (error) {
+      message.error("Failed to update role.");
+    }
   };
 
   const columns: any = [
@@ -251,9 +245,11 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           value={role}
           onChange={(value: any) => handleRoleChange(record.id, value)}
           style={{ width: 120 }}
+          disabled={currentUser?.id === record.id}
         >
-          <Option value="Editor">Editor</Option>
-          <Option value="Viewer">Viewer</Option>
+          <Option value="admin">Admin</Option>
+          <Option value="manager">Manager</Option>
+          <Option value="employee">Employee</Option>
         </Select>
       ),
     },
@@ -594,7 +590,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         </div>
       </Modal>
 
-      <Modal
+      {/* <Modal
         visible={isEditModalVisible}
         onCancel={handleClose}
         onOk={saveUsers}
@@ -646,7 +642,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
             </Form.Item>
           </Form>
         </div>
-      </Modal>
+      </Modal> */}
 
       <Modal
         title="Confirm Delete"

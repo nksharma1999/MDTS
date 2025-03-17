@@ -11,9 +11,9 @@ import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
 import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, DownOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
 import moment from 'moment';
-import { getCurrentUserId } from '../Utils/moduleStorage';
 import { useLocation } from "react-router-dom";
-
+import { db } from "../Utils/dataStorege.ts";
+import { getCurrentUserId } from '../Utils/moduleStorage';
 interface Activity {
   code: string;
   activityName: string;
@@ -85,6 +85,7 @@ const TimeBuilder = () => {
   const [editedImpact, setEditedImpact] = useState<any>({});
   const [restoreDropdownVisible, setRestoreDropdownVisible] = useState(false);
   const [deletedModules, setDeletedModules] = useState<any>([]);
+
   useEffect(() => {
     defaultSetup();
   }, []);
@@ -163,8 +164,6 @@ const TimeBuilder = () => {
 
   useEffect(() => {
     if (location.state && location.state.selectedProject) {
-      console.log(location.state.selectedProject);
-
       const project = location.state.selectedProject;
       setIsUpdateMode(true);
       setSelectedProjectName(project.projectParameters.projectName);
@@ -195,25 +194,23 @@ const TimeBuilder = () => {
     }
   }, [location.state]);
 
-  const defaultSetup = () => {
+  const defaultSetup = async () => {
     try {
-      const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = loggedInUser.id;
-      const userProjectsKey = `projects_${userId}`;
-      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]").filter((item: any) => item.projectTimeline == undefined);
-      setAllProjectsTimelines(JSON.parse(localStorage.getItem(userProjectsKey) || "[]").filter((item: any) => item.projectTimeline != undefined))
-      if (!Array.isArray(storedData) || storedData.length === 0) {
+      const allProjects = await db.getProjects();
+      const frestTimelineProject = allProjects.filter((item: any) => item.projectTimeline == undefined);
+      setAllProjectsTimelines(allProjects.filter((item: any) => item.projectTimeline != undefined))
+      if (!Array.isArray(frestTimelineProject) || frestTimelineProject.length === 0) {
         setAllProjects([]);
         return;
       }
-      setAllProjects(storedData);
-      if (storedData && Array.isArray(storedData) && storedData.length === 1) {
-        const firstProject = storedData[0];
+      setAllProjects(frestTimelineProject);
+      if (frestTimelineProject && Array.isArray(frestTimelineProject) && frestTimelineProject.length === 1) {
+        const firstProject = frestTimelineProject[0];
         if (firstProject && firstProject.id) {
           setSelectedProjectId(firstProject.id);
-          setSelectedProject(storedData[0]);
+          setSelectedProject(frestTimelineProject[0]);
 
-          const project = storedData.find((p) => p?.id === firstProject.id);
+          const project = frestTimelineProject.find((p) => p?.id === firstProject.id);
           const selectedProjectLibrary = project.initialStatus.library || [];
           setLibraryName(selectedProjectLibrary);
           if (project && project.projectTimeline) {
@@ -612,21 +609,24 @@ const TimeBuilder = () => {
     setIsModalVisible(false);
   };
 
-  const saveProjectTimeline = (sequencedModules: any) => {
-    const activeUserId = getCurrentUserId();
-    if (!activeUserId) return console.error("No active user found.");
-
-    const userProjectsKey = `projects_${activeUserId}`;
-    const storedProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
-    const projectId = selectedProjectId;
-    const projectIndex = storedProjects.findIndex((p: any) => p.id === projectId);
-
-    if (projectIndex === -1) return console.error("Project not found.");
-    storedProjects[projectIndex].projectTimeline = sequencedModules;
-    storedProjects[projectIndex].holidays = finalHolidays;
-    localStorage.setItem(userProjectsKey, JSON.stringify(storedProjects));
-    message.success(isUpdateMode ? "Project timeline updated successfully!." : "Project timeline saved successfully!.");
+  const saveProjectTimeline = async (sequencedModules: any) => {
+    try {
+      if (!selectedProject || !selectedProjectId) {
+        throw new Error("Project or Project ID is missing.");
+      }
+      const updatedProjectWithTimeline = {
+        ...selectedProject,
+        projectTimeline: sequencedModules
+      };
+      await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
+      message.success(isUpdateMode
+        ? "Project timeline updated successfully!"
+        : "Project timeline saved successfully!"
+      );
+    } catch (error) {
+      console.error("Error saving project timeline:", error);
+      message.error("Failed to save project timeline. Please try again.");
+    }
   };
 
   const holidayColumns: any = [
@@ -745,26 +745,22 @@ const TimeBuilder = () => {
     },
   ];
 
-  const handleSaveHoliday = (key: any) => {
+  const handleSaveHoliday = async (key: any) => {
     const updatedHolidays: any = finalHolidays?.map((item) =>
       item.key === key ? { ...item, impact: { ...editedImpact } } : item
     );
-
-    const userId = getCurrentUserId();
-    const userProjectsKey = `projects_${userId}`;
-    const projects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-    const projectIndex = projects.findIndex((proj: any) => proj.id === selectedProjectId);
-
-    if (projectIndex !== -1) {
-      projects[projectIndex].holidays = updatedHolidays;
-      localStorage.setItem(userProjectsKey, JSON.stringify(projects));
-    }
-
+    const updatedProjectWithHoliday = {
+      ...selectedProject,
+      holidays: updatedHolidays
+    };
+    await db.updateProject(selectedProjectId, updatedProjectWithHoliday);
+    message.success(isUpdateMode
+      ? "Project timeline updated successfully!"
+      : "Project timeline saved successfully!"
+    );
     setFinalHolidays([...updatedHolidays]);
     setHolidayData([...updatedHolidays]);
     setEditingKey(null);
-    console.log(updatedHolidays);
-
   };
 
   const handleImpactChange = (module: any, value: any) => {
@@ -1051,38 +1047,32 @@ const TimeBuilder = () => {
         message.warning("Please select a project first.");
         return;
       }
-  
+
       const userId = getCurrentUserId();
       const userProjectsKey = `projects_${userId}`;
       const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-  
+
       const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
       const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
-  
-      console.log("Selected Project:", selectedProject);
-      console.log("Current Project:", currentProject);
-  
       if (!selectedProject || !currentProject) {
         message.error("Invalid project selection.");
         return;
       }
-  
+
       const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
       const selectedLibrary = selectedProject?.initialStatus?.library;
       const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
       const currentLibrary = currentProject?.initialStatus?.library;
-  
+
       if (selectedMineType !== currentMineType || selectedLibrary !== currentLibrary) {
         message.warning("Selected project must have the same Mine Type and Library.");
         return;
       }
-  
+
       if (!selectedProject.projectTimeline || selectedProject.projectTimeline.length === 0) {
         message.warning("Selected project does not have a timeline.");
         return;
       }
-  
-      // Deep copy to avoid direct mutations
       const updatedProjectTimeline = selectedProject.projectTimeline.map((module: any) => ({
         ...module,
         activities: module.activities.map((activity: any) => ({
@@ -1091,19 +1081,14 @@ const TimeBuilder = () => {
           end: null,
         })),
       }));
-  
+
       currentProject.projectTimeline = updatedProjectTimeline;
-  
-      // Ensure storedAllProjects reflects the update
       const projectIndex = storedAllProjects.findIndex((p: any) => p.id === selectedProjectId);
       if (projectIndex !== -1) {
         storedAllProjects[projectIndex] = { ...currentProject };
       }
-  
-      console.log("Updated storedAllProjects:", storedAllProjects);
-  
       localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
-  
+
       message.success("Project timeline linked successfully!");
       setTimeout(() => {
         navigate("/create/project-timeline", { state: { currentProject } });
@@ -1114,127 +1099,6 @@ const TimeBuilder = () => {
       message.error("Failed to link project timeline. Please try again.");
     }
   };
-
-  // const handleSaveProjectTimeline = () => {
-  //   try {
-  //     if (!selectedExistingProjectId) {
-  //       message.warning("Please select a project first.");
-  //       return;
-  //     }
-
-  //     const userId = getCurrentUserId();
-  //     const userProjectsKey = `projects_${userId}`;
-  //     const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
-  //     const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
-  //     const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
-
-  //     if (!selectedProject || !currentProject) {
-  //       message.error("Invalid project selection.");
-  //       return;
-  //     }
-
-  //     const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
-  //     const selectedLibrary = selectedProject?.initialStatus?.library;
-  //     const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
-  //     const currentLibrary = currentProject?.initialStatus?.library;
-
-  //     if (selectedMineType !== currentMineType || selectedLibrary !== currentLibrary) {
-  //       message.warning("Selected project must have the same Mine Type and Library.");
-  //       return;
-  //     }
-
-  //     if (selectedProject.projectTimeline) {
-  //       const updatedProjectTimeline = selectedProject.projectTimeline.map((module:any) => ({
-  //         ...module,
-  //         activities: module.activities.map((activity:any) => ({
-  //           ...activity,
-  //           start: null,
-  //           end: null,
-  //         })),
-  //       }));
-  //       currentProject.projectTimeline = updatedProjectTimeline;
-  //       localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
-
-  //       message.success("Project timeline linked successfully!");
-  //       setTimeout(() => {
-  //         navigate("/create/project-timeline", { state: { currentProject } });
-  //       }, 1000);
-  //       setOpenExistingTimelineModal(false);
-  //     } else {
-  //       message.warning("Selected project does not have a timeline.");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating project timeline:", error);
-  //     message.error("Failed to link project timeline. Please try again.");
-  //   }
-  // };
-
-  // const handleSaveProjectTimeline = () => {
-  //   try {
-  //     if (!selectedExistingProjectId) {
-  //       message.warning("Please select a project first.");
-  //       return;
-  //     }
-
-  //     const userId = getCurrentUserId();
-  //     const userProjectsKey = `projects_${userId}`;
-  //     const storedAllProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
-  //     const selectedProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
-  //     const currentProject = storedAllProjects.find((p: any) => p.id === selectedProjectId);
-
-  //     if (!selectedProject || !currentProject) {
-  //       message.error("Invalid project selection.");
-  //       return;
-  //     }
-
-  //     const selectedMineType = selectedProject?.initialStatus?.items?.[0]?.mineType;
-  //     const selectedLibrary = selectedProject?.initialStatus?.library;
-  //     const currentMineType = currentProject?.initialStatus?.items?.[0]?.mineType;
-  //     const currentLibrary = currentProject?.initialStatus?.library;
-
-  //     let mismatchMessages: string[] = [];
-
-  //     if (selectedMineType !== currentMineType) {
-  //       mismatchMessages.push(`Mine Type mismatch (Selected: ${selectedMineType}, Current: ${currentMineType})`);
-  //     }
-
-  //     if (selectedLibrary !== currentLibrary) {
-  //       mismatchMessages.push(`Library mismatch (Selected: ${selectedLibrary}, Current: ${currentLibrary})`);
-  //     }
-
-  //     if (mismatchMessages.length > 0) {
-  //       message.warning(`Selected project must have the same Mine Type and Library:\n${mismatchMessages.join("\n")}`);
-  //       return;
-  //     }
-
-  //     if (selectedProject.projectTimeline) {
-  //       const updatedProjectTimeline = selectedProject.projectTimeline.map((module: any) => ({
-  //         ...module,
-  //         activities: module.activities.map((activity: any) => ({
-  //           ...activity,
-  //           start: null,
-  //           end: null,
-  //         })),
-  //       }));
-
-  //       currentProject.projectTimeline = updatedProjectTimeline;
-  //       localStorage.setItem(userProjectsKey, JSON.stringify(storedAllProjects));
-
-  //       message.success("Project timeline linked successfully!");
-  //       setTimeout(() => {
-  //         navigate("/create/project-timeline", { state: { currentProject } });
-  //       }, 1000);
-  //       setOpenExistingTimelineModal(false);
-  //     } else {
-  //       message.warning("Selected project does not have a timeline.");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error updating project timeline:", error);
-  //     message.error("Failed to link project timeline. Please try again.");
-  //   }
-  // };
 
   const handleCancelUpdateProjectTimeline = () => {
     setIsCancelEditModalVisiblVisible(false)

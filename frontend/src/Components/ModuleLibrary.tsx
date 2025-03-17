@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, IconButton } from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, IconButton, TablePagination } from "@mui/material";
 import { FilterList } from "@mui/icons-material";
 import { Select, Input, Button, Typography, message, Modal } from "antd";
 import { SearchOutlined, DeleteOutlined, RobotOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import "../styles/module-library.css";
 import { Link } from "react-router-dom";
-import { getCurrentUserId, getCurrentUser } from '../Utils/moduleStorage';
+import { getCurrentUser } from '../Utils/moduleStorage';
 const { Option } = Select;
 import { db } from "../Utils/dataStorege.ts";
 
@@ -39,7 +39,7 @@ interface Library {
 const ModuleLibrary = () => {
   const [_searchTerm, setSearchTerm] = useState<string>("");
   const navigate = useNavigate();
-  const [_page, setPage] = useState<number>(0);
+  const [page, setPage] = useState<number>(0);
   const rowsPerPage = 10;
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [newLibraryName, setNewLibraryName] = useState<string>("");
@@ -53,7 +53,7 @@ const ModuleLibrary = () => {
   const [projects, setProjects] = useState<string[]>([]);
   const [allProjects, setAllProjects] = useState<string[]>([]);
   const [_selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
-  const [mineTypes, _setMineTypes] = useState<any>([]);
+  const [mineTypes, setMineTypes] = useState<any>([]);
   const [moduleTypes, _setModuleTypes] = useState<any>(["MDTS Module", "Organizational Module", "Personal Module"]);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isDeleteModuleModalVisible, setIsDeleteModuleModalVisible] = useState(false);
@@ -61,15 +61,19 @@ const ModuleLibrary = () => {
   const [selectedModuleId, setSelectedModuleId] = useState<any>();
 
   useEffect(() => {
-    setCurrentUser(getCurrentUser());
-    const userProjectsKey = `projects_${getCurrentUserId()}`;
-    try {
-      const storedProjects = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-      setProjects(storedProjects?.map((p: any) => p.projectParameters.projectName) || []);
-      setAllProjects(Array.isArray(storedProjects) ? storedProjects : []);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-    }
+    fetchAllProjects();
+  }, []);
+
+  useEffect(() => {
+    const fetchMineTypes = async () => {
+      try {
+        const storedOptions: any = await db.getAllMineTypes();
+        setMineTypes(storedOptions);
+      } catch (error) {
+        console.error("Error fetching mine types:", error);
+      }
+    };
+    fetchMineTypes();
   }, []);
 
   useEffect(() => {
@@ -87,90 +91,32 @@ const ModuleLibrary = () => {
     db.getModules().then(setModulesData);
   }, []);
 
+  const fetchAllProjects = async () => {
+    setCurrentUser(getCurrentUser());
+    try {
+      const storedProjects = await db.getProjects();
+      setProjects(storedProjects?.map((p: any) => p.projectParameters.projectName) || []);
+      setAllProjects(storedProjects);
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  }
+
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
     setSearchTerm(value);
     setPage(0);
   };
 
-  // const handleChangePage = (_: any, newPage: number) => {
-  //   setPage(newPage);
-  // };
+  const handleChangePage = (_: any, newPage: number) => {
+    setPage(newPage);
+  };
 
   const handleProjectChange = (value: string) => {
     setSelectedProject(value);
     const selected: any = allProjects.find((project: any) => project.projectParameters.projectName === value);
     setNewLibraryMineType(selected?.projectParameters.typeOfMine || null);
     setNewLibraryName(value);
-  };
-
-  const handleCreateLibrary = () => {
-    if (!newLibraryName.trim() || !newLibraryMineType.trim()) return message.error("Library name and Mine Type are mandatory.");
-    if (!currentUser) return message.error("User not found.");
-    if (selectedLibrary) handleSaveLibrary();
-
-    const newLibrary: Library = {
-      id: Date.now().toString(),
-      name: newLibraryName,
-      mineType: newLibraryMineType,
-      items: [],
-      userId: currentUser.id,
-    };
-
-    setLibraries((prev) => [...prev, newLibrary]);
-    setSelectedLibrary(newLibrary);
-    setNewLibraryName("");
-    setNewLibraryMineType("");
-    message.success("New library created! You can now drag and drop modules.");
-  };
-
-  const updateLibraryData = async (updatedLibrary: Library) => {
-    try {
-      await db.updateLibrary(updatedLibrary.id, updatedLibrary);
-    } catch (error) {
-      console.error("Error updating library:", error);
-    }
-  };
-
-  const handleDeleteLibrary = async () => {
-    try {
-      await db.deleteLibrary(selectedLibrryId);
-      setLibraries((prev) => prev.filter((lib) => lib.id !== selectedLibrryId));
-      setIsDeleteModalVisible(false);
-      if (selectedLibrary?.id === selectedLibrryId) setSelectedLibrary(null);
-    } catch (error) {
-      console.error("Error deleting library:", error);
-    }
-  };
-
-  const handleSaveLibrary = async () => {
-    if (!selectedLibrary) return;
-
-    try {
-      try {
-        await updateLibraryData(selectedLibrary);
-      } catch {
-        throw new Error("Failed to update library data.");
-      }
-
-      try {
-        await db.addLibrary(selectedLibrary);
-      } catch {
-        throw new Error("Failed to save library to database.");
-      }
-
-      try {
-        setLibraries(await db.getAllLibraries());
-      } catch {
-        throw new Error("Failed to refresh library list.");
-      }
-
-      message.success("Library saved successfully!");
-    } catch (error: any) {
-      message.error(error.message || "Error saving library.");
-    }
-
-    setSelectedLibrary(null);
   };
 
   const handleChange = (value: string) => {
@@ -230,8 +176,72 @@ const ModuleLibrary = () => {
 
   const handleModuleDelete = async () => {
     if (!selectedModuleId) return;
-    await db.deleteModule(selectedModuleId);
+    try {
+      await db.deleteModule(selectedModuleId);
+      db.getModules().then(setModulesData);
+    } catch (error) {
+      message.error("Error deleting module.");
+    }
     setIsDeleteModuleModalVisible(false);
+  };
+
+  const handleCreateLibrary = () => {
+    if (!newLibraryName.trim() || !newLibraryMineType.trim()) return message.error("Library name and Mine Type are mandatory.");
+    if (!currentUser) return message.error("User not found.");
+    if (selectedLibrary) handleSaveLibrary();
+
+    const newLibrary: Library = {
+      id: Date.now().toString(),
+      name: newLibraryName,
+      mineType: newLibraryMineType,
+      items: [],
+      userId: currentUser.id,
+    };
+
+    setLibraries((prev) => [...prev, newLibrary]);
+    setSelectedLibrary(newLibrary);
+    setNewLibraryName("");
+    setNewLibraryMineType("");
+  };
+
+  const updateLibraryData = async (updatedLibrary: Library) => {
+    try {
+      await db.updateLibrary(updatedLibrary.id, updatedLibrary);
+    } catch (error) {
+      console.error("Error updating library:", error);
+    }
+  };
+
+  const handleDeleteLibrary = async () => {
+    try {
+      await db.deleteLibrary(selectedLibrryId);
+      setLibraries((prev) => prev.filter((lib) => lib.id !== selectedLibrryId));
+      setIsDeleteModalVisible(false);
+      if (selectedLibrary?.id === selectedLibrryId) setSelectedLibrary(null);
+    } catch (error) {
+      console.error("Error deleting library:", error);
+    }
+  };
+
+  const handleSaveLibrary = async () => {
+    if (!selectedLibrary) return;
+    try {
+      const existingLibrary = await db.getLibraryById(selectedLibrary.id);
+
+      if (existingLibrary) {
+        await updateLibraryData(selectedLibrary);
+        message.success("Library updated successfully!");
+      } else {
+        await db.addLibrary(selectedLibrary);
+        message.success("Library created successfully!");
+      }
+      const updatedLibraries = await db.getAllLibraries();
+      setLibraries(updatedLibraries);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "Error saving library.");
+    } finally {
+      setSelectedLibrary(null);
+    }
   };
 
   return (
@@ -253,6 +263,7 @@ const ModuleLibrary = () => {
       </div>
 
       <Box className="main-section">
+
         <div className="module-list-page">
           <Box sx={{ flex: 3 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
@@ -285,8 +296,8 @@ const ModuleLibrary = () => {
                 disabled={libraryType === "project"}
               >
                 {mineTypes?.map((type: any) => (
-                  <Option key={type} value={type}>
-                    {type}
+                  <Option key={type.type} value={type.type}>
+                    {type.type}
                   </Option>
                 ))}
               </Select>
@@ -344,15 +355,15 @@ const ModuleLibrary = () => {
               </Table>
             </TableContainer>
 
-            {/* <TablePagination
+            <TablePagination
               component="div"
-              count={filteredData.length}
+              count={modulesData.length}
               page={page}
               rowsPerPage={rowsPerPage}
               onPageChange={handleChangePage}
               rowsPerPageOptions={[]}
               sx={{ mt: 2 }}
-            /> */}
+            />
           </Box>
         </div>
 
@@ -403,7 +414,12 @@ const ModuleLibrary = () => {
             {selectedLibrary && (
               <>
                 <hr />
-                <Button style={{ float: "right", height: "26px", marginTop: "5px", marginRight: "10px" }} type="primary" className="bg-secondary" onClick={handleSaveLibrary}>
+                <Button
+                  style={{ float: "right", height: "26px", marginTop: "5px", marginRight: "10px" }}
+                  type="primary"
+                  className="bg-secondary"
+                  onClick={handleSaveLibrary}
+                >
                   Save
                 </Button>
               </>
@@ -413,20 +429,6 @@ const ModuleLibrary = () => {
 
         <div className="library-details">
           <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
-            {/* <Select
-              size="small"
-              value={libraryType}
-              onChange={(value) => {
-                setLibraryType(value);
-                setNewLibraryName("");
-                setNewLibraryMineType("");
-              }}
-              disabled
-              style={{ width: "100%", height: "26px", fontSize: "12px" }}
-            >
-              <Option value="project">Project Based Library</Option>
-              <Option value="custom">Custom Library</Option>
-            </Select> */}
             <Input
               size="small"
               placeholder="Search..."
@@ -474,8 +476,8 @@ const ModuleLibrary = () => {
                 disabled={libraryType === "project"}
               >
                 {mineTypes.map((type: any) => (
-                  <Option key={type} value={type}>
-                    {type}
+                  <Option key={type.type} value={type.type}>
+                    {type.type}
                   </Option>
                 ))}
               </Select>
@@ -495,11 +497,10 @@ const ModuleLibrary = () => {
                     padding: "5px 10px",
                     borderRadius: "5px",
                     marginBottom: "5px",
-                    cursor: "pointer",
                     background: selectedLibrary && selectedLibrary.id === library.id ? "#d0ebff" : "#eee",
                   }}
                 >
-                  <Typography.Text onClick={() => setSelectedLibrary(library)}>
+                  <Typography.Text style={{cursor:"pointer"}} onClick={() => setSelectedLibrary(library)}>
                     {library.name} ({library.mineType})
                   </Typography.Text>
                   <DeleteOutlined
@@ -511,6 +512,7 @@ const ModuleLibrary = () => {
             </div>
           </div>
         </div>
+
       </Box>
 
       <Modal

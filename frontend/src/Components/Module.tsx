@@ -7,10 +7,10 @@ import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 const { Option } = Select;
-import { addModule } from '../Utils/moduleStorage';
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
 import { db } from "../Utils/dataStorege.ts";
+import { getCurrentUserId } from '../Utils/moduleStorage';
 
 const Module = () => {
     const { state } = useLocation();
@@ -86,6 +86,7 @@ const Module = () => {
 
     const handleSaveModuleAndActivity = async () => {
         try {
+            const userId=getCurrentUserId();
             if (!moduleData || Object.keys(moduleData).length === 0 || !moduleData.parentModuleCode) {
                 notification.error({
                     message: "Module data is empty or missing required fields.",
@@ -95,8 +96,6 @@ const Module = () => {
             }
             
             if (isEditing) {
-                console.log("Updating Module - moduleData:", moduleData);
-
                 if (!moduleData.id || typeof moduleData.id !== "number") {
                     notification.error({
                         message: "Invalid module ID. Unable to update module.",
@@ -110,7 +109,7 @@ const Module = () => {
                 if (existingModule) {
                     const updatedCount = await db.modules.update(moduleData.id, {
                         ...existingModule,
-                        ...moduleData
+                        ...moduleData,
                     });
 
                     if (updatedCount) {
@@ -132,18 +131,14 @@ const Module = () => {
                     });
                 }
             } else {
-                await db.addModule(moduleData);
-                addModule(moduleData);
-
+                await db.addModule({ ...moduleData, userId });
                 notification.success({
                     message: "Module saved successfully!",
                     duration: 3,
                 });
-
             }
             navigate('/create/module-library');
         } catch (error) {
-            console.error("Error while saving/updating module:", error);
             notification.error({
                 message: "Failed to save/update module.",
                 description: "Check the console for details.",
@@ -354,7 +349,6 @@ const Module = () => {
                 });
             }
 
-            // Sort activities by code to ensure they are in correct order
             updatedActivities.sort((a, b) => {
                 let aParts = a.code.split("/").map(Number);
                 let bParts = b.code.split("/").map(Number);
