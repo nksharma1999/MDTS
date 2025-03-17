@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "../layouts/NavbarItems";
+import Navbar from "../Layout/Navbar";
 import "../styles/landing-page.css";
 // import { Box } from "@mui/material";
 

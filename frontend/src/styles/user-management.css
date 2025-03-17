@@ -1,6 +1,5 @@
 .page-container {
-    width: 99%;
-    margin: 8px;
+    margin: 10px 0px;
     border: 1px solid gray;
     border-radius: 4px;
     background-color: transparent;
@@ -246,4 +245,13 @@
 .raci-save-button {
     background-color: #258790;
     color: white;
+}
+
+.selected-row-active {
+    background-color: #7c9fc2 !important;
+    font-weight: bold;
+}
+
+.selected-row {
+    cursor: pointer;
 }

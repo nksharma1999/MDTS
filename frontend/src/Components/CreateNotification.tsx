@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Switch, Button, Select, Input, Table } from "antd";
+import { ColumnsType } from "antd/es/table";
 import { ArrowRightOutlined } from "@ant-design/icons";
-
+import "../styles/notification.css";
 const { Option } = Select;
 
 type FormRow = {
@@ -21,15 +22,11 @@ type DelayedDropdownProps = {
 const DelayedDropdown: React.FC<DelayedDropdownProps> = ({ selectedDays, onChange }) => {
   const delayOptions = ["1 day", "7 days", "14 days", "30 days"];
 
-  const handleChange = (value: string[]) => {
-    onChange(value);
-  };
-
   return (
     <Select
       mode="multiple"
       value={selectedDays}
-      onChange={handleChange}
+      onChange={onChange}
       style={{ width: "130px", margin: "10px" }}
     >
       {delayOptions.map((option) => (
@@ -41,8 +38,14 @@ const DelayedDropdown: React.FC<DelayedDropdownProps> = ({ selectedDays, onChang
   );
 };
 
-const CreateNotification: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+type CreateNotificationProps = {
+  open?: boolean | undefined;
+  onClose?: () => void;
+};
+
+const CreateNotification: React.FC<CreateNotificationProps> = ({ onClose }) => {
   const navigate = useNavigate();
+
   const [form, setForm] = useState<FormRow[]>([
     { status: "Started", defaultMessage: "", personalizedMessage: "", notificationEnabled: false },
     { status: "Completed", defaultMessage: "", personalizedMessage: "", notificationEnabled: false },
@@ -50,13 +53,15 @@ const CreateNotification: React.FC<{ open: boolean; onClose: () => void }> = ({ 
   ]);
 
   const handlePersonalizedMessageChange = (index: number, value: string, dayIndex?: number) => {
-    const updatedForm = [...form];
-    if (dayIndex !== undefined && Array.isArray(updatedForm[index].personalizedMessage)) {
-      updatedForm[index].personalizedMessage[dayIndex] = value;
-    } else {
-      updatedForm[index].personalizedMessage = value;
-    }
-    setForm(updatedForm);
+    setForm((prevForm) => {
+      const updatedForm = [...prevForm];
+      if (dayIndex !== undefined && Array.isArray(updatedForm[index].personalizedMessage)) {
+        updatedForm[index].personalizedMessage[dayIndex] = value;
+      } else {
+        updatedForm[index].personalizedMessage = value;
+      }
+      return updatedForm;
+    });
   };
 
   const handleToggle = (index: number) => {
@@ -68,24 +73,26 @@ const CreateNotification: React.FC<{ open: boolean; onClose: () => void }> = ({ 
   };
 
   const handleDaysChange = (index: number, days: string[]) => {
-    const updatedForm = [...form];
-    updatedForm[index].selectedDays = days;
-    setForm(updatedForm);
+    setForm((prevForm) => {
+      const updatedForm = [...prevForm];
+      updatedForm[index].selectedDays = days;
+      return updatedForm;
+    });
   };
 
   const handleSave = () => {
     console.log("Form Data Saved:", form);
     alert("Form saved successfully!");
-    onClose();
+    onClose?.();
     navigate("/modules");
   };
 
-  const columns: any = [
+  const columns: ColumnsType<FormRow> = [
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (text: string, record: FormRow, index: number) => (
+      render: (text, record, index) => (
         <div>
           {text}
           {text === "Delayed" && (
@@ -102,18 +109,15 @@ const CreateNotification: React.FC<{ open: boolean; onClose: () => void }> = ({ 
       dataIndex: "notificationEnabled",
       key: "notificationEnabled",
       align: "center",
-      render: (_: boolean, _record: FormRow, index: number) => (
-        <Switch
-          checked={form[index].notificationEnabled}
-          onChange={() => handleToggle(index)}
-        />
+      render: (_value, _record, index) => (
+        <Switch checked={form[index].notificationEnabled} onChange={() => handleToggle(index)} />
       ),
     },
     {
       title: "Personalized Message",
       dataIndex: "personalizedMessage",
       key: "personalizedMessage",
-      render: (_: string | string[], record: FormRow, index: number) => (
+      render: (_value, record, index) => (
         <div>
           {record.status === "Delayed" && Array.isArray(record.personalizedMessage)
             ? record.selectedDays?.map((day, i) => (
@@ -139,24 +143,31 @@ const CreateNotification: React.FC<{ open: boolean; onClose: () => void }> = ({ 
 
   return (
     <>
-      <Table
-        columns={columns}
-        dataSource={form.map((item, index) => ({ ...item, key: index }))}
-        pagination={false}
-        bordered
-      />
-      <div style={{ marginTop: 10, textAlign: "right" }}>
-        <Button className="bg-tertiary" style={{ marginRight: 10 }} onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          type="primary"
-          className={"bg-secondary"}
-          onClick={handleSave}
-          icon={<ArrowRightOutlined />}
-        >
-          Save
-        </Button>
+      <div className="main-notification-page">
+        <div className="notification-heading">
+          <div>Notification</div>
+        </div>
+        <div className="notification-items">
+          <div className="notification-table">
+            <Table
+              columns={columns}
+              dataSource={form.map((item, index) => ({ ...item, key: index }))}
+              pagination={false}
+              bordered
+            />
+          </div>
+          <hr />
+          <div className="notification-action-btns">
+            <div>
+              <Button className="bg-tertiary" style={{ marginRight: 10 }} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="primary" className="bg-secondary" onClick={handleSave} icon={<ArrowRightOutlined />}>
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );

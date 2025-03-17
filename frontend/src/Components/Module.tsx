@@ -3,14 +3,14 @@ import { generateTwoLetterAcronym } from "../Utils/generateTwoLetterAcronym";
 import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
-import { addModule } from '../Utils/moduleStorage';
 import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, FilterOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 const { Option } = Select;
-import { getAllMineTypes, addNewMineType } from '../Utils/moduleStorage';
+import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
-import CreateNotification from "./CreateNotification";
+import { db } from "../Utils/dataStorege.ts";
+import { getCurrentUserId } from '../Utils/moduleStorage';
 
 const Module = () => {
     const { state } = useLocation();
@@ -26,6 +26,7 @@ const Module = () => {
         ? moduleCode
         : generateTwoLetterAcronym(moduleName, existingAcronyms);
     const [openPopup, setOpenPopup] = useState<boolean>(false);
+    const [openCancelUpdateModulePopup, setOpenCancelUpdateModulePopup] = useState<boolean>(false);
     const [newModelName, setNewModelName] = useState<string>("");
     const [selectedOption, setSelectedOption] = useState<string>("");
     const [options, setOptions] = useState<string[]>([]);
@@ -43,11 +44,18 @@ const Module = () => {
         duration: '',
         activities: state?.activities || []
     });
-    const isEditing = !!state;
+    let isEditing = !!state;
+    const [moduleType, setModuleType] = useState("custom");
+    const [selectedMDTSModule, setSelectedMDTSModule] = useState(null);
+    const mdtsModules = ["MDTS-001", "MDTS-002", "MDTS-003"];
+    const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+    const [discardEditByCreating, setDiscardEditByCreating] = useState(false);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
 
     useEffect(() => {
         if (state) {
             setModuleData({
+                id: state.id,
                 parentModuleCode: state.parentModuleCode,
                 moduleName: state.moduleName,
                 level: state.level,
@@ -59,46 +67,84 @@ const Module = () => {
     }, [state]);
 
     useEffect(() => {
-        try {
-            const storedOptions = getAllMineTypes();
-            if (storedOptions.length > 0) {
+        const fetchMineTypes = async () => {
+            try {
+                const storedOptions: any = await db.getAllMineTypes();
                 setOptions(storedOptions);
+            } catch (error) {
+                console.error("Error fetching mine types:", error);
             }
-        } catch (error) {
-            console.error("Error fetching mine types:", error);
-        }
+        };
+        fetchMineTypes();
     }, []);
 
-    const handleSaveModuleAndActivity = () => {
+    useEffect(() => {
+        if (moduleData.activities.length > 0) {
+            //handlePrerequisite();
+        }
+    }, [moduleData.activities]);
+
+    const handleSaveModuleAndActivity = async () => {
         try {
-            if (isEditing) {
-                const storedModulesString = localStorage.getItem("modules");
-                const storedModules = storedModulesString ? JSON.parse(storedModulesString) : [];
-                const updatedModules = storedModules.map((module: any) =>
-                    module.parentModuleCode === moduleData.parentModuleCode ? moduleData : module
-                );
-                localStorage.setItem("modules", JSON.stringify(updatedModules));
-                notification.success({
-                    message: "Module updated successfully!",
+            const userId=getCurrentUserId();
+            if (!moduleData || Object.keys(moduleData).length === 0 || !moduleData.parentModuleCode) {
+                notification.error({
+                    message: "Module data is empty or missing required fields.",
                     duration: 3,
                 });
+                return;
+            }
+            
+            if (isEditing) {
+                if (!moduleData.id || typeof moduleData.id !== "number") {
+                    notification.error({
+                        message: "Invalid module ID. Unable to update module.",
+                        duration: 3,
+                    });
+                    return;
+                }
+
+                const existingModule = await db.modules.get(moduleData.id);
+
+                if (existingModule) {
+                    const updatedCount = await db.modules.update(moduleData.id, {
+                        ...existingModule,
+                        ...moduleData,
+                    });
+
+                    if (updatedCount) {
+                        notification.success({
+                            message: "Module updated successfully!",
+                            duration: 3,
+                        });
+                        navigate('/create/module-library');
+                    } else {
+                        notification.error({
+                            message: "Module update failed. No changes detected.",
+                            duration: 3,
+                        });
+                    }
+                } else {
+                    notification.error({
+                        message: "Module not found in IndexedDB.",
+                        duration: 3,
+                    });
+                }
             } else {
-                addModule(moduleData);
+                await db.addModule({ ...moduleData, userId });
                 notification.success({
                     message: "Module saved successfully!",
                     duration: 3,
                 });
             }
+            navigate('/create/module-library');
         } catch (error) {
-            console.error("Error while saving/updating module:", error);
             notification.error({
                 message: "Failed to save/update module.",
                 description: "Check the console for details.",
                 duration: 3,
             });
         }
-
-        navigate('/create/module-library');
     };
 
     const addActivity = () => {
@@ -124,7 +170,7 @@ const Module = () => {
         const newActivity = {
             code: newCode,
             activityName: "New Activity " + timestamp,
-            duration: 0,
+            duration: 1,
             prerequisite: isModuleSelected ? "" : selectedRow.code,
             level: newLevel
         };
@@ -162,30 +208,74 @@ const Module = () => {
     };
 
     const deleteActivity = () => {
-        if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
+        // if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
 
+        // setModuleData((prev: any) => {
+        //     let activities = [...prev.activities];
+        //     let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
+        //     children.forEach(child => {
+        //         let newParentCode = selectedRow.prerequisite;
+        //         let childParts = child.code.split("/");
+        //         childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
+        //         child.code = newParentCode + "/" + childParts.slice(-1);
+        //         child.prerequisite = newParentCode;
+        //     });
+
+        //     let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
+
+        //     let sameLevelActivities = updatedActivities.filter(activity => {
+        //         let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
+        //         return activity.code.startsWith(parentCode) && activity.level === selectedRow.level;
+        //     });
+
+        //     sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
+
+        //     sameLevelActivities.forEach((activity, index) => {
+        //         let newCode = `${selectedRow.code.split("/").slice(0, -1).join("/")}/${(index + 1) * 10}`;
+        //         activity.code = newCode;
+        //     });
+
+        //     return {
+        //         ...prev,
+        //         activities: updatedActivities
+        //     };
+        // });
+
+        // setSelectedRow(null);
+        // handlePrerequisite();
+        // setIsDeleteModalVisible(false);
+
+        if (!selectedRow) return;
         setModuleData((prev: any) => {
+            if (selectedRow.parentModuleCode) {
+                return {
+                    parentModuleCode: "",
+                    moduleName: "",
+                    level: "",
+                    mineType: "",
+                    duration: "",
+                    activities: []
+                };
+            }
             let activities = [...prev.activities];
             let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
+
             children.forEach(child => {
-                let newParentCode = selectedRow.prerequisite;
+                let newParentCode = selectedRow.prerequisite || "";
                 let childParts = child.code.split("/");
                 childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
-                child.code = newParentCode + "/" + childParts.slice(-1);
+                child.code = newParentCode ? `${newParentCode}/${childParts.slice(-1)}` : childParts.slice(-1).join("/");
                 child.prerequisite = newParentCode;
             });
-
             let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
-
-            let sameLevelActivities = updatedActivities.filter(activity => {
-                let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
-                return activity.code.startsWith(parentCode) && activity.level === selectedRow.level;
-            });
+            let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
+            let sameLevelActivities = updatedActivities.filter(activity =>
+                activity.code.startsWith(parentCode) && activity.level === selectedRow.level
+            );
 
             sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
-
             sameLevelActivities.forEach((activity, index) => {
-                let newCode = `${selectedRow.code.split("/").slice(0, -1).join("/")}/${(index + 1) * 10}`;
+                let newCode = `${parentCode}/${(index + 1) * 10}`;
                 activity.code = newCode;
             });
 
@@ -197,6 +287,7 @@ const Module = () => {
 
         setSelectedRow(null);
         handlePrerequisite();
+        setIsDeleteModalVisible(false);
     };
 
     const increaseLevel = () => {
@@ -258,7 +349,6 @@ const Module = () => {
                 });
             }
 
-            // Sort activities by code to ensure they are in correct order
             updatedActivities.sort((a, b) => {
                 let aParts = a.code.split("/").map(Number);
                 let bParts = b.code.split("/").map(Number);
@@ -372,8 +462,6 @@ const Module = () => {
         }));
     };
 
-    const handlePopupClose = () => setOpenPopup(false);
-
     const handleModulePlus = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
@@ -388,7 +476,7 @@ const Module = () => {
                 })
                 setNewModelName("");
                 setSelectedOption("");
-                handlePopupClose();
+                setOpenPopup(false);
             }
         }
         else {
@@ -403,18 +491,20 @@ const Module = () => {
             .join("");
     };
 
-    const handleAddNewMineType = () => {
-        if (newMineType) {
-            const updatedOptions = [...options, shorthandCode];
-            addNewMineType(updatedOptions)
-            setOptions(updatedOptions);
-            setNewMineType("");
-            setShorthandCode("");
-            setMineTypePopupOpen(false);
+    const handleAddNewMineType = async () => {
+        if (newMineType && shorthandCode) {
+            try {
+                const mineTypeData: any = { type: shorthandCode, description: newMineType };
+                const id = await db.addMineType(mineTypeData);
+                setOptions([...options, { id, ...mineTypeData }]);
+                setNewMineType("");
+                setShorthandCode("");
+                setMineTypePopupOpen(false);
+            } catch (error) {
+                console.error("Error adding mine type:", error);
+            }
         }
     };
-
-    const handlePopupOpen = () => setOpenPopup(true);
 
     const handleMineTypeChange = (value: string) => {
         setNewMineType(value);
@@ -461,12 +551,6 @@ const Module = () => {
         });
     };
 
-    useEffect(() => {
-        if (moduleData.activities.length > 0) {
-            //handlePrerequisite();
-        }
-    }, [moduleData.activities]);
-
     const handleAssignRACI = () => {
         if (!selectedRow) {
             notification.warning({
@@ -491,13 +575,71 @@ const Module = () => {
         setOpenModal(true);
     };
 
-    const [moduleType, setModuleType] = useState("custom");
-    const [selectedMTTSModule, setSelectedMTTSModule] = useState(null);
-    const mttsModules = ["MTTS-001", "MTTS-002", "MTTS-003"];
+    const handleCancelUpdateModule = () => {
+        setOpenCancelUpdateModulePopup(false);
+
+        if (!discardEditByCreating) {
+            navigate('/create/module-library');
+        }
+        else {
+            setModuleData({
+                parentModuleCode: "",
+                moduleName: "",
+                level: "",
+                mineType: "",
+                duration: "",
+                activities: []
+            })
+            isEditing = false;
+            setTimeout(() => navigate(".", { replace: true }), 0);
+        }
+    }
+
+    const handleCreateNewModule = () => {
+        if (isEditing) {
+            setDiscardEditByCreating(true);
+            setOpenCancelUpdateModulePopup(true);
+        }
+        else {
+            setOpenPopup(true)
+        }
+    }
+
+    const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
+        const activitiesCopy = [...moduleData.activities];
+
+        let sortedActivities;
+        if (order === "asc") {
+            sortedActivities = [...activitiesCopy].sort((a, b) => a.level.localeCompare(b.level));
+        } else if (order === "desc") {
+            sortedActivities = [...activitiesCopy].sort((a, b) => b.level.localeCompare(a.level));
+        } else {
+            sortedActivities = state?.activities || [];
+        }
+        setModuleData((prev: any) => ({
+            ...prev,
+            activities: sortedActivities
+        }));
+    };
+
+    useEffect(() => {
+        handleSortModule(sortOrder);
+    }, [sortOrder]);
+
+    const toggleSortOrder = () => {
+        const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
+        setSortOrder(newOrder);
+    };
+
+    const getSortIcon = () => {
+        if (sortOrder === 'asc') return <SortAscendingOutlined />;
+        if (sortOrder === 'desc') return <SortDescendingOutlined />;
+        return <ReloadOutlined />;
+    };
+
     return (
         <div>
             <div className="module-main">
-
                 <div className="top-item" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
                     <div className="module-title" style={{ display: "flex", justifyContent: "space-between", gap: "100px", alignItems: "center" }}>
                         <span className="">Modules</span>
@@ -528,6 +670,7 @@ const Module = () => {
                                                 icon={<ArrowDownOutlined />}
                                                 className="icon-button orange"
                                                 onClick={decreaseLevel}
+                                                disabled={!selectedRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -537,24 +680,25 @@ const Module = () => {
                                                 icon={<ArrowUpOutlined />}
                                                 className="icon-button orange"
                                                 onClick={increaseLevel}
+                                                disabled={!selectedRow}
                                             />
                                         </Tooltip>
                                     </Col>
+
                                     <Col>
                                         <Tooltip title="Delete">
                                             <Button
                                                 icon={<DeleteOutlined />}
                                                 className="icon-button red"
-                                                onClick={deleteActivity}
+                                                onClick={() => setIsDeleteModalVisible(true)}
+                                                disabled={!selectedRow}
                                             />
                                         </Tooltip>
                                     </Col>
+
                                     <Col>
-                                        <Tooltip title="Filter">
-                                            <Button
-                                                icon={<FilterOutlined />}
-                                                className="icon-button blue"
-                                            />
+                                        <Tooltip title={`${sortOrder.toUpperCase()}`}>
+                                            <Button onClick={toggleSortOrder} icon={getSortIcon()} disabled={moduleData.activities.length == 0} className="icon-button blue" />
                                         </Tooltip>
                                     </Col>
                                     <Col>
@@ -587,6 +731,7 @@ const Module = () => {
                                                 icon={<BellOutlined />}
                                                 onClick={() => setOpen(true)}
                                                 className="icon-button blue"
+                                                disabled={!selectedRow}
                                             />
                                         </Tooltip>
                                         <Modal
@@ -606,6 +751,7 @@ const Module = () => {
                                                 onClick={addActivity}
                                                 className="add-button"
                                                 style={{ height: "30px", fontSize: "14px" }}
+                                                disabled={!selectedRow}
                                             >
                                                 Add Activity
                                             </Button>
@@ -616,7 +762,7 @@ const Module = () => {
                                         <Tooltip title="Create New Module">
                                             <Button
                                                 type="primary"
-                                                onClick={handlePopupOpen}
+                                                onClick={() => handleCreateNewModule()}
                                                 className="add-module-button"
                                                 style={{ height: "30px", fontSize: "14px" }}
                                             >
@@ -625,6 +771,20 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
+                                    {isEditing && (
+                                        <Col>
+                                            <Tooltip title="Update Module">
+                                                <Button
+                                                    type="primary"
+                                                    onClick={() => setOpenCancelUpdateModulePopup(true)}
+                                                    className="bg-tertiary"
+                                                    style={{ height: "30px", fontSize: "14px" }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            </Tooltip>
+                                        </Col>
+                                    )}
                                 </Row>
                             </Col>
                         </Row>
@@ -652,30 +812,37 @@ const Module = () => {
                                         onClick={() => setSelectedRow(moduleData)}
                                         sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                     >
-                                        <TableCell contentEditable
+                                        <TableCell
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
                                             sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
                                         >{moduleData.parentModuleCode}</TableCell>
                                         <TableCell
-                                            contentEditable
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('moduleName', e.target.innerText)}
                                             sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
                                         >
                                             {moduleData.moduleName}
                                         </TableCell>
-                                        <TableCell
+                                        {/* <TableCell
                                             contentEditable
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('duration', e.target.innerText)}
                                             sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
                                         >{moduleData.duration}
+                                        </TableCell> */}
+                                        <TableCell sx={{ padding: '10px', color: '#808080' }}>
+                                            {moduleData.duration}
                                         </TableCell>
-                                        <TableCell contentEditable
+                                        {/* <TableCell contentEditable
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('', e.target.innerText)}
-                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}></TableCell>
+                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}></TableCell> */}
+
+                                        <TableCell sx={{ padding: '10px', color: '#808080' }}>
+                                            {moduleData.prerequisite || ''}
+                                        </TableCell>
+
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
                                     {moduleData.activities
@@ -730,6 +897,7 @@ const Module = () => {
                             type="primary"
                             className="save-button"
                             onClick={handleSaveModuleAndActivity}
+                            disabled={!moduleData.parentModuleCode}
                         >
                             {isEditing ? "Update" : "Save"} <ArrowRightOutlined className="save-button-icon" />
                         </Button>
@@ -739,7 +907,7 @@ const Module = () => {
                 <Modal
                     title="Create New Module"
                     open={openPopup}
-                    onCancel={handlePopupClose}
+                    onCancel={() => setOpenPopup(false)}
                     onOk={handleModulePlus}
                     okButtonProps={{ className: "bg-secondary" }}
                     cancelButtonProps={{ className: "bg-tertiary" }}
@@ -755,7 +923,7 @@ const Module = () => {
                             style={{ marginBottom: "10px" }}
                         >
                             <Radio value="custom">Custom Module</Radio>
-                            <Radio value="mtts">MTTS Module</Radio>
+                            <Radio value="mdts">MDTS Module</Radio>
                         </Radio.Group>
 
                         <div style={{ display: "flex", gap: "10px" }}>
@@ -765,9 +933,9 @@ const Module = () => {
                                 onChange={setSelectedOption}
                                 placeholder="Select mine type"
                             >
-                                {options.map((option, index) => (
-                                    <Option key={index} value={option}>
-                                        {option}
+                                {options.map((option: any, index) => (
+                                    <Option key={index} value={option.type}>
+                                        {option.type}
                                     </Option>
                                 ))}
                             </Select>
@@ -788,11 +956,11 @@ const Module = () => {
                         ) : (
                             <Select
                                 style={{ width: "100%", marginBottom: "10px" }}
-                                value={selectedMTTSModule || undefined}
-                                onChange={setSelectedMTTSModule}
-                                placeholder="Select MTTS Module"
+                                value={selectedMDTSModule || undefined}
+                                onChange={setSelectedMDTSModule}
+                                placeholder="Select MDTS Module"
                             >
-                                {mttsModules.map((module, index) => (
+                                {mdtsModules.map((module, index) => (
                                     <Option key={index} value={module}>
                                         {module}
                                     </Option>
@@ -830,6 +998,45 @@ const Module = () => {
                         <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
                     </div>
                 </Modal>
+
+                <Modal
+                    title="Confirm Delete"
+                    visible={isDeleteModalVisible}
+                    onOk={deleteActivity}
+                    onCancel={() => setIsDeleteModalVisible(false)}
+                    okText="Delete"
+                    cancelText="Cancel"
+                    okType="danger"
+                    width={"45%"}
+                    className="modal-container"
+                    centered
+                >
+                    <div style={{ padding: "0px 10px" }}>
+                        <p>
+                            <ExclamationCircleOutlined style={{ color: "red", marginRight: "8px" }} />
+                            {selectedRow?.parentModuleCode
+                                ? "Are you sure you want to delete this module? All associated activities will also be removed. This action cannot be undone."
+                                : "Are you sure you want to remove this activity? This action cannot be undone."}
+                        </p>
+                    </div>
+                </Modal >
+
+                <Modal
+                    title="Confirm Cancel"
+                    visible={openCancelUpdateModulePopup}
+                    onOk={handleCancelUpdateModule}
+                    onCancel={() => setOpenCancelUpdateModulePopup(false)}
+                    okText="Yes Discard"
+                    cancelText="Cancel"
+                    okType="danger"
+                    className="modal-container"
+                >
+                    <div style={{ padding: "0px 10px" }}>
+                        <p>
+                            Are you sure you want to cancel?
+                        </p>
+                    </div>
+                </Modal >
             </div>
         </div>
     );

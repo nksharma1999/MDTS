@@ -32,6 +32,10 @@
 .right-images {
     flex: 0 0 30%;
     margin-left: 0px;
+    height: calc(100vh - 95px);
+    overflow-y: scroll;
+    overflow-x: hidden;
+    margin-left: 5px;
 }
 
 .action-buttons {
@@ -54,10 +58,9 @@
 
 
 .table-title {
-    font-size: 20px;
+    font-size: 17px;
     font-weight: bold;
-    margin-left: 10px;
-    margin-top: 10px;
+    margin-bottom: 0px;
     color: grey;
 }
 

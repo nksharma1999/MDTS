@@ -1,12 +1,9 @@
-// src/utils/moduleStorage.js
-
 const MODULE_KEY = "modules";
 const FORM_DATA = "formDatas";
 const MINE_TYPE_KEY = "mineTypes";
 const DOCUMENTS_KEY = " documents";
 const USERS = "users";
 
-// Get all modules from local storage
 export const getModules = () => {
   const savedModules = localStorage.getItem(MODULE_KEY);
   const modules = savedModules ? JSON.parse(savedModules) : [];
@@ -22,12 +19,10 @@ const flattenModules = (modules: any) => {
   }, []);
 };
 
-// Save the entire module list to local storage
 export const saveModules = (modules: any) => {
   localStorage.setItem(MODULE_KEY, JSON.stringify(modules));
 };
 
-// Add a new module to the list
 export const addModule = (newModule: any) => {
   const modules = getModules();
   modules.push(newModule);
@@ -35,7 +30,6 @@ export const addModule = (newModule: any) => {
 };
 
 export const updateModule = (newModule: any) => {
-  console.log('New Module:', newModule);
   let modules = getModules();
   const moduleIndex = modules.findIndex(
     (mod: any) =>
@@ -44,18 +38,14 @@ export const updateModule = (newModule: any) => {
   );
 
   if (moduleIndex !== -1) {
-    // Update the existing module
     modules[moduleIndex] = {
       ...modules[moduleIndex],
-      ...newModule, // Merge new properties into the existing module
+      ...newModule,
     };
     console.log(`Updated module: ${newModule.moduleName}`);
   } else {
-    // If not found, alert the user
     window.alert("Didn't find any module with this module name & code!");
   }
-
-  // Save the updated modules back to local storage
   saveModules(modules);
 };
 
@@ -68,19 +58,16 @@ export const findModule = (parentModuleCode: string, moduleName: string) => {
   );
 };
 
-// Check if a moduleName already exists in the module list
 export const isDuplicateModuleName = (moduleName: string) => {
   const modules = getModules();
   return modules.some((mod: any) => mod.moduleName === moduleName);
 };
 
-// Check if a moduleCode already exists in the module list
 export const isDuplicateModuleCode = (moduleCode: string) => {
   const modules = getModules();
   return modules.some((mod: any) => mod.parentModuleCode === moduleCode);
 };
 
-// Initialize local storage with an empty array if not already set
 export const initializeModules = () => {
   if (!localStorage.getItem(MODULE_KEY)) {
     saveModules([]);
@@ -95,7 +82,6 @@ export const getOrderedModuleNames = () => {
   const savedModules = localStorage.getItem(MODULE_KEY);
   const modules = savedModules ? JSON.parse(savedModules) : [];
 
-  // Predefined sequence of module names
   const moduleSequence = [
     "Explored",
     "GR Approved",
@@ -108,36 +94,24 @@ export const getOrderedModuleNames = () => {
     "Mine Opening Permission",
   ];
 
-  // Extract valid module names from savedModules
   const moduleNames = modules
-    .map((module: any) => module?.moduleName) // Ensure `moduleName` exists
-    .filter((name: any) => name); // Remove undefined or falsy values
+    .map((module: any) => module?.moduleName)
+    .filter((name: any) => name);
 
-  // Sort module names based on predefined sequence first
   const orderedModules = moduleSequence.filter((name) =>
     moduleNames.includes(name)
   );
 
-  // Add remaining modules not in the predefined sequence, sorted alphabetically
   const otherModules = moduleNames
     .filter((name: any) => !moduleSequence.includes(name))
     .sort((a: any, b: any) => a.localeCompare(b));
-
-  // Combine both lists
   return [...orderedModules, ...otherModules];
 };
 
-//Form data related code.....
 export const saveFormDataToListInLocalStorage = (formData: any) => {
   const formDatas = loadFormDataListFromLocalStorage();
-
-  // Dynamically set the project_id
   formData.project_id = getNewProjectId();
-
-  // Add the new form data to the list
   formDatas.push(formData);
-
-  // Save the updated list back to local storage
   localStorage.setItem(FORM_DATA, JSON.stringify(formDatas));
 };
 
@@ -257,8 +231,6 @@ export const updateDocument = (_id: Number, document: any) => {
   }
 };
 
-// Delete a document from localStorage based on its index
-
 export const deleteDocument = (id: number): boolean => {
   const existingDocuments = getAllDocuments();
   if (!Array.isArray(existingDocuments)) {
@@ -279,7 +251,6 @@ export const deleteDocument = (id: number): boolean => {
     return false;
   }
 };
-
 
 export const addNewMineType = (mineTypes: any): void => {
   try {
@@ -341,7 +312,6 @@ export const getCurrentUserId = (): string | null => {
   }
 };
 
-// Get all users from local storage
 export const getAllUsers = () => {
   try {
     const savedUsers = localStorage.getItem(USERS);
@@ -351,7 +321,7 @@ export const getAllUsers = () => {
     }
 
     const users = JSON.parse(savedUsers);
-    return users; // Return the parsed users directly
+    return users;
   } catch (error) {
     console.error("Error parsing users from localStorage:", error);
     return [];
@@ -360,13 +330,20 @@ export const getAllUsers = () => {
 
 export const saveUsers = (userList: any) => {
   try {
-    // Convert the user list to a JSON string
     const usersString = JSON.stringify(userList);
-    // Save the JSON string to localStorage under the key "USERS"
     localStorage.setItem(USERS, usersString);
   } catch (error) {
     console.error("Error saving users to localStorage:", error);
   }
 };
 
+export const updateUser = (userId: any, updatedData: any) => {
+  let users = getAllUsers();
+  users = users.map((user: any) => user.id === userId ? { ...user, ...updatedData } : user);
+  saveUsers(users);
+}
 
+export const deleteModuleById = (id: any) => {
+  const updatedModules:any = getModules().filter((module:any) => module.id !== id);
+  saveModules(updatedModules);
+}

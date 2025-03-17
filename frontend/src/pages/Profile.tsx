@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import "../styles/profile.css";
-import { Form, Input, Button, Row, Col, Select, DatePicker, message, Modal } from "antd";
+import { Form, Input, Button, Row, Col, Select, message, Modal } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
-import moment from "moment";
 import ManageUser from "../Components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
-
+import { db } from "../Utils/dataStorege.ts";
+import { getCurrentUser,getCurrentUserId } from '../Utils/moduleStorage';
 const { Option } = Select;
 
 const Profile = () => {
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<any>({
         id: null as number | null,
         name: null as string | null,
         company: null as string | null,
         designation: null as string | null,
+        companyType: null as string | null,
+        industryType: null as string | null,
         mobile: null as string | null,
         email: null as string | null,
         whatsapp: null as string | null,
@@ -23,6 +25,11 @@ const Profile = () => {
         password: null as string | null,
         isTempPassword: null as boolean | null,
         role: null as string | null,
+        address: null as string | null,
+        city: null as string | null,
+        state: null as string | null,
+        country: null as string | null,
+        zipCode: null as string | null,
         assignedModules: [] as {
             moduleCode: string | null;
             moduleName: string | null;
@@ -34,7 +41,6 @@ const Profile = () => {
             }[];
         }[]
     });
-
     const [selectedTab, setSelectedTab] = useState("Profile Information");
     const [image, setImage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,22 +59,29 @@ const Profile = () => {
         }
     }, [formData.id]);
 
-    const fillUsersData = () => {
-        const userData = localStorage.getItem("user");
+    const fillUsersData = async () => {
+        const currentUserId=getCurrentUserId();
+        const userData = await db.getUserById(currentUserId);
         if (userData) {
-            const parsedData = JSON.parse(userData);
             setFormData({
-                id: parsedData.id || "",
-                name: parsedData.name || "",
-                company: parsedData.company || "",
-                designation: parsedData.designation || "",
-                mobile: parsedData.mobile || "",
-                email: parsedData.email || "",
-                whatsapp: parsedData.whatsapp || "",
-                registeredOn: parsedData.registeredOn || "",
-                profilePhoto: parsedData.profilePhoto || "",
-                role: parsedData.role || "",
-                isTempPassword: parsedData.isTempPassword
+                id: userData.id || "",
+                name: userData.name || "",
+                company: userData.company || "",
+                designation: userData.designation || "",
+                companyType: userData.companyType || "",
+                industryType: userData.industryType || "",
+                mobile: userData.mobile || "",
+                email: userData.email || "",
+                whatsapp: userData.whatsapp || "",
+                registeredOn: userData.registeredOn || "",
+                profilePhoto: userData.profilePhoto || "",
+                address: userData.address,
+                city: userData.city,
+                state: userData.state,
+                country: userData.country,
+                zipCode: userData.zipCode || "",
+                role: userData.role || "",
+                isTempPassword: userData.isTempPassword
             });
             form.resetFields();
         }
@@ -91,29 +104,42 @@ const Profile = () => {
 
     const handleInputChange = (e: any) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev: any) => ({ ...prev, [name]: value }));
     };
 
     const handleSelectChange = (value: any, name: any) => {
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData((prev: any) => ({ ...prev, [name]: value }));
     };
 
-    const handleSave = () => {
-        const users = JSON.parse(localStorage.getItem("users") || "[]");
-        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-
-        if (currentUser?.isTempPassword) {
-            setIsModalOpen(true);
+    const handleSave = async () => {
+        try {
+            const users = await db.getUsers();
+            const currentUser = getCurrentUser();
+    
+            if (!currentUser?.email) {
+                message.error("No user found. Please log in again.");
+                return;
+            }
+    
+            if (currentUser?.isTempPassword) {
+                setIsModalOpen(true);
+            }
+            
+            if (currentUser.id) {
+                const updatedUser = { ...users[currentUser.id], ...formData };
+                await db.updateUsers(updatedUser.id, updatedUser);
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+    
+                if (!formData.isTempPassword) {
+                    message.success("Profile information updated successfully!");
+                }
+            } else {
+                message.error("User not found in database.");
+            }
+        } catch (error) {
+            console.error("Error updating user profile:", error);
+            message.error("An error occurred while updating profile. Please try again.");
         }
-
-        const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
-        if (userIndex !== -1) {
-            users[userIndex] = { ...users[userIndex], ...formData };
-            localStorage.setItem("users", JSON.stringify(users));
-        }
-        localStorage.setItem("user", JSON.stringify(formData));
-        if (!formData.isTempPassword)
-            message.success("Profile information Updated successfully!");
     };
 
     function getInitials(name?: string): string {
@@ -124,43 +150,47 @@ const Profile = () => {
             : parts[0][0]?.toUpperCase() || "";
     }
 
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-
-        if (!file) {
-            console.error("File upload error: No file selected");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (e.target?.result) {
+    const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            const file = event.target.files?.[0];
+            if (!file) {
+                message.error("No file selected.");
+                return;
+            }
+    
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                if (!e.target?.result) {
+                    message.error("Error reading file.");
+                    return;
+                }
+    
                 const base64Image = e.target.result as string;
                 setImage(base64Image);
-                const users = JSON.parse(localStorage.getItem("users") || "[]");
-                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
-                if (userIndex !== -1) {
-                    users[userIndex] = {
-                        ...users[userIndex],
-                        profilePhoto: base64Image,
-                    };
-                    localStorage.setItem("users", JSON.stringify(users));
+    
+                const currentUserId = getCurrentUserId();
+                const activeUser = await db.getUserById(currentUserId);
+                if (!activeUser) {
+                    message.error("User not found.");
+                    return;
                 }
-
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify({ ...currentUser, profilePhoto: base64Image, })
-                );
-
+    
+                const updatedUser = { ...activeUser, profilePhoto: base64Image };
+                await db.updateUsers(currentUserId, updatedUser);
+    
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                localStorage.setItem("user", JSON.stringify({ ...currentUser, profilePhoto: base64Image }));
+    
                 message.success("Profile photo updated successfully!");
                 setIsModalOpen(false);
-                setTimeout(() => {
-                    fillUsersData();
-                }, 1000)
-            }
-        };
-        reader.readAsDataURL(file);
+                fillUsersData();
+            };
+    
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error("Error updating profile photo:", error);
+            message.error("Something went wrong. Please try again.");
+        }
     };
 
     const showModal = () => {
@@ -198,7 +228,6 @@ const Profile = () => {
         }, 1000)
     };
 
-
     const renderContent = () => {
         switch (selectedTab) {
             case "Profile Information":
@@ -227,124 +256,233 @@ const Profile = () => {
                             <div className="change-password-container">
                                 <a onClick={showModal}>Change Password</a>
                             </div>
-                            <Form className={`eployee-professional-form ${isProfileCompleted() ? "registration-height-without-warning" : "registration-height-with-warning"}`}>
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: "left" }}>
-                                        <label>Name</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Input
-                                            name="name"
-                                            value={formData.name}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter Name"
-                                        />
-                                    </Col>
-                                </Row>
 
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: 'left' }}>
-                                        <label>Company</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Input
-                                            name="company"
-                                            value={formData.company}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter Company"
-                                        />
-                                    </Col>
-                                </Row>
+                            <div className="company-registration-form">
+                                <Form
+                                    className={`employee-professional-form ${isProfileCompleted()
+                                        ? "registration-height-without-warning"
+                                        : "registration-height-with-warning"
+                                        }`}
+                                    layout="horizontal"
+                                    labelCol={{ span: 6 }}
+                                    wrapperCol={{ span: 18 }}
+                                    labelAlign="left"
+                                >
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Company Name"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please enter company name" }]}
+                                            >
+                                                <Input
+                                                    name="company"
+                                                    value={formData.company}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Company"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Company Type"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please select company type" }]}
+                                            >
+                                                <Select
+                                                    value={formData.companyType}
+                                                    onChange={(value) => handleSelectChange(value, "companyType")}
+                                                    placeholder="Select Company Type"
+                                                    style={{ width: "100%" }}
+                                                >
+                                                    <Option value="Mining">Mining</Option>
+                                                    <Option value="Construction">Construction</Option>
+                                                    <Option value="Equipment Supplier">Equipment Supplier</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
 
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: 'left' }}>
-                                        <label>Designation</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Select
-                                            value={formData.designation}
-                                            onChange={(value) => handleSelectChange(value, "designation")}
-                                            placeholder="Select Designation"
-                                            style={{ width: "100%" }}
-                                        >
-                                            <Option value="Mining Engineer">Mining Engineer</Option>
-                                            <Option value="Geologist">Geologist</Option>
-                                            <Option value="Operations Manager">Operations Manager</Option>
-                                        </Select>
-                                    </Col>
-                                </Row>
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Industry Type"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please select industry type" }]}
+                                            >
+                                                <Select
+                                                    value={formData.industryType}
+                                                    onChange={(value) => handleSelectChange(value, "industryType")}
+                                                    placeholder="Select Industry Type"
+                                                    style={{ width: "100%" }}
+                                                >
+                                                    <Option value="Coal">Coal</Option>
+                                                    <Option value="Iron">Iron</Option>
+                                                    <Option value="Gold">Gold</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Designation"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please select designation" }]}
+                                            >
+                                                <Select
+                                                    value={formData.designation}
+                                                    onChange={(value) => handleSelectChange(value, "designation")}
+                                                    placeholder="Select Designation"
+                                                    style={{ width: "100%" }}
+                                                >
+                                                    <Option value="Mining Engineer">Mining Engineer</Option>
+                                                    <Option value="Geologist">Geologist</Option>
+                                                    <Option value="Operations Manager">Operations Manager</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
 
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: 'left' }}>
-                                        <label>Role</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Select
-                                            value={formData.role}
-                                            onChange={(value) => handleSelectChange(value, "role")}
-                                            placeholder="Select Role"
-                                            style={{ width: "100%" }}
-                                        >
-                                            <Option value="Editor">Editor</Option>
-                                            <Option value="Viewer">Viewer</Option>
-                                        </Select>
-                                    </Col>
-                                </Row>
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Full Name"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please enter name" }]}
+                                            >
+                                                <Input
+                                                    name="name"
+                                                    value={formData.name}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Name"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Email"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please enter email", type: "email" }]}
+                                            >
+                                                <Input
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Email"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
 
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: "left" }}>
-                                        <label>Mobile No</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Input
-                                            name="mobile"
-                                            value={formData.mobile}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter Mobile No"
-                                        />
-                                    </Col>
-                                </Row>
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Mobile No"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please enter mobile number" }]}
+                                            >
+                                                <Input
+                                                    name="mobile"
+                                                    value={formData.mobile}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Mobile No"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="WhatsApp No" colon={false}>
+                                                <Input
+                                                    name="whatsapp"
+                                                    value={formData.whatsapp}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter WhatsApp No"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
 
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: "left" }}>
-                                        <label>Email</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Input
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter Email"
-                                        />
-                                    </Col>
-                                </Row>
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Role"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please select role" }]}
+                                            >
+                                                <Select
+                                                    value={formData.role}
+                                                    onChange={(value) => handleSelectChange(value, "role")}
+                                                    disabled
+                                                    placeholder="Select Role"
+                                                    style={{ width: "100%" }}
+                                                >
+                                                    <Option value="admin">Admin</Option>
+                                                    <Option value="manager">Manager</Option>
+                                                    <Option value="worker">Worker</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
 
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: "left" }}>
-                                        <label>WhatsApp No</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <Input
-                                            name="whatsapp"
-                                            value={formData.whatsapp}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter WhatsApp No"
-                                        />
-                                    </Col>
-                                </Row>
+                                        <Col span={12}>
+                                            <Form.Item label="City" colon={false}>
+                                                <Input
+                                                    name="city"
+                                                    value={formData.city}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter City"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
 
-                                <Row gutter={[16, 16]} className="form-row" align="middle">
-                                    <Col span={6} style={{ textAlign: "left" }}>
-                                        <label>Registration Date</label>
-                                    </Col>
-                                    <Col span={18}>
-                                        <DatePicker
-                                            value={formData.registeredOn ? moment(formData.registeredOn) : null}
-                                            style={{ width: "100%" }}
-                                        />
-                                    </Col>
-                                </Row>
-                            </Form>
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item label="Address" colon={false}>
+                                                <Input.TextArea
+                                                    name="address"
+                                                    value={formData.address}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Address"
+                                                    rows={3}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item label="State" colon={false}>
+                                                <Input
+                                                    name="state"
+                                                    value={formData.state}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter State"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Country" colon={false}>
+                                                <Input
+                                                    name="country"
+                                                    value={formData.country}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Country"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Zip Code" colon={false}>
+                                                <Input
+                                                    name="zipCode"
+                                                    value={formData.zipCode}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Zip Code"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </Form>
+                            </div>
+
+
                             <hr />
                             <div className="button-group">
                                 <Button
@@ -376,20 +514,20 @@ const Profile = () => {
                         <div>
                             <img
                                 src={image || "../public/images/logos/user-profile.png"}
-                                // src="../public/images/logos/user-profile.png"
                                 alt="Logo"
                                 className="profile-image"
                             />
                         </div>
                         <div className="details">
-                            <p>{formData?.name || ""}</p>
+                            <div style={{ fontSize: "18px" }}>{formData?.name || ""}</div>
+                            <div style={{ color: "grey", fontSize: "12px" }}>{formData?.company || ""}</div>
                         </div>
                     </div>
 
-                    {['Profile Information', 'Team Members'].map((tab) => {
-                        if (tab === 'Team Members' && formData.role !== 'Editor') {
-                            return null;
-                        }
+                    {['Profile Information', 'Team Members', "Accessibility"].map((tab) => {
+                      if (tab === 'Team Members' && formData?.role?.toUpperCase() !== 'ADMIN') {
+                        return null;
+                    }                    
 
                         return (
                             <div
