@@ -1047,16 +1047,25 @@ const TimeBuilder = () => {
     try {
       const storedAllProjects = await db.getProjects();
       const selectedExProject = storedAllProjects.find((p: any) => p.id == selectedExistingProjectId);
-  
+
       if (!selectedExistingProjectId) return;
-  
+
       if (selectedExProject?.initialStatus.library === selectedProject.initialStatus.library &&
-          selectedExProject?.projectParameters.typeOfMine === selectedProject.projectParameters.typeOfMine) {
-        
-        const updatedProjectWithTimeline = { ...selectedProject, projectTimeline: selectedExProject.projectTimeline };
+        selectedExProject?.projectParameters.typeOfMine === selectedProject.projectParameters.typeOfMine) {
+        const updatedProjectWithTimeline = { ...selectedProject, projectTimeline: [] };
+        if (selectedExProject.projectTimeline && selectedExProject.projectTimeline.length > 0) {
+          updatedProjectWithTimeline.projectTimeline = selectedExProject.projectTimeline.map((module: any) => ({
+            ...module,
+            activities: module.activities.map((activity: any) => ({
+              ...activity,
+              start: "",
+              end: "",
+            })),
+          }));
+        }
         await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
         localStorage.setItem('selectedProjectId', selectedProject.id);
-  
+
         setTimeout(() => message.success("Project timeline linked successfully!"), 0); // Fix for React 18
         navigate("/create/project-timeline");
       } else {
@@ -1066,7 +1075,7 @@ const TimeBuilder = () => {
       setTimeout(() => message.warning(error.message || "An error occurred"), 0);
     }
   };
-  
+
 
   const handleCancelUpdateProjectTimeline = () => {
     setIsCancelEditModalVisiblVisible(false)
