@@ -4,7 +4,8 @@ import { Form, Input, Button, Row, Col, Select, message, Modal } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import ManageUser from "../Components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
-
+import { db } from "../Utils/dataStorege.ts";
+import { getCurrentUser,getCurrentUserId } from '../Utils/moduleStorage';
 const { Option } = Select;
 
 const Profile = () => {
@@ -58,29 +59,29 @@ const Profile = () => {
         }
     }, [formData.id]);
 
-    const fillUsersData = () => {
-        const userData = localStorage.getItem("user");
+    const fillUsersData = async () => {
+        const currentUserId=getCurrentUserId();
+        const userData = await db.getUserById(currentUserId);
         if (userData) {
-            const parsedData = JSON.parse(userData);
             setFormData({
-                id: parsedData.id || "",
-                name: parsedData.name || "",
-                company: parsedData.company || "",
-                designation: parsedData.designation || "",
-                companyType: parsedData.companyType || "",
-                industryType: parsedData.industryType || "",
-                mobile: parsedData.mobile || "",
-                email: parsedData.email || "",
-                whatsapp: parsedData.whatsapp || "",
-                registeredOn: parsedData.registeredOn || "",
-                profilePhoto: parsedData.profilePhoto || "",
-                address: parsedData.address,
-                city: parsedData.city,
-                state: parsedData.state,
-                country: parsedData.country,
-                zipCode: parsedData.zipCode || "",
-                role: parsedData.role || "",
-                isTempPassword: parsedData.isTempPassword
+                id: userData.id || "",
+                name: userData.name || "",
+                company: userData.company || "",
+                designation: userData.designation || "",
+                companyType: userData.companyType || "",
+                industryType: userData.industryType || "",
+                mobile: userData.mobile || "",
+                email: userData.email || "",
+                whatsapp: userData.whatsapp || "",
+                registeredOn: userData.registeredOn || "",
+                profilePhoto: userData.profilePhoto || "",
+                address: userData.address,
+                city: userData.city,
+                state: userData.state,
+                country: userData.country,
+                zipCode: userData.zipCode || "",
+                role: userData.role || "",
+                isTempPassword: userData.isTempPassword
             });
             form.resetFields();
         }
@@ -110,22 +111,35 @@ const Profile = () => {
         setFormData((prev: any) => ({ ...prev, [name]: value }));
     };
 
-    const handleSave = () => {
-        const users = JSON.parse(localStorage.getItem("users") || "[]");
-        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-
-        if (currentUser?.isTempPassword) {
-            setIsModalOpen(true);
+    const handleSave = async () => {
+        try {
+            const users = await db.getUsers();
+            const currentUser = getCurrentUser();
+    
+            if (!currentUser?.email) {
+                message.error("No user found. Please log in again.");
+                return;
+            }
+    
+            if (currentUser?.isTempPassword) {
+                setIsModalOpen(true);
+            }
+            
+            if (currentUser.id) {
+                const updatedUser = { ...users[currentUser.id], ...formData };
+                await db.updateUsers(updatedUser.id, updatedUser);
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+    
+                if (!formData.isTempPassword) {
+                    message.success("Profile information updated successfully!");
+                }
+            } else {
+                message.error("User not found in database.");
+            }
+        } catch (error) {
+            console.error("Error updating user profile:", error);
+            message.error("An error occurred while updating profile. Please try again.");
         }
-
-        const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
-        if (userIndex !== -1) {
-            users[userIndex] = { ...users[userIndex], ...formData };
-            localStorage.setItem("users", JSON.stringify(users));
-        }
-        localStorage.setItem("user", JSON.stringify(formData));
-        if (!formData.isTempPassword)
-            message.success("Profile information Updated successfully!");
     };
 
     function getInitials(name?: string): string {
@@ -136,43 +150,47 @@ const Profile = () => {
             : parts[0][0]?.toUpperCase() || "";
     }
 
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-
-        if (!file) {
-            console.error("File upload error: No file selected");
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            if (e.target?.result) {
+    const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            const file = event.target.files?.[0];
+            if (!file) {
+                message.error("No file selected.");
+                return;
+            }
+    
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                if (!e.target?.result) {
+                    message.error("Error reading file.");
+                    return;
+                }
+    
                 const base64Image = e.target.result as string;
                 setImage(base64Image);
-                const users = JSON.parse(localStorage.getItem("users") || "[]");
-                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
-                if (userIndex !== -1) {
-                    users[userIndex] = {
-                        ...users[userIndex],
-                        profilePhoto: base64Image,
-                    };
-                    localStorage.setItem("users", JSON.stringify(users));
+    
+                const currentUserId = getCurrentUserId();
+                const activeUser = await db.getUserById(currentUserId);
+                if (!activeUser) {
+                    message.error("User not found.");
+                    return;
                 }
-
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify({ ...currentUser, profilePhoto: base64Image, })
-                );
-
+    
+                const updatedUser = { ...activeUser, profilePhoto: base64Image };
+                await db.updateUsers(currentUserId, updatedUser);
+    
+                const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+                localStorage.setItem("user", JSON.stringify({ ...currentUser, profilePhoto: base64Image }));
+    
                 message.success("Profile photo updated successfully!");
                 setIsModalOpen(false);
-                setTimeout(() => {
-                    fillUsersData();
-                }, 1000)
-            }
-        };
-        reader.readAsDataURL(file);
+                fillUsersData();
+            };
+    
+            reader.readAsDataURL(file);
+        } catch (error) {
+            console.error("Error updating profile photo:", error);
+            message.error("Something went wrong. Please try again.");
+        }
     };
 
     const showModal = () => {
@@ -392,6 +410,7 @@ const Profile = () => {
                                                 <Select
                                                     value={formData.role}
                                                     onChange={(value) => handleSelectChange(value, "role")}
+                                                    disabled
                                                     placeholder="Select Role"
                                                     style={{ width: "100%" }}
                                                 >
@@ -506,9 +525,9 @@ const Profile = () => {
                     </div>
 
                     {['Profile Information', 'Team Members', "Accessibility"].map((tab) => {
-                        if (tab === 'Team Members' && formData.role !== 'admin') {
-                            return null;
-                        }
+                      if (tab === 'Team Members' && formData?.role?.toUpperCase() !== 'ADMIN') {
+                        return null;
+                    }                    
 
                         return (
                             <div

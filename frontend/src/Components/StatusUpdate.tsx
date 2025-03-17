@@ -9,6 +9,7 @@ import { saveAs } from "file-saver";
 import { Button, Select, Modal, Input, message, Table } from "antd";
 import { DownloadOutlined, EditOutlined, ShareAltOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
+import { db } from "../Utils/dataStorege.ts";
 interface Activity {
   code: string;
   activityName: string;
@@ -50,30 +51,6 @@ export const StatusUpdate = () => {
     setEmail("");
   };
 
-  // useEffect(() => {
-  //   try {
-  //     const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-  //     const userId = loggedInUser?.id;
-  //     if (!userId) return;
-
-  //     const userProjectsKey = `projects_${userId}`;
-  //     const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
-  //     if (Array.isArray(storedData)) {
-  //       const updatedData = storedData.map((project, index) => {
-  //         if (index === 1 || index === 2) {
-  //           const { projectTimeline, ...rest } = project;
-  //           return rest;
-  //         }
-  //         return project;
-  //       });
-  //       localStorage.setItem(userProjectsKey, JSON.stringify(updatedData));
-  //     }
-  //   } catch (error) {
-  //     console.error("An unexpected error occurred while fetching projects:", error);
-  //   }
-  // }, []);
-
   useEffect(() => {
     try {
       const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -81,36 +58,25 @@ export const StatusUpdate = () => {
       if (!userId) return;
 
       const userProjectsKey = `projects_${userId}`;
-      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]").filter((item: any) => item.projectTimeline != undefined);
+      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
 
-      if (!Array.isArray(storedData) || storedData.length === 0) {
-        setAllProjects([]);
-        return;
-      }
-
-      setAllProjects(storedData);
-
-      if (storedData.length === 1) {
-        const firstProject = storedData[0];
-
-        if (firstProject?.id) {
-          setSelectedProjectId(firstProject.id);
-          setSelectedProject(firstProject);
-
-          if (firstProject?.projectTimeline && Array.isArray(firstProject.projectTimeline)) {
-            handleLibraryChange(firstProject.projectTimeline);
-          } else if (firstProject?.initialStatus?.items && Array.isArray(firstProject.initialStatus.items)) {
-            handleLibraryChange(firstProject.initialStatus.items.filter(
-              (item: any) => item?.status?.toLowerCase() !== "completed"
-            ));
-          } else {
-            handleLibraryChange([]);
+      if (Array.isArray(storedData)) {
+        const updatedData = storedData.map((project, index) => {
+          if (index === 1 || index === 2) {
+            const { projectTimeline, ...rest } = project;
+            return rest;
           }
-        }
+          return project;
+        });
+        localStorage.setItem(userProjectsKey, JSON.stringify(updatedData));
       }
     } catch (error) {
       console.error("An unexpected error occurred while fetching projects:", error);
     }
+  }, []);
+
+  useEffect(() => {
+    defaultSetup();
   }, []);
 
   useEffect(() => {
@@ -131,11 +97,49 @@ export const StatusUpdate = () => {
     }
   }, [location.state]);
 
+  const defaultSetup = async () => {
+    try {
+      const storedData = (await db.getProjects()).filter((p) => p.projectTimeline);
+      setAllProjects(storedData);
+
+      const getProjectTimeline = (project: any) => {
+        if (Array.isArray(project?.projectTimeline)) return project.projectTimeline;
+        if (Array.isArray(project?.initialStatus?.items)) {
+          return project.initialStatus.items.filter((item: any) => item?.status?.toLowerCase() !== "completed");
+        }
+        return [];
+      };
+
+      let selectedProject = null;
+
+      if (storedData.length === 1) {
+        selectedProject = storedData[0];
+      } else {
+        try {
+          const lastVisitedProjectId = localStorage.getItem("selectedProjectId");
+          selectedProject = storedData.find((p) => p.id == lastVisitedProjectId) || null;
+        } catch (error) {
+          console.error("Error selecting project:", error);
+        }
+      }
+
+      if (selectedProject) {
+        setSelectedProjectId(selectedProject.id);
+        setSelectedProject(selectedProject);
+        handleLibraryChange(getProjectTimeline(selectedProject));
+      } else {
+        handleLibraryChange([]);
+      }
+    } catch (error) {
+      console.error("An unexpected error occurred while fetching projects:", error);
+    }
+  };
+
   const handleProjectChange = (projectId: any) => {
     setSelectedProjectId(projectId);
     const project = allProjects.find((p) => p.id === projectId);
+    localStorage.setItem('selectedProjectId', projectId)
     setSelectedProject(project);
-
     if (project?.projectTimeline) {
       handleLibraryChange(project?.projectTimeline);
     } else {
@@ -318,55 +322,59 @@ export const StatusUpdate = () => {
       </div>
 
       <div className="main-status-update">
-        <div className="status-toolbar">
-          <div className="filters">
-            <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Select Project</label>
-            <Select
-              placeholder="Select Project"
-              value={selectedProjectId}
-              onChange={handleProjectChange}
-              dropdownMatchSelectWidth={false}
-              style={{ width: "100%" }}
-            >
-              {allProjects.map((project) => (
-                <Option key={project.id} value={project.id}>
-                  {project.projectParameters.projectName}
-                </Option>
-              ))}
-            </Select>
-          </div>
-          <div className="actions">
-            <Button
-              type="primary"
-              disabled={!selectedProjectId}
-              icon={<DownloadOutlined />}
-              onClick={handleDownload}
-              style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
-            >
-              Download Timeline
-            </Button>
-            <Button
-              type="primary"
-              disabled={!selectedProjectId}
-              icon={<EditOutlined />}
-              onClick={editTimeBuilder}
-              style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
-            >
-              Edit Timeline
-            </Button>
-            <Button
-              type="primary"
-              className="bg-secondary"
-              disabled={!selectedProjectId}
-              icon={<ShareAltOutlined />}
-              onClick={showModal}
-              style={{ marginLeft: "15px", backgroundColor: "#4169E1", borderColor: "#007BFF" }}
-            >
-              Share
-            </Button>
-          </div>
-        </div>
-        <hr />
+        {allProjects.length != 0 && (
+          <>
+            <div className="status-toolbar">
+              <div className="filters">
+                <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Select Project</label>
+                <Select
+                  placeholder="Select Project"
+                  value={selectedProjectId}
+                  onChange={handleProjectChange}
+                  dropdownMatchSelectWidth={false}
+                  style={{ width: "100%" }}
+                >
+                  {allProjects.map((project) => (
+                    <Option key={project.id} value={project.id}>
+                      {project.projectParameters.projectName}
+                    </Option>
+                  ))}
+                </Select>
+              </div>
+              <div className="actions">
+                <Button
+                  type="primary"
+                  disabled={!selectedProjectId}
+                  icon={<DownloadOutlined />}
+                  onClick={handleDownload}
+                  style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
+                >
+                  Download Timeline
+                </Button>
+                <Button
+                  type="primary"
+                  disabled={!selectedProjectId}
+                  icon={<EditOutlined />}
+                  onClick={editTimeBuilder}
+                  style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
+                >
+                  Edit Timeline
+                </Button>
+                <Button
+                  type="primary"
+                  className="bg-secondary"
+                  disabled={!selectedProjectId}
+                  icon={<ShareAltOutlined />}
+                  onClick={showModal}
+                  style={{ marginLeft: "15px", backgroundColor: "#4169E1", borderColor: "#007BFF" }}
+                >
+                  Share
+                </Button>
+              </div>
+            </div>
+            <hr />
+          </>
+        )}
         {selectedProject != null ? (
           <div className="status-update-items">
             <div style={{ overflowX: "hidden" }}>

@@ -3,7 +3,7 @@ import "../styles/sign-in.css";
 import { Input, Button, Typography, Row, Col, message } from "antd";
 import { Card, CardMedia } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-
+import { db } from "../Utils/dataStorege.ts";
 const images = [
     "../public/images/auths/m5.jpg",
     "../public/images/auths/m6.jpg",
@@ -20,13 +20,6 @@ const SignInSignUp: React.FC = () => {
     const [workEmail, setWorkEmail] = useState("");
     const [isSignUp, setIsSignUp] = useState(false);
 
-    useEffect(() => {
-        const users = JSON.parse(localStorage.getItem("users") || "[]");
-        if (!users.length) {
-            localStorage.setItem("users", JSON.stringify([]));
-        }
-    }, []);
-
     const isProfileCompleted = (user: any) => {
         return (
             user.name &&
@@ -40,28 +33,30 @@ const SignInSignUp: React.FC = () => {
         );
     };
 
-    const handleLogin = () => {
-        const users = JSON.parse(localStorage.getItem("users") || "[]");
+    const handleLogin = async () => {
+        const users = await db.getUsers();
         const user = users.find((user: any) => user.email === email && user.password === password);
-
-        if (user) {
-            localStorage.setItem("user", JSON.stringify(user));
-            message.success("Login Successful!");
-            const isProfileComplete = isProfileCompleted(user);
-            setTimeout(() => {
-                navigate(isProfileComplete ? "/home" : "/profile");
-            }, 1000);
-        } else {
-            message.error("Invalid Email or Password");
+        try {
+            if (users) {
+                localStorage.setItem("user", JSON.stringify(user));
+                message.success("Login Successful!");
+                const isProfileComplete = isProfileCompleted(user);
+                setTimeout(() => {
+                    navigate(isProfileComplete ? "/home" : "/profile");
+                }, 1000);
+            } else {
+                message.error("Invalid Email or Password");
+            }
+        } catch (error: any) {
+            message.error(error);
         }
     };
 
-    const handleSignUp = () => {
+    const handleSignUp = async () => {
         if (!workEmail) {
             return message.error("Please fill all required fields");
         }
-
-        const users = JSON.parse(localStorage.getItem("users") || "[]");
+        const users = await db.getUsers();
         const emailExists = users.some((user: any) => user.email === workEmail);
 
         if (emailExists) {
@@ -81,13 +76,16 @@ const SignInSignUp: React.FC = () => {
             profilePhoto: "",
             password: password,
             isTempPassword: true,
-            role: "Editor"
+            role: "Admin"
         };
 
         users.push(newUser);
-        localStorage.setItem("users", JSON.stringify(users));
+        try {
+            await db.addUsers(newUser);
+        } catch (error: any) {
+            message.error(error)
+        }
         localStorage.setItem("user", JSON.stringify(newUser));
-
         message.success("Sign-up successful! Invite link sent. Please verify your account.");
         setTimeout(() => navigate("/profile"), 1000);
     };
