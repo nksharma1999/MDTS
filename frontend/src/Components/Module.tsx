@@ -11,6 +11,7 @@ import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUserId } from '../Utils/moduleStorage';
+import { RollbackOutlined } from '@ant-design/icons';
 
 const Module = () => {
     const { state } = useLocation();
@@ -51,9 +52,18 @@ const Module = () => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [discardEditByCreating, setDiscardEditByCreating] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
+    const [originalActivities, setOriginalActivities] = useState<any[]>(moduleData.activities);
+    const [isOriginalActivitiesStateStored, setIsOriginalActivitiesStateStored] = useState(false);
+    const [undoStack, setUndoStack] = useState<any[]>([]);
+
+    const pushToUndoStack = (currentState: any) => {
+        setUndoStack((prevStack) => [...prevStack, currentState]);
+        setIsOriginalActivitiesStateStored(false);
+    };
 
     useEffect(() => {
-        if (state) {
+        console.log("State from useLocation:", state); 
+          if (state && state.activities)  {
             setModuleData({
                 id: state.id,
                 parentModuleCode: state.parentModuleCode,
@@ -63,7 +73,14 @@ const Module = () => {
                 duration: state.duration,
                 activities: state.activities
             });
+            setUndoStack([]);
+            // Initialize originalActivities only if it's empty
+        if (originalActivities.length === 0) {
+            setOriginalActivities(JSON.parse(JSON.stringify(state.activities)));
         }
+    } else {
+        console.error("State or state.activities is not available.");
+    }
     }, [state]);
 
     useEffect(() => {
@@ -148,6 +165,7 @@ const Module = () => {
     };
 
     const addActivity = () => {
+        pushToUndoStack(moduleData);
         if (!selectedRow) return;
 
         const isModuleSelected = selectedRow.level === "L1";
@@ -207,7 +225,7 @@ const Module = () => {
         }, 0);
     };
 
-    const deleteActivity = async () => {
+    const deleteActivity = async() => {
         // if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
 
         // setModuleData((prev: any) => {
@@ -315,6 +333,7 @@ const Module = () => {
     };
 
     const increaseLevel = () => {
+        pushToUndoStack(moduleData);
         if (!selectedRow || selectedRow.level === "L1") return;
 
         setModuleData((prev: any) => {
@@ -398,6 +417,7 @@ const Module = () => {
     };
 
     const decreaseLevel = () => {
+        pushToUndoStack(moduleData); 
         if (!selectedRow || selectedRow.level === "L1" || selectedRow.level === "L2") return;
 
         setModuleData((prev: any) => {
@@ -630,16 +650,22 @@ const Module = () => {
     }
 
     const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
-        const activitiesCopy = [...moduleData.activities];
-
+    
         let sortedActivities;
+    
         if (order === "asc") {
-            sortedActivities = [...activitiesCopy].sort((a, b) => a.level.localeCompare(b.level));
+            sortedActivities = [...moduleData.activities].sort((a, b) => a.level.localeCompare(b.level));
         } else if (order === "desc") {
-            sortedActivities = [...activitiesCopy].sort((a, b) => b.level.localeCompare(a.level));
+            sortedActivities = [...moduleData.activities].sort((a, b) => b.level.localeCompare(a.level));
         } else {
-            sortedActivities = state?.activities || [];
+            if (originalActivities.length === 0) {
+                return;
+            }
+            // Restore the original activities
+            sortedActivities = JSON.parse(JSON.stringify(originalActivities));
         }
+    
+    
         setModuleData((prev: any) => ({
             ...prev,
             activities: sortedActivities
@@ -647,8 +673,17 @@ const Module = () => {
     };
 
     useEffect(() => {
+        if (isOriginalActivitiesStateStored === false){
+            setOriginalActivities(JSON.parse(JSON.stringify(moduleData.activities)));
+            setIsOriginalActivitiesStateStored(true);
+        }
         handleSortModule(sortOrder);
     }, [sortOrder]);
+
+    useEffect(() => {
+        console.log("Original Activities Updated:", originalActivities);
+    }, [originalActivities]);
+
 
     const toggleSortOrder = () => {
         const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
@@ -660,6 +695,14 @@ const Module = () => {
         if (sortOrder === 'desc') return <SortDescendingOutlined />;
         return <ReloadOutlined />;
     };
+    const handleUndo = () => {
+        if (undoStack.length === 0) return;
+
+        const lastState = undoStack[undoStack.length - 1];
+        setUndoStack((prevStack) => prevStack.slice(0, -1)); // Remove the last state from the stack
+        setModuleData(lastState); // Restore the last state
+    };
+    
 
     return (
         <div>
@@ -716,6 +759,16 @@ const Module = () => {
                                                 className="icon-button red"
                                                 onClick={() => setIsDeleteModalVisible(true)}
                                                 disabled={!selectedRow}
+                                            />
+                                        </Tooltip>
+                                    </Col>
+                                    <Col>
+                                        <Tooltip title="Undo">
+                                            <Button
+                                                icon={<RollbackOutlined />}
+                                                className="icon-button blue"
+                                                onClick={handleUndo}
+                                                disabled={undoStack.length === 0}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -870,7 +923,7 @@ const Module = () => {
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
                                     {moduleData.activities
-                                        .sort((a: any, b: any) => a.code.localeCompare(b.code))
+                                        // .sort((a: any, b: any) => a.code.localeCompare(b.code))
                                         .map((activity: any, index: any, sortedActivities: any) => (
                                             <TableRow
                                                 hover
