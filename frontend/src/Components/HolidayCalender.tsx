@@ -67,10 +67,6 @@ export const HolidayCalender = () => {
     if (field === "module") {
       let selectedModules = value;
 
-      if (value.includes("all")) {
-        selectedModules = moduleOptions;
-      }
-
       updatedRows[index][field] = selectedModules;
 
       const impact: Record<string, string> = {};

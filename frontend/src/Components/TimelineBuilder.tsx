@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, message, Result, Dropdown, Menu } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, message, Result, notification, Progress } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import type { ColumnsType } from "antd/es/table";
@@ -9,10 +9,11 @@ const { Step } = Steps;
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
-import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, DownOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
+import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
 import moment from 'moment';
 import { useLocation } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
+import { getCurrentUser } from '../Utils/moduleStorage';
 interface Activity {
   code: string;
   activityName: string;
@@ -82,8 +83,10 @@ const TimeBuilder = () => {
   const [selectedExistingProject, setSelectedExistigProject] = useState<any>(null);
   const [editingKey, setEditingKey] = useState(null);
   const [editedImpact, setEditedImpact] = useState<any>({});
-  const [restoreDropdownVisible, setRestoreDropdownVisible] = useState(false);
-  const [deletedModules, setDeletedModules] = useState<any>([]);
+  const [_deletedModules, setDeletedModules] = useState<any>([]);
+  const [isDeletionInProgress, setIsDeletionInProgress] = useState(false);
+  const [_deletedActivities, setDeletedActivities] = useState<any[]>([]);
+  const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
 
   useEffect(() => {
     defaultSetup();
@@ -453,22 +456,195 @@ const TimeBuilder = () => {
     setSequencedModules(updatedSequencedModules);
   };
 
+
   const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
+    if (isDeletionInProgress) return;
+
     setSelectedActivities((prevSelectedActivities) => {
-      const updatedActivities = isChecked
-        ? [...prevSelectedActivities, activityCode]
-        : prevSelectedActivities.filter((code) => code !== activityCode);
+      if (!isChecked) {
+        let removedActivityIndex: number | null = null;
+        let removedActivity: any = null;
+        let parentModuleCode: string | null = null;
 
-      setSequencedModules((prevFinalData) =>
-        prevFinalData.map((module) => ({
-          ...module,
-          activities: module.activities.filter((activity) => updatedActivities.includes(activity.code)),
-        }))
-      );
+        setSequencedModules((prevFinalData) =>
+          prevFinalData.map((module) => {
+            const index = module.activities.findIndex(
+              (activity) => activity.code === activityCode
+            );
 
-      return updatedActivities;
+            if (index !== -1) {
+              removedActivityIndex = index;
+              removedActivity = { ...module.activities[index] };
+              parentModuleCode = module.parentModuleCode;
+            }
+
+            return {
+              ...module,
+              activities: module.activities.filter(
+                (activity) => activity.code !== activityCode
+              ),
+            };
+          })
+        );
+
+        if (removedActivity && parentModuleCode) {
+          setDeletedActivities((prevDeleted: any) => [
+            ...prevDeleted,
+            { ...removedActivity, index: removedActivityIndex, parentModuleCode },
+          ]);
+        }
+
+        setIsDeletionInProgress(true);
+        setDeletingActivity(activityCode);
+
+        const key = `delete-activity-${activityCode}`;
+        let progress = 100;
+        let isUndoClicked = false;
+
+        const updateProgress = () => {
+          if (isUndoClicked) {
+            setIsDeletionInProgress(false);
+            setDeletingActivity(null);
+            return;
+          }
+          progress -= 2;
+          if (progress <= 0) {
+            notification.destroy(key);
+            setIsDeletionInProgress(false); // ✅ Re-enable deletion after progress ends
+            setDeletingActivity(null);
+            return;
+          }
+
+          notification.open({
+            key,
+            message: null,
+            duration: 0,
+            closeIcon: null,
+            style: {
+              borderRadius: "12px",
+              padding: "12px 16px",
+              boxShadow: "0px 6px 18px rgba(0, 0, 0, 0.15)",
+              background: "#FFF8F0",
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+            },
+            btn: (
+              <>
+                <div
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: "0px 8px 0 4px",
+                      fontSize: "13px",
+                      color: "#444",
+                      fontWeight: "500",
+                      width: "200px",
+                    }}
+                  >
+                    {removedActivity?.name} has been deleted.
+                  </p>
+
+                  <div>
+                    <Button
+                      type="primary"
+                      size="small"
+                      style={{
+                        background: "#258790",
+                        border: "none",
+                        fontWeight: "bold",
+                        color: "#fff",
+                        padding: "6px 14px",
+                        borderRadius: "6px",
+                        minWidth: "60px",
+                      }}
+                      onClick={() => {
+                        isUndoClicked = true;
+                        restoreDeletedActivity(activityCode);
+                        notification.destroy(key);
+                        setIsDeletionInProgress(false);
+                        setDeletingActivity(null);
+                        notification.success({
+                          message: "✅ Rollback Successful",
+                          description: `${removedActivity?.name} has been restored successfully.`,
+                          placement: "topRight",
+                          duration: 0.1,
+                          style: {
+                            borderRadius: "10px",
+                            background: "#E6FFFB",
+                            color: "#006D75",
+                          },
+                        });
+                      }}
+                    >
+                      Undo
+                    </Button>
+                  </div>
+                </div>
+                <div className="progress-bar-item">
+                  <Progress
+                    percent={progress}
+                    showInfo={false}
+                    status="active"
+                    strokeColor={{ from: "#FF4D4F", to: "#FF9C6E" }}
+                    strokeWidth={6}
+                    style={{ flex: 1, borderRadius: "6px", margin: 0 }}
+                  />
+                </div>
+              </>
+            ),
+          });
+
+          setTimeout(updateProgress, 100);
+        };
+
+        setTimeout(updateProgress, 100);
+
+        return prevSelectedActivities.filter((code) => code !== activityCode);
+      } else {
+        return [...prevSelectedActivities, activityCode];
+      }
     });
   };
+
+  const restoreDeletedActivity = (activityCode: string) => {
+    setDeletedActivities((prevDeleted: any) => {
+      const restoredActivity = prevDeleted.find(
+        (activity: any) => activity.code == activityCode
+      );
+      if (restoredActivity) {
+        setSequencedModules((prevModules) =>
+          prevModules.map((module) =>
+            module.parentModuleCode === restoredActivity.parentModuleCode
+              ? {
+                ...module,
+                activities: [
+                  ...module.activities.slice(0, restoredActivity.index),
+                  { ...restoredActivity },
+                  ...module.activities.slice(restoredActivity.index),
+                ],
+              }
+              : module
+          )
+        );
+
+        return prevDeleted.filter(
+          (activity: any) => activity.code !== activityCode
+        );
+      }
+
+      return prevDeleted;
+    });
+
+    setSelectedActivities((prevSelected) => [...prevSelected, activityCode]);
+  };
+
 
   const handleProjectChange = (projectId: any) => {
     setCurrentStep(0);
@@ -506,55 +682,84 @@ const TimeBuilder = () => {
 
   const handleDownload = async () => {
     const workbook: any = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Activities");
+    const worksheet = workbook.addWorksheet("Project Report");
+    const currentUser = getCurrentUser();
+    const titleStyle = {
+      font: { bold: true, size: 16, color: { argb: "004d99" } },
+      alignment: { horizontal: "center", vertical: "middle" },
+    };
+
+    const subtitleStyle = {
+      font: { bold: true, size: 12, color: { argb: "333333" } },
+      alignment: { horizontal: "center", vertical: "middle" },
+    };
+
+    const tableHeaderStyle = {
+      font: { bold: true, size: 12, color: { argb: "FFFFFF" } },
+      fill: { type: "pattern", pattern: "solid", fgColor: { argb: "258790" } },
+      alignment: { horizontal: "center", vertical: "middle" },
+      border: {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      },
+    };
+
+    const moduleHeaderStyle = {
+      font: { bold: true, size: 12, color: { argb: "000000" } },
+      fill: { type: "pattern", pattern: "solid", fgColor: { argb: "DDDDDD" } },
+      alignment: { horizontal: "left", vertical: "middle" },
+    };
+
+    const dataRowStyle = {
+      font: { size: 11 },
+      alignment: { horizontal: "left", vertical: "middle" },
+      border: { top: { style: "thin" }, bottom: { style: "thin" } },
+    };
+
+    worksheet.mergeCells("B1:G1");
+    const projectTitle = worksheet.getCell("B1");
+    projectTitle.value = `Project Report: ${selectedProject?.projectParameters.projectName}`;
+    projectTitle.font = titleStyle.font;
+    projectTitle.alignment = titleStyle.alignment;
+
+    worksheet.mergeCells("B2:G2");
+    const companyTitle = worksheet.getCell("B2");
+    companyTitle.value = `Company: ${currentUser.company}`;
+    companyTitle.font = subtitleStyle.font;
+    companyTitle.alignment = subtitleStyle.alignment;
+
+    worksheet.mergeCells("B3:G3");
+    const timestamp = worksheet.getCell("B3");
+    timestamp.value = `Generated On: ${dayjs().format("DD-MM-YYYY HH:mm:ss")}`;
+    timestamp.font = { italic: true, size: 12, color: { argb: "555555" } };
+    timestamp.alignment = subtitleStyle.alignment;
+
+    worksheet.addRow([]);
 
     const globalHeader = [
       "Sr No.",
       "Key Activity",
-      "Duration",
+      "Duration (Days)",
       "Pre-Requisite",
       "Slack",
       "Planned Start",
-      "Planned Finish"
+      "Planned Finish",
     ];
     const headerRow = worksheet.addRow(globalHeader);
 
     headerRow.eachCell((cell: any) => {
-      cell.font = { bold: true, size: 14, color: { argb: "FFFFFF" } };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "258790" },
-      };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = {
-        top: { style: "thin" },
-        bottom: { style: "thin" },
-      };
+      Object.assign(cell, tableHeaderStyle);
     });
 
-    worksheet.getRow(1).height = 30;
+    worksheet.getRow(5).height = 25;
 
-    const moduleHeaderStyle = {
-      font: { bold: true, size: 14, color: { argb: "000000" } },
-      fill: {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "DDDDDD" },
-      },
-      alignment: { horizontal: "left", vertical: "middle" },
-    };
-
-    const activityRowStyle = {
-      font: { size: 11 },
-      alignment: { horizontal: "left", vertical: "middle" },
-    };
-
-    sequencedModules.forEach((module) => {
+    let rowIndex = 6;
+    sequencedModules.forEach((module, moduleIndex) => {
       const moduleHeaderRow = worksheet.addRow([
-        module.parentModuleCode,
+        `Module: ${module.parentModuleCode}`,
         module.moduleName,
-        "",
         "",
         "",
         "",
@@ -563,14 +768,14 @@ const TimeBuilder = () => {
       ]);
 
       moduleHeaderRow.eachCell((cell: any) => {
-        cell.font = moduleHeaderStyle.font;
-        cell.fill = moduleHeaderStyle.fill;
-        cell.alignment = moduleHeaderStyle.alignment;
+        Object.assign(cell, moduleHeaderStyle);
       });
 
-      module.activities.forEach((activity) => {
+      rowIndex++;
+
+      module.activities.forEach((activity, activityIndex) => {
         const row = worksheet.addRow([
-          activity.code,
+          `${moduleIndex + 1}.${activityIndex + 1}`,
           activity.activityName,
           activity.duration || 0,
           activity.prerequisite,
@@ -580,24 +785,40 @@ const TimeBuilder = () => {
         ]);
 
         row.eachCell((cell: any) => {
-          cell.font = activityRowStyle.font;
-          cell.alignment = activityRowStyle.alignment;
+          Object.assign(cell, dataRowStyle);
         });
+
+        if (activityIndex % 2 === 0) {
+          row.eachCell((cell: any) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "F7F7F7" },
+            };
+          });
+        }
+        rowIndex++;
       });
 
       worksheet.addRow([]);
+      rowIndex++;
     });
 
     worksheet.columns = [
+      { width: 10 },
+      { width: 35 },
+      { width: 18 },
+      { width: 30 },
+      { width: 15 },
       { width: 20 },
-      { width: 30 },
-      { width: 15 },
-      { width: 30 },
-      { width: 15 },
-      { width: 25 },
-      { width: 25 },
-      { width: 30 },
+      { width: 20 },
     ];
+
+    worksheet.mergeCells(`B${rowIndex + 2}:G${rowIndex + 2}`);
+    const createdByRow = worksheet.getCell(`B${rowIndex + 2}`);
+    createdByRow.value = `Created by: ${currentUser.name || ""}`;
+    createdByRow.font = { italic: true, size: 12, color: { argb: "777777" } };
+    createdByRow.alignment = { horizontal: "right", vertical: "middle" };
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -800,7 +1021,7 @@ const TimeBuilder = () => {
         dataIndex: "code",
         key: "code",
         align: "left",
-        render: (_: any, record: any) => record.parentModuleCode || record.code, // Show parentModuleCode for modules, code for activities
+        render: (_: any, record: any) => record.code,
       },
       {
         title: "Activity Name",
@@ -827,7 +1048,7 @@ const TimeBuilder = () => {
           <Checkbox
             checked={selectedActivities.includes(record.code)}
             onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-            disabled={step !== 1}
+            disabled={isDeletionInProgress && deletingActivity !== record.code}
           />
         ),
       });
@@ -987,7 +1208,7 @@ const TimeBuilder = () => {
         title: (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
             <span>Actions</span>
-            {deletedModules.length > 0 && (
+            {/* {deletedModules.length > 0 && (
               <div style={{ position: "absolute", right: 0 }}>
                 <Dropdown
                   overlay={(
@@ -1006,7 +1227,7 @@ const TimeBuilder = () => {
                   <Button icon={<DownOutlined />} />
                 </Dropdown>
               </div>
-            )}
+            )} */}
           </div>
         ),
         dataIndex: "actions",
@@ -1024,6 +1245,7 @@ const TimeBuilder = () => {
                 padding: "6px 10px",
                 borderRadius: "4px",
               }}
+              disabled={isDeletionInProgress}
             >
               Delete
             </Button>
@@ -1076,7 +1298,6 @@ const TimeBuilder = () => {
     }
   };
 
-
   const handleCancelUpdateProjectTimeline = () => {
     setIsCancelEditModalVisiblVisible(false)
     setIsUpdateMode(false);
@@ -1102,27 +1323,159 @@ const TimeBuilder = () => {
     return true;
   };
 
+  // const handleModuleSelection = (moduleCode: any, isChecked: any) => {
+  //   setSequencedModules((prevModules) => {
+  //     if (!isChecked) {
+  //       const removedModule = prevModules.find((module) => module.parentModuleCode === moduleCode);
+  //       setDeletedModules((prevDeleted: any) => [...prevDeleted, removedModule]);
+  //       return prevModules.filter((module) => module.parentModuleCode !== moduleCode);
+  //     }
+  //     return prevModules;
+  //   });
+  // };
+
+  // const restoreDeletedModule = (moduleCode: any) => {
+  //   setDeletedModules((prevDeleted: any) => {
+  //     const restoredModule = prevDeleted.find((module: any) => module.parentModuleCode === moduleCode);
+  //     if (restoredModule) {
+  //       setSequencedModules((prevModules) => [...prevModules, restoredModule]);
+  //       return prevDeleted.filter((module: any) => module.parentModuleCode !== moduleCode);
+  //     }
+  //     return prevDeleted;
+  //   });
+  // };
+
   const handleModuleSelection = (moduleCode: any, isChecked: any) => {
     setSequencedModules((prevModules) => {
       if (!isChecked) {
-        const removedModule = prevModules.find((module) => module.parentModuleCode === moduleCode);
-        setDeletedModules((prevDeleted: any) => [...prevDeleted, removedModule]);
+        const index = prevModules.findIndex(
+          (module) => module.parentModuleCode === moduleCode
+        );
+
+        if (index === -1) return prevModules;
+
+        const removedModule = prevModules[index];
+        setDeletedModules((prevDeleted: any) => [
+          ...prevDeleted,
+          { ...removedModule, originalIndex: index },
+        ]);
+
+        setIsDeletionInProgress(true);
+
+        const key = `delete-${moduleCode}`;
+        let progress = 100;
+        let isUndoClicked = false;
+
+        const updateProgress = () => {
+          if (isUndoClicked) {
+            setIsDeletionInProgress(false);
+            return;
+          }
+          progress -= 2;
+          if (progress <= 0) {
+            notification.destroy(key);
+            setIsDeletionInProgress(false);
+            return;
+          }
+
+          notification.open({
+            key,
+            message: null,
+            duration: 0,
+            closeIcon: null,
+            style: {
+              borderRadius: "12px",
+              padding: "12px 16px",
+              boxShadow: "0px 6px 18px rgba(0, 0, 0, 0.15)",
+              background: "#FFF8F0",
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+            },
+            btn: (
+              <>
+                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <p style={{ margin: " 0px 8px 0 4px", fontSize: "13px", color: "#444", fontWeight: "500", width: "200px" }}>
+                    {removedModule.moduleName} has been deleted.
+                  </p>
+
+                  <div>
+                    <Button
+                      type="primary"
+                      size="small"
+                      style={{
+                        background: "#258790",
+                        border: "none",
+                        fontWeight: "bold",
+                        color: "#fff",
+                        padding: "6px 14px",
+                        borderRadius: "6px",
+                        minWidth: "60px",
+                      }}
+                      onClick={() => {
+                        isUndoClicked = true;
+                        restoreDeletedModule(moduleCode);
+                        notification.destroy(key);
+                        setIsDeletionInProgress(false);
+                        notification.success({
+                          message: "✅ Roleback Successful",
+                          description: `${removedModule.moduleName} has been restored successfully.`,
+                          placement: "topRight",
+                          duration: 0.1,
+                          style: { borderRadius: "10px", background: "#E6FFFB", color: "#006D75" },
+                        });
+                      }}
+                    >
+                      Undo
+                    </Button>
+                  </div>
+                </div>
+                <div className="progress-bar-item">
+                  <Progress
+                    percent={progress}
+                    showInfo={false}
+                    status="active"
+                    strokeColor={{ from: "#FF4D4F", to: "#FF9C6E" }}
+                    strokeWidth={6}
+                    style={{ flex: 1, borderRadius: "6px", margin: 0 }}
+                  />
+                </div>
+              </>
+            ),
+          });
+
+          setTimeout(updateProgress, 100);
+        };
+
+        setTimeout(updateProgress, 100);
+
         return prevModules.filter((module) => module.parentModuleCode !== moduleCode);
       }
       return prevModules;
     });
   };
 
-  const restoreDeletedModule = (moduleCode: any) => {
+  const restoreDeletedModule = (moduleCode: string) => {
     setDeletedModules((prevDeleted: any) => {
-      const restoredModule = prevDeleted.find((module: any) => module.parentModuleCode === moduleCode);
-      if (restoredModule) {
-        setSequencedModules((prevModules) => [...prevModules, restoredModule]);
-        return prevDeleted.filter((module: any) => module.parentModuleCode !== moduleCode);
-      }
-      return prevDeleted;
+      const restoredModuleIndex = prevDeleted.findIndex(
+        (module: any) => module.parentModuleCode === moduleCode
+      );
+
+      if (restoredModuleIndex === -1) return prevDeleted;
+
+      const restoredModule = prevDeleted[restoredModuleIndex];
+      const { originalIndex } = restoredModule;
+
+      setSequencedModules((prevModules) => {
+        const newModules = [...prevModules];
+        newModules.splice(originalIndex, 0, restoredModule);
+        return newModules;
+      });
+
+      return prevDeleted.filter((module: any) => module.parentModuleCode !== moduleCode);
     });
   };
+
 
   return (
     <>

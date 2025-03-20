@@ -10,6 +10,7 @@ import { Button, Select, Modal, Input, message, Table } from "antd";
 import { DownloadOutlined, EditOutlined, ShareAltOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
+import { getCurrentUser } from '../Utils/moduleStorage';
 interface Activity {
   code: string;
   activityName: string;
@@ -197,109 +198,254 @@ export const StatusUpdate = () => {
     { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
   ];
 
-  const handleDownload = async () => {
-    const workbook: any = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Activities");
+  // const handleDownload = async () => {
+  //   const workbook: any = new ExcelJS.Workbook();
+  //   const worksheet = workbook.addWorksheet("Activities");
+  // const currentUser = getCurrentUser();
 
-    const globalHeader = [
-      "Sr No.",
-      "Key Activity",
-      "Duration",
-      "Pre-Requisite",
-      "Slack",
-      "Planned Start",
-      "Planned Finish"
-    ];
-    const headerRow = worksheet.addRow(globalHeader);
+  //   const globalHeader = [
+  //     "Sr No.",
+  //     "Key Activity",
+  //     "Duration",
+  //     "Pre-Requisite",
+  //     "Slack",
+  //     "Planned Start",
+  //     "Planned Finish"
+  //   ];
+  //   const headerRow = worksheet.addRow(globalHeader);
 
-    headerRow.eachCell((cell: any) => {
-      cell.font = { bold: true, size: 14, color: { argb: "FFFFFF" } };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "258790" },
+  //   headerRow.eachCell((cell: any) => {
+  //     cell.font = { bold: true, size: 14, color: { argb: "FFFFFF" } };
+  //     cell.fill = {
+  //       type: "pattern",
+  //       pattern: "solid",
+  //       fgColor: { argb: "258790" },
+  //     };
+  //     cell.alignment = { horizontal: "center", vertical: "middle" };
+  //     cell.border = {
+  //       top: { style: "thin" },
+  //       bottom: { style: "thin" },
+  //     };
+  //   });
+
+  //   worksheet.getRow(1).height = 30;
+
+  //   const moduleHeaderStyle = {
+  //     font: { bold: true, size: 14, color: { argb: "000000" } },
+  //     fill: {
+  //       type: "pattern",
+  //       pattern: "solid",
+  //       fgColor: { argb: "DDDDDD" },
+  //     },
+  //     alignment: { horizontal: "left", vertical: "middle" },
+  //   };
+
+  //   const activityRowStyle = {
+  //     font: { size: 11 },
+  //     alignment: { horizontal: "left", vertical: "middle" },
+  //   };
+
+  //   sequencedModules.forEach((module) => {
+  //     const moduleHeaderRow = worksheet.addRow([
+  //       module.parentModuleCode,
+  //       module.moduleName,
+  //       "",
+  //       "",
+  //       "",
+  //       "",
+  //       "",
+  //       "",
+  //     ]);
+
+  //     moduleHeaderRow.eachCell((cell: any) => {
+  //       cell.font = moduleHeaderStyle.font;
+  //       cell.fill = moduleHeaderStyle.fill;
+  //       cell.alignment = moduleHeaderStyle.alignment;
+  //     });
+
+  //     module.activities.forEach((activity) => {
+  //       const row = worksheet.addRow([
+  //         activity.code,
+  //         activity.activityName,
+  //         activity.duration || 0,
+  //         activity.prerequisite,
+  //         activity.slack || 0,
+  //         activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+  //         activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+  //       ]);
+
+  //       row.eachCell((cell: any) => {
+  //         cell.font = activityRowStyle.font;
+  //         cell.alignment = activityRowStyle.alignment;
+  //       });
+  //     });
+
+  //     worksheet.addRow([]);
+  //   });
+
+  //   worksheet.columns = [
+  //     { width: 20 },
+  //     { width: 30 },
+  //     { width: 15 },
+  //     { width: 30 },
+  //     { width: 15 },
+  //     { width: 25 },
+  //     { width: 25 },
+  //     { width: 30 },
+  //   ];
+
+  //   const buffer = await workbook.xlsx.writeBuffer();
+  //   const blob = new Blob([buffer], {
+  //     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  //   });
+  //   saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
+  //   message.success("Download started!");
+  // };
+
+    const handleDownload = async () => {
+      const workbook: any = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Project Report");
+      const currentUser = getCurrentUser();
+      const titleStyle = {
+        font: { bold: true, size: 16, color: { argb: "004d99" } },
+        alignment: { horizontal: "center", vertical: "middle" },
       };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = {
-        top: { style: "thin" },
-        bottom: { style: "thin" },
+    
+      const subtitleStyle = {
+        font: { bold: true, size: 12, color: { argb: "333333" } },
+        alignment: { horizontal: "center", vertical: "middle" },
       };
-    });
-
-    worksheet.getRow(1).height = 30;
-
-    const moduleHeaderStyle = {
-      font: { bold: true, size: 14, color: { argb: "000000" } },
-      fill: {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "DDDDDD" },
-      },
-      alignment: { horizontal: "left", vertical: "middle" },
-    };
-
-    const activityRowStyle = {
-      font: { size: 11 },
-      alignment: { horizontal: "left", vertical: "middle" },
-    };
-
-    sequencedModules.forEach((module) => {
-      const moduleHeaderRow = worksheet.addRow([
-        module.parentModuleCode,
-        module.moduleName,
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-      ]);
-
-      moduleHeaderRow.eachCell((cell: any) => {
-        cell.font = moduleHeaderStyle.font;
-        cell.fill = moduleHeaderStyle.fill;
-        cell.alignment = moduleHeaderStyle.alignment;
-      });
-
-      module.activities.forEach((activity) => {
-        const row = worksheet.addRow([
-          activity.code,
-          activity.activityName,
-          activity.duration || 0,
-          activity.prerequisite,
-          activity.slack || 0,
-          activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
-          activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-        ]);
-
-        row.eachCell((cell: any) => {
-          cell.font = activityRowStyle.font;
-          cell.alignment = activityRowStyle.alignment;
-        });
-      });
-
+    
+      const tableHeaderStyle = {
+        font: { bold: true, size: 12, color: { argb: "FFFFFF" } },
+        fill: { type: "pattern", pattern: "solid", fgColor: { argb: "258790" } },
+        alignment: { horizontal: "center", vertical: "middle" },
+        border: {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        },
+      };
+    
+      const moduleHeaderStyle = {
+        font: { bold: true, size: 12, color: { argb: "000000" } },
+        fill: { type: "pattern", pattern: "solid", fgColor: { argb: "DDDDDD" } },
+        alignment: { horizontal: "left", vertical: "middle" },
+      };
+    
+      const dataRowStyle = {
+        font: { size: 11 },
+        alignment: { horizontal: "left", vertical: "middle" },
+        border: { top: { style: "thin" }, bottom: { style: "thin" } },
+      };
+  
+      worksheet.mergeCells("B1:G1");
+      const projectTitle = worksheet.getCell("B1");
+      projectTitle.value = `Project Report: ${selectedProject?.projectParameters.projectName}`;
+      projectTitle.font = titleStyle.font;
+      projectTitle.alignment = titleStyle.alignment;
+    
+      worksheet.mergeCells("B2:G2");
+      const companyTitle = worksheet.getCell("B2");
+      companyTitle.value = `Company: ${currentUser.company}`;
+      companyTitle.font = subtitleStyle.font;
+      companyTitle.alignment = subtitleStyle.alignment;
+    
+      worksheet.mergeCells("B3:G3");
+      const timestamp = worksheet.getCell("B3");
+      timestamp.value = `Generated On: ${dayjs().format("DD-MM-YYYY HH:mm:ss")}`;
+      timestamp.font = { italic: true, size: 12, color: { argb: "555555" } };
+      timestamp.alignment = subtitleStyle.alignment;
+    
       worksheet.addRow([]);
-    });
-
-    worksheet.columns = [
-      { width: 20 },
-      { width: 30 },
-      { width: 15 },
-      { width: 30 },
-      { width: 15 },
-      { width: 25 },
-      { width: 25 },
-      { width: 30 },
-    ];
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-    message.success("Download started!");
-  };
-
+    
+      const globalHeader = [
+        "Sr No.",
+        "Key Activity",
+        "Duration (Days)",
+        "Pre-Requisite",
+        "Slack",
+        "Planned Start",
+        "Planned Finish",
+      ];
+      const headerRow = worksheet.addRow(globalHeader);
+    
+      headerRow.eachCell((cell: any) => {
+        Object.assign(cell, tableHeaderStyle);
+      });
+    
+      worksheet.getRow(5).height = 25;
+      let rowIndex = 6;
+      sequencedModules.forEach((module, moduleIndex) => {
+        const moduleHeaderRow = worksheet.addRow([
+          `Module: ${module.parentModuleCode}`,
+          module.moduleName,
+          "",
+          "",
+          "",
+          "",
+          "",
+        ]);
+    
+        moduleHeaderRow.eachCell((cell: any) => {
+          Object.assign(cell, moduleHeaderStyle);
+        });
+    
+        rowIndex++;
+        module.activities.forEach((activity, activityIndex) => {
+          const row = worksheet.addRow([
+            `${moduleIndex + 1}.${activityIndex + 1}`,
+            activity.activityName,
+            activity.duration || 0,
+            activity.prerequisite,
+            activity.slack || 0,
+            activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+            activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+          ]);
+    
+          row.eachCell((cell: any) => {
+            Object.assign(cell, dataRowStyle);
+          });
+          if (activityIndex % 2 === 0) {
+            row.eachCell((cell: any) => {
+              cell.fill = {
+                type: "pattern",
+                pattern: "solid",
+                fgColor: { argb: "F7F7F7" },
+              };
+            });
+          }
+          rowIndex++;
+        });
+    
+        worksheet.addRow([]);
+        rowIndex++;
+      });
+    
+      worksheet.columns = [
+        { width: 10 },
+        { width: 35 },
+        { width: 18 },
+        { width: 30 },
+        { width: 15 },
+        { width: 20 },
+        { width: 20 },
+      ];
+    
+      worksheet.mergeCells(`B${rowIndex + 2}:G${rowIndex + 2}`);
+      const createdByRow = worksheet.getCell(`B${rowIndex + 2}`);
+      createdByRow.value = `Created by: ${currentUser.name || ""}`;
+      createdByRow.font = { italic: true, size: 12, color: { argb: "777777" } };
+      createdByRow.alignment = { horizontal: "right", vertical: "middle" };
+    
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
+      message.success("Download started!");
+    };
   const editTimeBuilder = () => {
     eventBus.emit("updateTab", "/create/timeline-builder");
     navigate("/create/timeline-builder", { state: { selectedProject: selectedProject } });

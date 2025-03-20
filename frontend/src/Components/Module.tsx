@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
@@ -86,7 +86,7 @@ const Module = () => {
 
     const handleSaveModuleAndActivity = async () => {
         try {
-            const userId=getCurrentUserId();
+            const userId = getCurrentUserId();
             if (!moduleData || Object.keys(moduleData).length === 0 || !moduleData.parentModuleCode) {
                 notification.error({
                     message: "Module data is empty or missing required fields.",
@@ -94,7 +94,7 @@ const Module = () => {
                 });
                 return;
             }
-            
+
             if (isEditing) {
                 if (!moduleData.id || typeof moduleData.id !== "number") {
                     notification.error({
@@ -207,7 +207,7 @@ const Module = () => {
         }, 0);
     };
 
-    const deleteActivity = () => {
+    const deleteActivity = async () => {
         // if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
 
         // setModuleData((prev: any) => {
@@ -246,45 +246,69 @@ const Module = () => {
         // setIsDeleteModalVisible(false);
 
         if (!selectedRow) return;
-        setModuleData((prev: any) => {
-            if (selectedRow.parentModuleCode) {
-                return {
+        else {
+            if (selectedRow.parentModuleCode && selectedRow.id) {
+                setModuleData({
                     parentModuleCode: "",
                     moduleName: "",
                     level: "",
                     mineType: "",
                     duration: "",
                     activities: []
-                };
+                })
+                try {
+                    await db.deleteModule(selectedRow.id);
+                    setTimeout(() => navigate(".", { replace: true }), 0);
+                    message.success("Module removed successfully!");
+                } catch (error: any) {
+                    message.error(error);
+                }
             }
-            let activities = [...prev.activities];
-            let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
+            else if (selectedRow.parentModuleCode && selectedRow.id) {
+                setModuleData({
+                    parentModuleCode: "",
+                    moduleName: "",
+                    level: "",
+                    mineType: "",
+                    duration: "",
+                    activities: []
+                })
+            }
+            else {
+                setModuleData((prev: any) => {
+                    let activities = [...prev.activities];
+                    let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
 
-            children.forEach(child => {
-                let newParentCode = selectedRow.prerequisite || "";
-                let childParts = child.code.split("/");
-                childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
-                child.code = newParentCode ? `${newParentCode}/${childParts.slice(-1)}` : childParts.slice(-1).join("/");
-                child.prerequisite = newParentCode;
-            });
-            let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
-            let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
-            let sameLevelActivities = updatedActivities.filter(activity =>
-                activity.code.startsWith(parentCode) && activity.level === selectedRow.level
-            );
+                    children.forEach(child => {
+                        let newParentCode = selectedRow.prerequisite || "";
+                        let childParts = child.code.split("/");
+                        childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
+                        child.code = newParentCode ? `${newParentCode}/${childParts.slice(-1)}` : childParts.slice(-1).join("/");
+                        child.prerequisite = newParentCode;
+                    });
+                    let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
+                    let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
+                    let sameLevelActivities = updatedActivities.filter(activity =>
+                        activity.code.startsWith(parentCode) && activity.level === selectedRow.level
+                    );
 
-            sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
-            sameLevelActivities.forEach((activity, index) => {
-                let newCode = `${parentCode}/${(index + 1) * 10}`;
-                activity.code = newCode;
-            });
+                    sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
+                    sameLevelActivities.forEach((activity, index) => {
+                        let newCode = `${parentCode}/${(index + 1) * 10}`;
+                        activity.code = newCode;
+                    });
 
-            return {
-                ...prev,
-                activities: updatedActivities
-            };
-        });
+                    return {
+                        ...prev,
+                        activities: updatedActivities
+                    };
+                });
 
+                setSelectedRow(null);
+                handlePrerequisite();
+                setIsDeleteModalVisible(false);
+            }
+        }
         setSelectedRow(null);
         handlePrerequisite();
         setIsDeleteModalVisible(false);

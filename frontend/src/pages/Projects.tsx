@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Form, Input, Row, Col, Button, Modal, Select, Dropdown, Menu } from 'antd';
+import { Form, Input, Row, Col, Button, Modal, Select, Dropdown, Menu, message } from 'antd';
 import { Link } from "react-router-dom";
 import ImageContainer from "../components/ImageContainer";
 import { SearchOutlined } from "@mui/icons-material";
@@ -83,7 +83,6 @@ const Projects = () => {
                 setProjectDetails(null);
                 return;
             }
-
             setAllProjects(storedData);
             setProjectDetails(storedData[0]);
             setSelectedProjectName(storedData[0].projectParameters.projectName);
@@ -91,6 +90,7 @@ const Projects = () => {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
     }
+
     useEffect(() => {
         getAllProjects();
     }, []);
@@ -105,7 +105,6 @@ const Projects = () => {
             </div>
         </div>;
     }
-
 
     const { projectParameters, locations, contractualDetails, initialStatus }: any = projectDetails;
 
@@ -122,10 +121,7 @@ const Projects = () => {
     const handleSearch = (_event: any) => {
         console.log("searching...");
     };
-
-    const showModal = () => setIsModalOpen(true);
-    const handleCancel = () => setIsModalOpen(false);
-
+    
     const handleAddMember = () => {
         if (selectedMember && !addedMembers.includes(selectedMember)) {
             setAddedMembers([...addedMembers, selectedMember]);
@@ -134,23 +130,23 @@ const Projects = () => {
         setSelectedMember(null);
     };
 
-    const handleDeleteProject = () => {
+    const handleDeleteProject = async () => {
         if (!projectToDelete) return;
-
-        const updatedProjects = allProjects.filter(
-            (project) => project.id !== projectToDelete.id
-        );
-
-        const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-        const userId = loggedInUser.id;
-        const userProjectsKey = `projects_${userId}`;
-
-        localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
-        setAllProjects(updatedProjects);
-        setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
-        setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0].projectParameters.projectName : "");
-        setIsDeleteModalOpen(false);
+    
+        try {
+            await db.deleteProject(projectToDelete.id);
+            const updatedProjects = await db.getProjects();
+            setAllProjects(updatedProjects);
+            setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
+            setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0]?.projectParameters?.projectName || "" : "");
+            message.success("Project removed successfully");
+        } catch (error:any) {
+            message.error("Error deleting project:", error);
+        } finally {
+            setIsDeleteModalOpen(false);
+        }
     };
+    
 
     const closeDeleteModal = () => {
         setProjectToDelete(null);
@@ -209,7 +205,7 @@ const Projects = () => {
                             <div style={{ fontSize: "12px", color: "#c5c5c5" }}>{projectParameters.companyName}</div>
                         </div>
                         <div>
-                            <Button className="bg-secondary" onClick={showModal}>
+                            <Button className="bg-secondary" onClick={() => setIsModalOpen(true)}>
                                 Add Member
                             </Button>
                         </div>
@@ -397,7 +393,7 @@ const Projects = () => {
             <Modal
                 title="Select Member"
                 open={isModalOpen}
-                onCancel={handleCancel}
+                onCancel={() => setIsModalOpen(false)}
                 onOk={handleAddMember}
                 okButtonProps={{ className: "bg-secondary text-white" }}
                 cancelButtonProps={{ className: "bg-tertiary text-white" }}

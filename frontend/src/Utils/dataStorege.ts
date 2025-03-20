@@ -18,6 +18,7 @@ export class DataStorage extends Dexie {
   projects!: Table<any, number>;
   moduleLibrary!: Table<Library, number>;
   users!: Table<any, number>;
+  holidays!: Table<any, number>;
 
   constructor() {
     super("MTDS");
@@ -27,6 +28,7 @@ export class DataStorage extends Dexie {
       moduleLibrary: "++id",
       projects: "++id",
       users: "++id",
+      holidays:"++id"
     });
 
     this.mineTypes = this.table("mineTypes");
@@ -34,6 +36,7 @@ export class DataStorage extends Dexie {
     this.moduleLibrary = this.table("moduleLibrary");
     this.projects = this.table("projects");
     this.users = this.table("users");
+    this.holidays=this.table("holidays");
   }
 
   async addModule(module: any): Promise<number> {
@@ -198,6 +201,47 @@ export class DataStorage extends Dexie {
       throw new Error(`Invalid user ID: ${id}`);
     }
     return await this.users.get(numericId);
+  }
+
+  async addHolidays(holiday: any): Promise<number> {
+    return this.holidays.add(holiday);
+  }
+
+  async getAllHolidays(): Promise<any> {
+    return this.holidays.toArray();
+  }
+
+  async getHolidaysById(id: any): Promise<any> {
+    return this.holidays.get(id);
+  }
+
+  async updateHolidays(id: number, newRecord: any): Promise<void> {
+    try {
+      const existingholiday = await this.holidays.get(id);
+      if (existingholiday) {
+        const updatedholiday = { ...newRecord, id };
+        await this.holidays.put(updatedholiday);
+        message.success(`Holiday with ID ${id} updated successfully.`);
+      } else {
+        message.warning(`Holiday with ID ${id} not found.`);
+      }
+    } catch (error) {
+      message.error("Error updating holiday in IndexedDB:");
+    }
+  }
+
+  async deleteHolidays(id: number): Promise<void> {
+    try {
+      const existingholiday = await this.holidays.get(id);
+      if (existingholiday) {
+        await this.holidays.delete(id);
+        message.success(`Holiday with ID ${id} deleted successfully.`);
+      } else {
+        message.warning(`Holiday with ID ${id} not found.`);
+      }
+    } catch (error) {
+      message.error("Error deleting Holiday from IndexedDB:");
+    }
   }
   
 
