@@ -226,43 +226,6 @@ const Module = () => {
     };
 
     const deleteActivity = async() => {
-        // if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
-
-        // setModuleData((prev: any) => {
-        //     let activities = [...prev.activities];
-        //     let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
-        //     children.forEach(child => {
-        //         let newParentCode = selectedRow.prerequisite;
-        //         let childParts = child.code.split("/");
-        //         childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
-        //         child.code = newParentCode + "/" + childParts.slice(-1);
-        //         child.prerequisite = newParentCode;
-        //     });
-
-        //     let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
-
-        //     let sameLevelActivities = updatedActivities.filter(activity => {
-        //         let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
-        //         return activity.code.startsWith(parentCode) && activity.level === selectedRow.level;
-        //     });
-
-        //     sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
-
-        //     sameLevelActivities.forEach((activity, index) => {
-        //         let newCode = `${selectedRow.code.split("/").slice(0, -1).join("/")}/${(index + 1) * 10}`;
-        //         activity.code = newCode;
-        //     });
-
-        //     return {
-        //         ...prev,
-        //         activities: updatedActivities
-        //     };
-        // });
-
-        // setSelectedRow(null);
-        // handlePrerequisite();
-        // setIsDeleteModalVisible(false);
-
         if (!selectedRow) return;
         else {
             if (selectedRow.parentModuleCode && selectedRow.id) {
