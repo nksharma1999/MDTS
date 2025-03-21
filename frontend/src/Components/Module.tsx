@@ -57,13 +57,19 @@ const Module = () => {
     const [undoStack, setUndoStack] = useState<any[]>([]);
 
     const pushToUndoStack = (currentState: any) => {
-        setUndoStack((prevStack) => [...prevStack, currentState]);
+        setUndoStack((prevStack) => {
+            const newStack = [...prevStack, currentState];
+            if (newStack.length > 10) {
+                return newStack.slice(1); // Keep only the last 10 states
+            }
+            return newStack;
+        });
         setIsOriginalActivitiesStateStored(false);
     };
 
     useEffect(() => {
-        console.log("State from useLocation:", state); 
-          if (state && state.activities)  {
+        console.log("State from useLocation:", state);
+        if (state && state.activities) {
             setModuleData({
                 id: state.id,
                 parentModuleCode: state.parentModuleCode,
@@ -75,12 +81,12 @@ const Module = () => {
             });
             setUndoStack([]);
             // Initialize originalActivities only if it's empty
-        if (originalActivities.length === 0) {
-            setOriginalActivities(JSON.parse(JSON.stringify(state.activities)));
+            if (originalActivities.length === 0) {
+                setOriginalActivities(JSON.parse(JSON.stringify(state.activities)));
+            }
+        } else {
+            console.error("State or state.activities is not available.");
         }
-    } else {
-        console.error("State or state.activities is not available.");
-    }
     }, [state]);
 
     useEffect(() => {
@@ -225,9 +231,10 @@ const Module = () => {
         }, 0);
     };
 
-    const deleteActivity = async() => {
+    const deleteActivity = async () => {
         if (!selectedRow) return;
         else {
+            pushToUndoStack(moduleData);
             if (selectedRow.parentModuleCode && selectedRow.id) {
                 setModuleData({
                     parentModuleCode: "",
@@ -380,7 +387,7 @@ const Module = () => {
     };
 
     const decreaseLevel = () => {
-        pushToUndoStack(moduleData); 
+        pushToUndoStack(moduleData);
         if (!selectedRow || selectedRow.level === "L1" || selectedRow.level === "L2") return;
 
         setModuleData((prev: any) => {
@@ -613,9 +620,9 @@ const Module = () => {
     }
 
     const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
-    
+
         let sortedActivities;
-    
+
         if (order === "asc") {
             sortedActivities = [...moduleData.activities].sort((a, b) => a.level.localeCompare(b.level));
         } else if (order === "desc") {
@@ -627,8 +634,8 @@ const Module = () => {
             // Restore the original activities
             sortedActivities = JSON.parse(JSON.stringify(originalActivities));
         }
-    
-    
+
+
         setModuleData((prev: any) => ({
             ...prev,
             activities: sortedActivities
@@ -636,7 +643,7 @@ const Module = () => {
     };
 
     useEffect(() => {
-        if (isOriginalActivitiesStateStored === false){
+        if (isOriginalActivitiesStateStored === false) {
             setOriginalActivities(JSON.parse(JSON.stringify(moduleData.activities)));
             setIsOriginalActivitiesStateStored(true);
         }
@@ -665,7 +672,7 @@ const Module = () => {
         setUndoStack((prevStack) => prevStack.slice(0, -1)); // Remove the last state from the stack
         setModuleData(lastState); // Restore the last state
     };
-    
+
 
     return (
         <div>
