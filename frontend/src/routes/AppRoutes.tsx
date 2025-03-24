@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Register from "../pages/Registration";
-import Dashboard from "../pages/dashboard";
+import Home from "../pages/Home";
 import SignIn from "../pages/SignIn";
 import About from "../pages/About";
 import Projects from "../pages/Projects";
@@ -39,8 +39,8 @@ const AppRoutes = () => {
                 <Route path="/" element={<Navigate to="/home" replace />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/home" element={<Home />} />
                 <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-                    <Route path="/home" element={<Dashboard />} />
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />

@@ -111,11 +111,11 @@ const SignInSignUp: React.FC = () => {
                     height: "100vh",
                     borderRadius: 0,
                     margin: 0,
-                    background: "linear-gradient(135deg, #257180 20%, #e33b28 60%, #257180 80%)",
+                    background: "linear-gradient(135deg, #257180 10%, #4C585B 60%, #92C7CF 80%)",
                     color: "#e0e0e0"
                 }}
             >
-                <div style={{ flex: 0.4, padding: 32, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ padding: 32, display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     <Title level={3} style={{ color: "#fff", marginBottom: 24, fontSize: "30px" }}>
                         Mine Development Tracking System
                     </Title>
@@ -137,7 +137,7 @@ const SignInSignUp: React.FC = () => {
                                         onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}> Privacy Policy</span>
                                 </Text>
 
-                                <Button type="primary" onClick={handleLogin} style={{ backgroundColor: "#e33b28", borderColor: "#c53020", borderRadius: "8px", fontWeight: "bold" }}>
+                                <Button type="primary" onClick={handleLogin} style={{ backgroundColor: "#258790", color:'#fff', borderRadius: "8px", fontWeight: "bold" }}>
                                     Login
                                 </Button>
 
@@ -175,7 +175,7 @@ const SignInSignUp: React.FC = () => {
 
                             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                                 <Input placeholder="Enter your work email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} />
-                                <Button type="primary" onClick={handleSignUp} style={{ backgroundColor: "#e33b28", borderColor: "#c53020", borderRadius: "8px", fontWeight: "bold" }}>
+                                <Button type="primary" onClick={handleSignUp} style={{ backgroundColor: "#258790", borderRadius: "8px", fontWeight: "bold" }}>
                                     Sign Up
                                 </Button>
 
@@ -200,62 +200,6 @@ const SignInSignUp: React.FC = () => {
                             </div>
                         </>
                     )}
-                </div>
-
-                <div
-                    style={{
-                        flex: 0.6,
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        boxSizing: "border-box"
-                    }}
-                >
-                    <div
-                        style={{
-                            flex: 0.6,
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            padding: 1,
-                            paddingTop: "2.2em",
-                            paddingRight: "1.5em",
-                            paddingBottom: "1em",
-                            boxSizing: "border-box"
-                        }}
-                    >
-                        <Row gutter={[16, 16]} style={{ width: "100%", height: "100%" }}>
-                            {images.map((image, index) => (
-                                <Col span={12} key={index} style={{ height: "50%" }}>
-                                    <Card
-                                        sx={{
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            alignItems: "center",
-                                            height: "100%",
-                                            width: "100%",
-                                            borderRadius: "10px",
-                                            boxShadow: 5,
-                                            transition: "transform 0.3s ease-in-out",
-                                            "&:hover": { transform: "scale(1.02)", boxShadow: 10 },
-                                            marginBottom: index === 1 || index === 0 ? 2 : 0,
-                                            marginRight: index === 0 || index === 2 ? 2 : 0,
-                                            backgroundColor: "#333"
-                                        }}
-                                    >
-                                        <CardMedia
-                                            component="img"
-                                            alt={`Image ${index + 1}`}
-                                            image={image}
-                                            sx={{ objectFit: "cover", height: "100%", width: "100%", padding: 0 }}
-                                        />
-                                    </Card>
-                                </Col>
-                            ))}
-                        </Row>
-                    </div>
                 </div>
             </div>
         </div>

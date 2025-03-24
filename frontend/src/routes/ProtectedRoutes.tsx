@@ -9,7 +9,7 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     children,
-    redirectPath = '/sign-in',
+    redirectPath = '/home',
     checkAuthAsync,
 }) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

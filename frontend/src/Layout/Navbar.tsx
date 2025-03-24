@@ -93,7 +93,7 @@ const Navbar: React.FC = () => {
         localStorage.removeItem("user");
         setUser(null);
         setIsLogoutModalVisible(false);
-        navigate("/sign-in");
+        navigate("/home");
     };
 
     const handleDropdownSelect = (menuLabel: string, subItem: any) => {
@@ -215,7 +215,7 @@ const Navbar: React.FC = () => {
 
                     ) : (
                         <Button className="signin-btn" style={{ marginLeft: "20px" }}>
-                            <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>
+                            <Link to="/home" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>
                         </Button>
                     )}
                 </div>
