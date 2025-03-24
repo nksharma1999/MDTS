@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import "../styles/status-update.css";
 import { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
-import { FolderOpenOutlined } from "@mui/icons-material";
+import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table } from "antd";
-import { DownloadOutlined, EditOutlined, ShareAltOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, message, Table, DatePicker } from "antd";
+import { DownloadOutlined, EditOutlined, FormOutlined, ShareAltOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -32,16 +32,17 @@ interface Module {
 const { Option } = Select;
 
 export const StatusUpdate = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [expandedKeys, setExpandedKeys] = useState<any>([]);
   const [allProjects, setAllProjects] = useState<any[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [sequencedModules, setSequencedModules] = useState<Module[]>([]);
   const [dataSource, setDataSource] = useState<any>([]);
-  const navigate = useNavigate();
-  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -148,307 +149,149 @@ export const StatusUpdate = () => {
     }
   };
 
-  const handleLibraryChange = (libraryItems: any) => {
-    if (libraryItems) {
-      setSequencedModules(libraryItems);
-      const finDataSource = libraryItems.map((module: any, moduleIndex: number) => {
-        return {
-          key: `module-${moduleIndex}`,
-          SrNo: module.parentModuleCode,
-          Code: module.parentModuleCode,
-          keyActivity: module.moduleName,
-          isModule: true,
-          children: (module.activities || []).map((activity: any, actIndex: number) => ({
-            key: `activity-${moduleIndex}-${actIndex}`,
-            SrNo: module.parentModuleCode,
-            Code: activity.code,
-            keyActivity: activity.activityName,
-            duration: activity.duration ?? "",
-            preRequisite: activity.prerequisite ?? "-",
-            slack: activity.slack ?? "0",
-            plannedStart: activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
-            plannedFinish: activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-            actualStart: "",
-            actualFinish: "",
-            actualDuration: "",
-            remarks: "",
-            expectedStart: "",
-            expectedFinish: "",
-            isModule: false,
-            activityStatus: activity.activityStatus || "Pending",
-          })),
-        };
-      });
-
-      setDataSource(finDataSource);
-      setExpandedKeys(finDataSource.map((_: any, index: any) => `module-${index}`));
-    } else {
-      setSequencedModules([]);
-      setDataSource([]);
-    }
-  };
-
-  const finalColumns: ColumnsType = [
-    { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
-    { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
-    { title: "Duration", dataIndex: "duration", key: "duration", width: 80, align: "center" },
-    { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
-    { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
-    { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
-    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
-  ];
-
-  // const handleDownload = async () => {
-  //   const workbook: any = new ExcelJS.Workbook();
-  //   const worksheet = workbook.addWorksheet("Activities");
-  // const currentUser = getCurrentUser();
-
-  //   const globalHeader = [
-  //     "Sr No.",
-  //     "Key Activity",
-  //     "Duration",
-  //     "Pre-Requisite",
-  //     "Slack",
-  //     "Planned Start",
-  //     "Planned Finish"
-  //   ];
-  //   const headerRow = worksheet.addRow(globalHeader);
-
-  //   headerRow.eachCell((cell: any) => {
-  //     cell.font = { bold: true, size: 14, color: { argb: "FFFFFF" } };
-  //     cell.fill = {
-  //       type: "pattern",
-  //       pattern: "solid",
-  //       fgColor: { argb: "258790" },
-  //     };
-  //     cell.alignment = { horizontal: "center", vertical: "middle" };
-  //     cell.border = {
-  //       top: { style: "thin" },
-  //       bottom: { style: "thin" },
-  //     };
-  //   });
-
-  //   worksheet.getRow(1).height = 30;
-
-  //   const moduleHeaderStyle = {
-  //     font: { bold: true, size: 14, color: { argb: "000000" } },
-  //     fill: {
-  //       type: "pattern",
-  //       pattern: "solid",
-  //       fgColor: { argb: "DDDDDD" },
-  //     },
-  //     alignment: { horizontal: "left", vertical: "middle" },
-  //   };
-
-  //   const activityRowStyle = {
-  //     font: { size: 11 },
-  //     alignment: { horizontal: "left", vertical: "middle" },
-  //   };
-
-  //   sequencedModules.forEach((module) => {
-  //     const moduleHeaderRow = worksheet.addRow([
-  //       module.parentModuleCode,
-  //       module.moduleName,
-  //       "",
-  //       "",
-  //       "",
-  //       "",
-  //       "",
-  //       "",
-  //     ]);
-
-  //     moduleHeaderRow.eachCell((cell: any) => {
-  //       cell.font = moduleHeaderStyle.font;
-  //       cell.fill = moduleHeaderStyle.fill;
-  //       cell.alignment = moduleHeaderStyle.alignment;
-  //     });
-
-  //     module.activities.forEach((activity) => {
-  //       const row = worksheet.addRow([
-  //         activity.code,
-  //         activity.activityName,
-  //         activity.duration || 0,
-  //         activity.prerequisite,
-  //         activity.slack || 0,
-  //         activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
-  //         activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-  //       ]);
-
-  //       row.eachCell((cell: any) => {
-  //         cell.font = activityRowStyle.font;
-  //         cell.alignment = activityRowStyle.alignment;
-  //       });
-  //     });
-
-  //     worksheet.addRow([]);
-  //   });
-
-  //   worksheet.columns = [
-  //     { width: 20 },
-  //     { width: 30 },
-  //     { width: 15 },
-  //     { width: 30 },
-  //     { width: 15 },
-  //     { width: 25 },
-  //     { width: 25 },
-  //     { width: 30 },
-  //   ];
-
-  //   const buffer = await workbook.xlsx.writeBuffer();
-  //   const blob = new Blob([buffer], {
-  //     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  //   });
-  //   saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-  //   message.success("Download started!");
-  // };
-
-    const handleDownload = async () => {
-      const workbook: any = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet("Project Report");
-      const currentUser = getCurrentUser();
-      const titleStyle = {
-        font: { bold: true, size: 16, color: { argb: "004d99" } },
-        alignment: { horizontal: "center", vertical: "middle" },
-      };
-    
-      const subtitleStyle = {
-        font: { bold: true, size: 12, color: { argb: "333333" } },
-        alignment: { horizontal: "center", vertical: "middle" },
-      };
-    
-      const tableHeaderStyle = {
-        font: { bold: true, size: 12, color: { argb: "FFFFFF" } },
-        fill: { type: "pattern", pattern: "solid", fgColor: { argb: "258790" } },
-        alignment: { horizontal: "center", vertical: "middle" },
-        border: {
-          top: { style: "thin" },
-          bottom: { style: "thin" },
-          left: { style: "thin" },
-          right: { style: "thin" },
-        },
-      };
-    
-      const moduleHeaderStyle = {
-        font: { bold: true, size: 12, color: { argb: "000000" } },
-        fill: { type: "pattern", pattern: "solid", fgColor: { argb: "DDDDDD" } },
-        alignment: { horizontal: "left", vertical: "middle" },
-      };
-    
-      const dataRowStyle = {
-        font: { size: 11 },
-        alignment: { horizontal: "left", vertical: "middle" },
-        border: { top: { style: "thin" }, bottom: { style: "thin" } },
-      };
-  
-      worksheet.mergeCells("B1:G1");
-      const projectTitle = worksheet.getCell("B1");
-      projectTitle.value = `Project Report: ${selectedProject?.projectParameters.projectName}`;
-      projectTitle.font = titleStyle.font;
-      projectTitle.alignment = titleStyle.alignment;
-    
-      worksheet.mergeCells("B2:G2");
-      const companyTitle = worksheet.getCell("B2");
-      companyTitle.value = `Company: ${currentUser.company}`;
-      companyTitle.font = subtitleStyle.font;
-      companyTitle.alignment = subtitleStyle.alignment;
-    
-      worksheet.mergeCells("B3:G3");
-      const timestamp = worksheet.getCell("B3");
-      timestamp.value = `Generated On: ${dayjs().format("DD-MM-YYYY HH:mm:ss")}`;
-      timestamp.font = { italic: true, size: 12, color: { argb: "555555" } };
-      timestamp.alignment = subtitleStyle.alignment;
-    
-      worksheet.addRow([]);
-    
-      const globalHeader = [
-        "Sr No.",
-        "Key Activity",
-        "Duration (Days)",
-        "Pre-Requisite",
-        "Slack",
-        "Planned Start",
-        "Planned Finish",
-      ];
-      const headerRow = worksheet.addRow(globalHeader);
-    
-      headerRow.eachCell((cell: any) => {
-        Object.assign(cell, tableHeaderStyle);
-      });
-    
-      worksheet.getRow(5).height = 25;
-      let rowIndex = 6;
-      sequencedModules.forEach((module, moduleIndex) => {
-        const moduleHeaderRow = worksheet.addRow([
-          `Module: ${module.parentModuleCode}`,
-          module.moduleName,
-          "",
-          "",
-          "",
-          "",
-          "",
-        ]);
-    
-        moduleHeaderRow.eachCell((cell: any) => {
-          Object.assign(cell, moduleHeaderStyle);
-        });
-    
-        rowIndex++;
-        module.activities.forEach((activity, activityIndex) => {
-          const row = worksheet.addRow([
-            `${moduleIndex + 1}.${activityIndex + 1}`,
-            activity.activityName,
-            activity.duration || 0,
-            activity.prerequisite,
-            activity.slack || 0,
-            activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
-            activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-          ]);
-    
-          row.eachCell((cell: any) => {
-            Object.assign(cell, dataRowStyle);
-          });
-          if (activityIndex % 2 === 0) {
-            row.eachCell((cell: any) => {
-              cell.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "F7F7F7" },
-              };
-            });
-          }
-          rowIndex++;
-        });
-    
-        worksheet.addRow([]);
-        rowIndex++;
-      });
-    
-      worksheet.columns = [
-        { width: 10 },
-        { width: 35 },
-        { width: 18 },
-        { width: 30 },
-        { width: 15 },
-        { width: 20 },
-        { width: 20 },
-      ];
-    
-      worksheet.mergeCells(`B${rowIndex + 2}:G${rowIndex + 2}`);
-      const createdByRow = worksheet.getCell(`B${rowIndex + 2}`);
-      createdByRow.value = `Created by: ${currentUser.name || ""}`;
-      createdByRow.font = { italic: true, size: 12, color: { argb: "777777" } };
-      createdByRow.alignment = { horizontal: "right", vertical: "middle" };
-    
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-      message.success("Download started!");
+  const handleDownload = async () => {
+    const workbook: any = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Project Report");
+    const currentUser = getCurrentUser();
+    const titleStyle = {
+      font: { bold: true, size: 16, color: { argb: "004d99" } },
+      alignment: { horizontal: "center", vertical: "middle" },
     };
-  const editTimeBuilder = () => {
-    eventBus.emit("updateTab", "/create/timeline-builder");
-    navigate("/create/timeline-builder", { state: { selectedProject: selectedProject } });
+
+    const subtitleStyle = {
+      font: { bold: true, size: 12, color: { argb: "333333" } },
+      alignment: { horizontal: "center", vertical: "middle" },
+    };
+
+    const tableHeaderStyle = {
+      font: { bold: true, size: 12, color: { argb: "FFFFFF" } },
+      fill: { type: "pattern", pattern: "solid", fgColor: { argb: "258790" } },
+      alignment: { horizontal: "center", vertical: "middle" },
+      border: {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      },
+    };
+
+    const moduleHeaderStyle = {
+      font: { bold: true, size: 12, color: { argb: "000000" } },
+      fill: { type: "pattern", pattern: "solid", fgColor: { argb: "DDDDDD" } },
+      alignment: { horizontal: "left", vertical: "middle" },
+    };
+
+    const dataRowStyle = {
+      font: { size: 11 },
+      alignment: { horizontal: "left", vertical: "middle" },
+      border: { top: { style: "thin" }, bottom: { style: "thin" } },
+    };
+
+    worksheet.mergeCells("B1:G1");
+    const projectTitle = worksheet.getCell("B1");
+    projectTitle.value = `Project Report: ${selectedProject?.projectParameters.projectName}`;
+    projectTitle.font = titleStyle.font;
+    projectTitle.alignment = titleStyle.alignment;
+
+    worksheet.mergeCells("B2:G2");
+    const companyTitle = worksheet.getCell("B2");
+    companyTitle.value = `Company: ${currentUser.company}`;
+    companyTitle.font = subtitleStyle.font;
+    companyTitle.alignment = subtitleStyle.alignment;
+
+    worksheet.mergeCells("B3:G3");
+    const timestamp = worksheet.getCell("B3");
+    timestamp.value = `Generated On: ${dayjs().format("DD-MM-YYYY HH:mm:ss")}`;
+    timestamp.font = { italic: true, size: 12, color: { argb: "555555" } };
+    timestamp.alignment = subtitleStyle.alignment;
+
+    worksheet.addRow([]);
+
+    const globalHeader = [
+      "Sr No.",
+      "Key Activity",
+      "Duration (Days)",
+      "Pre-Requisite",
+      "Slack",
+      "Planned Start",
+      "Planned Finish",
+    ];
+    const headerRow = worksheet.addRow(globalHeader);
+
+    headerRow.eachCell((cell: any) => {
+      Object.assign(cell, tableHeaderStyle);
+    });
+
+    worksheet.getRow(5).height = 25;
+    let rowIndex = 6;
+    sequencedModules.forEach((module, moduleIndex) => {
+      const moduleHeaderRow = worksheet.addRow([
+        `Module: ${module.parentModuleCode}`,
+        module.moduleName,
+        "",
+        "",
+        "",
+        "",
+        "",
+      ]);
+
+      moduleHeaderRow.eachCell((cell: any) => {
+        Object.assign(cell, moduleHeaderStyle);
+      });
+
+      rowIndex++;
+      module.activities.forEach((activity, activityIndex) => {
+        const row = worksheet.addRow([
+          `${moduleIndex + 1}.${activityIndex + 1}`,
+          activity.activityName,
+          activity.duration || 0,
+          activity.prerequisite,
+          activity.slack || 0,
+          activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+          activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+        ]);
+
+        row.eachCell((cell: any) => {
+          Object.assign(cell, dataRowStyle);
+        });
+        if (activityIndex % 2 === 0) {
+          row.eachCell((cell: any) => {
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: "F7F7F7" },
+            };
+          });
+        }
+        rowIndex++;
+      });
+
+      worksheet.addRow([]);
+      rowIndex++;
+    });
+
+    worksheet.columns = [
+      { width: 10 },
+      { width: 35 },
+      { width: 18 },
+      { width: 30 },
+      { width: 15 },
+      { width: 20 },
+      { width: 20 },
+    ];
+
+    worksheet.mergeCells(`B${rowIndex + 2}:G${rowIndex + 2}`);
+    const createdByRow = worksheet.getCell(`B${rowIndex + 2}`);
+    createdByRow.value = `Created by: ${currentUser.name || ""}`;
+    createdByRow.font = { italic: true, size: 12, color: { argb: "777777" } };
+    createdByRow.alignment = { horizontal: "right", vertical: "middle" };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
+    message.success("Download started!");
   };
 
   const handleShare = () => {
@@ -459,6 +302,260 @@ export const StatusUpdate = () => {
     message.success(`Shared to ${email}`);
     setIsModalOpen(false);
     setEmail("");
+  };
+
+  const handleLibraryChange = (libraryItems: any) => {
+    if (libraryItems) {
+      setSequencedModules(libraryItems);
+      let editingRequired = false;
+
+      const finDataSource = libraryItems.map((module: any, moduleIndex: number) => {
+        const children = (module.activities || []).map((activity: any, actIndex: number) => {
+          if (activity.activityStatus === "completed" || activity.activityStatus === "inProgress") {
+            editingRequired = true;
+          }
+
+          return {
+            key: `activity-${moduleIndex}-${actIndex}`,
+            SrNo: module.parentModuleCode,
+            Code: activity.code,
+            keyActivity: activity.activityName,
+            duration: activity.duration ?? "",
+            preRequisite: activity.prerequisite ?? "-",
+            slack: activity.slack ?? "0",
+            plannedStart: activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+            plannedFinish: activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+            actualStart: activity.actualStart || null,
+            actualFinish: activity.actualFinish || null,
+            expectedStart: activity.expectedStart ? dayjs(activity.expectedStart).format("DD-MM-YYYY") : "",
+            expectedFinish: activity.expectedFinish ? dayjs(activity.expectedFinish).format("DD-MM-YYYY") : "",
+            actualDuration: activity.actualDuration ?? "",
+            remarks: activity.remarks ?? "",
+            isModule: false,
+            activityStatus: activity.activityStatus || "yetToStart",
+            fin_status: activity.fin_status || ''
+          };
+        });
+
+        return {
+          key: `module-${moduleIndex}`,
+          SrNo: module.parentModuleCode,
+          Code: module.parentModuleCode,
+          keyActivity: module.moduleName,
+          isModule: true,
+          children,
+        };
+      });
+
+      setDataSource(finDataSource);
+      setExpandedKeys(finDataSource.map((_: any, index: any) => `module-${index}`));
+      if (editingRequired) {
+        setIsEditing(true);
+      } else {
+        setIsEditing(false);
+      }
+    } else {
+      setSequencedModules([]);
+      setDataSource([]);
+      setIsEditing(false);
+    }
+  };
+
+  const editTimeBuilder = () => {
+    eventBus.emit("updateTab", "/create/timeline-builder");
+    navigate("/create/timeline-builder", { state: { selectedProject: selectedProject } });
+  };
+
+  const renderStatusSelect = (status: string, recordKey: string, fin_status: any) => {
+    return (
+      <Select
+        value={status}
+        onChange={(value) => handleFieldChange(value, recordKey, "activityStatus")}
+        options={[
+          { label: "Yet to Start", value: "yetToStart" },
+          { label: "In Progress", value: "inProgress" },
+          { label: "Completed", value: "completed" },
+        ]}
+        disabled={fin_status === "completed"}
+        className={`status-select ${status}`}
+        style={{ width: "100%", fontWeight: "bold" }}
+      />
+    );
+  }
+
+  const baseColumns: ColumnsType = [
+    { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
+    { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
+    { title: "Duration", dataIndex: "duration", key: "duration", width: 80, align: "center" },
+    { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
+    { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
+    { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
+    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
+  ];
+
+  const editingColumns: ColumnsType = [
+    {
+      title: "Status",
+      dataIndex: "activityStatus",
+      key: "activityStatus",
+      width: 150,
+      align: "center",
+      render: (_, { activityStatus, key, isModule, fin_status }) =>
+        isEditing && !isModule ? renderStatusSelect(activityStatus, key, fin_status) : activityStatus,
+    },
+    {
+      title: "Actual Start",
+      dataIndex: "actualStart",
+      key: "actualStart",
+      width: 120,
+      align: "center",
+      render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
+        isEditing && !isModule ? (
+          <DatePicker
+            value={actualStart ? dayjs(actualStart) : null}
+            onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualStart")}
+            disabled={activityStatus == "yetToStart" || fin_status == 'completed'}
+            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "highlighted-field" : ""}
+          />
+        ) : (
+          actualStart || ""
+        ),
+    },
+    {
+      title: "Actual Finish",
+      dataIndex: "actualFinish",
+      key: "actualFinish",
+      width: 120,
+      align: "center",
+      render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
+        isEditing && !isModule ? (
+          <DatePicker
+            value={actualFinish ? dayjs(actualFinish) : null}
+            onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualFinish")}
+            disabled={activityStatus == "yetToStart" || fin_status == 'completed'}
+            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "highlighted-field" : ""}
+          />
+        ) : (
+          actualFinish || ""
+        ),
+    },
+  ];
+
+  const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
+
+  const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
+    setDataSource((prevData: any) => {
+      const updateItem = (item: any) => {
+        if (item.key === recordKey) {
+          if (fieldName === "activityStatus" && value === "yetToStart") {
+            return {
+              ...item,
+              activityStatus: value,
+              actualStart: null,
+              actualFinish: null,
+            };
+          }
+          return { ...item, [fieldName]: value };
+        }
+        return item;
+      };
+
+      const updatedData = prevData.map((item: any) => {
+        if (item.key === recordKey) {
+          return updateItem(item);
+        } else if (item.children) {
+          return {
+            ...item,
+            children: item.children.map((child: any) =>
+              child.key === recordKey ? updateItem(child) : child
+            ),
+          };
+        }
+        return item;
+      });
+
+      return updatedData;
+    });
+  };
+
+  const handleUpdateStatus = () => {
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    let isValid = true;
+    let errorMessage = "";
+
+    dataSource.some((module: any) => {
+      if (module.children) {
+        return module.children.some((activity: any) => {
+          const { activityStatus, actualStart, actualFinish } = activity;
+
+          if (activityStatus === "inProgress" && !actualStart) {
+            errorMessage = `Activity ${activity.keyActivity} is IN-PROGRESS but Actual Start is missing.`;
+            isValid = false;
+            return true;
+          }
+
+          if (activityStatus === "completed") {
+            if (!actualStart && !actualFinish) {
+              errorMessage = `Activity ${activity.keyActivity} is COMPLETED but Actual Start and Actual Finish are missing.`;
+            } else if (!actualStart) {
+              errorMessage = `Activity ${activity.keyActivity} is COMPLETED but Actual Start is missing.`;
+            } else if (!actualFinish) {
+              errorMessage = `Activity ${activity.keyActivity} is COMPLETED but Actual Finish is missing.`;
+            }
+
+            if (errorMessage) {
+              isValid = false;
+              return true;
+            }
+          }
+
+          if (activityStatus === "yetToStart" && (actualStart || actualFinish)) {
+            errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
+            isValid = false;
+            return true;
+          }
+
+          return false;
+        });
+      }
+      return false;
+    });
+
+    if (!isValid) {
+      message.error(errorMessage);
+      return;
+    }
+
+    if (!sequencedModules.length || !dataSource.length) return;
+
+    const updatedActivityMap = new Map();
+    dataSource.forEach((module: any) => {
+      module.children.forEach((activity: any) => {
+        updatedActivityMap.set(activity.Code, {
+          actualStart: activity.actualStart,
+          actualFinish: activity.actualFinish,
+          activityStatus: activity.activityStatus,
+          fin_status: activity.activityStatus,
+        });
+      });
+    });
+
+    const updatedSequencedModules = sequencedModules.map((module: any) => ({
+      ...module,
+      activities: module.activities.map((activity: any) => ({
+        ...activity,
+        ...(updatedActivityMap.has(activity.code) ? updatedActivityMap.get(activity.code) : {}),
+      })),
+    }));
+
+    setSequencedModules(updatedSequencedModules);
+    let updatedProject = selectedProject;
+    updatedProject.projectTimeline = updatedSequencedModules;
+    await db.updateProject(selectedProjectId, updatedProject);
+    message.success("Status updated successfully!");
   };
 
   return (
@@ -477,7 +574,7 @@ export const StatusUpdate = () => {
                   placeholder="Select Project"
                   value={selectedProjectId}
                   onChange={handleProjectChange}
-                  dropdownMatchSelectWidth={false}
+                  popupMatchSelectWidth={false}
                   style={{ width: "100%" }}
                 >
                   {allProjects.map((project) => (
@@ -493,7 +590,7 @@ export const StatusUpdate = () => {
                   disabled={!selectedProjectId}
                   icon={<DownloadOutlined />}
                   onClick={handleDownload}
-                  style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
+                  style={{ backgroundColor: "grey", borderColor: "#4CAF50" }}
                 >
                   Download Timeline
                 </Button>
@@ -502,7 +599,7 @@ export const StatusUpdate = () => {
                   disabled={!selectedProjectId}
                   icon={<EditOutlined />}
                   onClick={editTimeBuilder}
-                  style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
+                  style={{ backgroundColor: "#D35400", borderColor: "#FF9800" }}
                 >
                   Edit Timeline
                 </Button>
@@ -512,10 +609,20 @@ export const StatusUpdate = () => {
                   disabled={!selectedProjectId}
                   icon={<ShareAltOutlined />}
                   onClick={showModal}
-                  style={{ marginLeft: "15px", backgroundColor: "#4169E1", borderColor: "#007BFF" }}
+                  style={{ backgroundColor: "#4169E1", borderColor: "#007BFF" }}
                 >
                   Share
                 </Button>
+
+                {isEditing ? (
+                  <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
+                    Save Status
+                  </Button>
+                ) : (
+                  <Button type="primary" icon={<FormOutlined />} onClick={handleUpdateStatus}>
+                    Update Status
+                  </Button>
+                )}
               </div>
             </div>
             <hr />
@@ -573,7 +680,6 @@ export const StatusUpdate = () => {
           </div>
         )}
       </div>
-
       <Modal
         title="Share Timeline"
         visible={isModalOpen}
@@ -594,7 +700,6 @@ export const StatusUpdate = () => {
           />
         </div>
       </Modal>
-
     </>
   );
 };

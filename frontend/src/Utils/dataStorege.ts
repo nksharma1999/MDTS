@@ -19,6 +19,7 @@ export class DataStorage extends Dexie {
   moduleLibrary!: Table<Library, number>;
   users!: Table<any, number>;
   holidays!: Table<any, number>;
+  projectTimelines!: Table<any, number>;
 
   constructor() {
     super("MTDS");
@@ -28,7 +29,8 @@ export class DataStorage extends Dexie {
       moduleLibrary: "++id",
       projects: "++id",
       users: "++id",
-      holidays:"++id"
+      holidays: "++id",
+      projectTimelines: "++id"
     });
 
     this.mineTypes = this.table("mineTypes");
@@ -36,7 +38,8 @@ export class DataStorage extends Dexie {
     this.moduleLibrary = this.table("moduleLibrary");
     this.projects = this.table("projects");
     this.users = this.table("users");
-    this.holidays=this.table("holidays");
+    this.holidays = this.table("holidays");
+    this.projectTimelines = this.table("projectTimelines");
   }
 
   async addModule(module: any): Promise<number> {
@@ -243,8 +246,48 @@ export class DataStorage extends Dexie {
       message.error("Error deleting Holiday from IndexedDB:");
     }
   }
-  
 
+  async addProjectTimeline(timeline: any): Promise<number> {
+    const serializableTimeline = JSON.parse(JSON.stringify(timeline));
+    return this.projectTimelines.add(serializableTimeline);
+  }
+
+  async getAllProjectTimeline(): Promise<any> {
+    return this.projectTimelines.toArray();
+  }
+
+  async getProjectTimelineById(id: any): Promise<any> {
+    return this.projectTimelines.get(id);
+  }
+
+  async updateProjectTimeline(id: number, newRecord: any): Promise<void> {
+    try {
+      const existingprojectTimeline = await this.projectTimelines.get(id);
+      if (existingprojectTimeline) {
+        const updatedprojectTimeline = { ...newRecord, id };
+        await this.projectTimelines.put(updatedprojectTimeline);
+        message.success(`Project Timeline with ID ${id} updated successfully.`);
+      } else {
+        message.warning(`Project Timeline with ID ${id} not found.`);
+      }
+    } catch (error) {
+      message.error("Error updating Project Timeline in IndexedDB:");
+    }
+  }
+
+  async deleteProjectTimeline(id: number): Promise<void> {
+    try {
+      const existingprojectTimelines = await this.projectTimelines.get(id);
+      if (existingprojectTimelines) {
+        await this.projectTimelines.delete(id);
+        message.success(`Project Timelines with ID ${id} deleted successfully.`);
+      } else {
+        message.warning(`Project Timelines with ID ${id} not found.`);
+      }
+    } catch (error) {
+      message.error("Error deleting Project Timelines from IndexedDB:");
+    }
+  }
 }
 
 export const db = new DataStorage();

@@ -262,3 +262,11 @@
 .add-new-holiday {
     padding-right: 10px;
 }
+
+.ant-steps-item-finish>.ant-steps-item-container>.ant-steps-item-content>.ant-steps-item-title::after {
+    background-color: transparent !important;
+}
+
+.ant-steps-item-title {
+    font-size: 14px !important;
+}

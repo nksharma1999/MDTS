@@ -51,6 +51,7 @@ interface Column {
 }
 
 const TimeBuilder = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [allProjects, setAllProjects] = useState<any[]>([]);
@@ -70,7 +71,6 @@ const TimeBuilder = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isCancelEditModalVisible, setIsCancelEditModalVisiblVisible] = useState(false);
   const [selectedProjectMineType, setSelectedProjectMineType] = useState("");
-  const navigate = useNavigate();
   const [finalHolidays, setFinalHolidays] = useState<HolidayData[]>();
   const [isSaturdayWorking, setIsSaturdayWorking] = useState(false);
   const [isSundayWorking, setIsSundayWorking] = useState(false);
@@ -93,18 +93,26 @@ const TimeBuilder = () => {
   }, []);
 
   useEffect(() => {
-    const storedData = localStorage.getItem("holidayCalendarData");
-    if (storedData) {
-      const parsedData: HolidayData[] = JSON.parse(storedData).map(
-        (item: any, index: number) => ({
-          ...item,
-          key: String(index + 1),
-        })
-      );
-      setHolidayData(parsedData);
-      setFinalHolidays(parsedData);
-      setSelected(Object.fromEntries(parsedData.map((item) => [item.key, true])));
-    }
+    const fetchHolidays = async () => {
+      try {
+        const holidays = await db.getAllHolidays();
+        if (holidays) {
+          const updatedData: HolidayData[] = holidays.map((item: any, index: number) => ({
+            ...item,
+            from: item.from?.$d ? item.from.$d : item.from,
+            to: item.to?.$d ? item.to.$d : item.to,
+            key: String(index + 1),
+          }));
+
+          setHolidayData(updatedData);
+          setFinalHolidays(updatedData);
+          setSelected(Object.fromEntries(updatedData.map((item) => [item.key, true])));
+        }
+      } catch (error) {
+        console.error("Error fetching holidays:", error);
+      }
+    };
+    fetchHolidays();
   }, []);
 
   useEffect(() => {
@@ -296,6 +304,42 @@ const TimeBuilder = () => {
     setFinalData(items);
     setSequencedModules(items);
   };
+  
+  const handleDurationChange = (code: any, newDuration: any) => {
+    let updatedFinalData = [...finalData];
+    let updatedSequencedModules = [...sequencedModules];
+  
+    function updateActivities(activities: any) {
+      return activities.map((activity: any) => {
+        if (activity.code === code) {
+          activity.duration = newDuration;
+          const startDate = activity.start;
+          const duration = parseInt(newDuration, 10) || 0;
+  
+          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
+          
+          activity.end = endDate;
+          activity.holidays = [...(activity.holidays || []), ...durationHolidays];
+  
+          updateDependentActivities(activity.code, endDate);
+        }
+        return activity;
+      });
+    }
+  
+    updatedFinalData = updatedFinalData.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+  
+    updatedSequencedModules = updatedSequencedModules.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+  
+    setFinalData(updatedFinalData);
+    setSequencedModules(updatedSequencedModules);
+  };
 
   const handleSlackChange = (code: any, newSlack: any) => {
     let updatedFinalData = [...finalData];
@@ -456,7 +500,6 @@ const TimeBuilder = () => {
     setSequencedModules(updatedSequencedModules);
   };
 
-
   const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
     if (isDeletionInProgress) return;
 
@@ -510,7 +553,7 @@ const TimeBuilder = () => {
           progress -= 2;
           if (progress <= 0) {
             notification.destroy(key);
-            setIsDeletionInProgress(false); // ✅ Re-enable deletion after progress ends
+            setIsDeletionInProgress(false);
             setDeletingActivity(null);
             return;
           }
@@ -572,7 +615,7 @@ const TimeBuilder = () => {
                         setDeletingActivity(null);
                         notification.success({
                           message: "✅ Rollback Successful",
-                          description: `${removedActivity?.name} has been restored successfully.`,
+                          description: `${removedActivity?.activityName} has been restored successfully.`,
                           placement: "topRight",
                           duration: 0.1,
                           style: {
@@ -613,7 +656,7 @@ const TimeBuilder = () => {
     });
   };
 
-  const restoreDeletedActivity = (activityCode: string) => {
+  const restoreDeletedActivity=(activityCode: string)=>{
     setDeletedActivities((prevDeleted: any) => {
       const restoredActivity = prevDeleted.find(
         (activity: any) => activity.code == activityCode
@@ -643,8 +686,7 @@ const TimeBuilder = () => {
     });
 
     setSelectedActivities((prevSelected) => [...prevSelected, activityCode]);
-  };
-
+  }
 
   const handleProjectChange = (projectId: any) => {
     setCurrentStep(0);
@@ -839,6 +881,7 @@ const TimeBuilder = () => {
         projectTimeline: sequencedModules
       };
       await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
+      await db.addProjectTimeline(sequencedModules);
       message.success(isUpdateMode
         ? "Project timeline updated successfully!"
         : "Project timeline saved successfully!"
@@ -1034,22 +1077,49 @@ const TimeBuilder = () => {
         dataIndex: "duration",
         key: "duration",
         align: "center",
-        render: (duration: any) => (duration ? duration : "0"),
+        render: (duration: any, record: any) =>
+          step === 1 ? (
+            <Input
+              placeholder="Duration"
+              type="text"
+              value={record.duration || 0}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ""); // Allow only numbers
+                handleDurationChange(record.code, value);
+              }}
+              onKeyDown={(e) => {
+                if (
+                  !/^\d$/.test(e.key) &&
+                  e.key !== "Backspace" &&
+                  e.key !== "Delete" &&
+                  e.key !== "ArrowLeft" &&
+                  e.key !== "ArrowRight"
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              disabled={step !== 1}
+            />
+          ) : (
+            duration || "0"
+          ),
       },
     ];
 
     if (step === 1) {
       baseColumns.push({
         key: "finalize",
-        align: "center",
+        align: "right",
         className: step === 1 ? "active-column" : "",
         onCell: () => ({ className: step === 1 ? "first-column-red" : "" }),
         render: (_: any, record: any) => (
-          <Checkbox
-            checked={selectedActivities.includes(record.code)}
-            onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-            disabled={isDeletionInProgress && deletingActivity !== record.code}
-          />
+          <div style={{marginRight:'20px'}}>
+            <Checkbox
+              checked={selectedActivities.includes(record.code)}
+              onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
+              disabled={isDeletionInProgress && deletingActivity !== record.code}
+            />
+          </div>
         ),
       });
     }
@@ -1168,15 +1238,6 @@ const TimeBuilder = () => {
       },
     ];
 
-    if (step === 1) {
-      columns.push({
-        title: "Finalize",
-        align: "center",
-        dataIndex: "finalize",
-        key: "finalize",
-      });
-    }
-
     if (step >= 2) {
       columns.push({
         title: "Prerequisite",
@@ -1206,7 +1267,7 @@ const TimeBuilder = () => {
     if (currentStep == 1) {
       columns.push({
         title: (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "right", justifyContent: "right", position: "relative",marginRight:"20px" }}>
             <span>Actions</span>
             {/* {deletedModules.length > 0 && (
               <div style={{ position: "absolute", right: 0 }}>
@@ -1286,9 +1347,10 @@ const TimeBuilder = () => {
           }));
         }
         await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
+        await db.addProjectTimeline(updatedProjectWithTimeline.projectTimeline);
         localStorage.setItem('selectedProjectId', selectedProject.id);
 
-        setTimeout(() => message.success("Project timeline linked successfully!"), 0); // Fix for React 18
+        setTimeout(() => message.success("Project timeline linked successfully!"), 0);
         navigate("/create/project-timeline");
       } else {
         setTimeout(() => message.error("Selected project and existing project do not match library and mine type!"), 0);
@@ -1322,28 +1384,6 @@ const TimeBuilder = () => {
     }
     return true;
   };
-
-  // const handleModuleSelection = (moduleCode: any, isChecked: any) => {
-  //   setSequencedModules((prevModules) => {
-  //     if (!isChecked) {
-  //       const removedModule = prevModules.find((module) => module.parentModuleCode === moduleCode);
-  //       setDeletedModules((prevDeleted: any) => [...prevDeleted, removedModule]);
-  //       return prevModules.filter((module) => module.parentModuleCode !== moduleCode);
-  //     }
-  //     return prevModules;
-  //   });
-  // };
-
-  // const restoreDeletedModule = (moduleCode: any) => {
-  //   setDeletedModules((prevDeleted: any) => {
-  //     const restoredModule = prevDeleted.find((module: any) => module.parentModuleCode === moduleCode);
-  //     if (restoredModule) {
-  //       setSequencedModules((prevModules) => [...prevModules, restoredModule]);
-  //       return prevDeleted.filter((module: any) => module.parentModuleCode !== moduleCode);
-  //     }
-  //     return prevDeleted;
-  //   });
-  // };
 
   const handleModuleSelection = (moduleCode: any, isChecked: any) => {
     setSequencedModules((prevModules) => {
@@ -1476,7 +1516,6 @@ const TimeBuilder = () => {
     });
   };
 
-
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -1510,7 +1549,7 @@ const TimeBuilder = () => {
               )}
             </div>
             {(isMenualTimeline && !isUpdateMode) ? (
-              <div style={{ padding: "8px 8px 0px 0px" }}>
+              <div style={{ padding: "0px 8px 0px 0px" }}>
                 <Button
                   type="primary"
                   disabled={!selectedProjectId}
@@ -1540,7 +1579,7 @@ const TimeBuilder = () => {
             <div className="timeline-steps">
               <Steps current={currentStep}>
                 <Step title="Sequencing" />
-                <Step title="Finalize Activities" />
+                <Step title="Activities & Duration" />
                 <Step title="Prerequisites" />
                 <Step title="Slack" />
                 <Step title="Start Date" />
