@@ -15,12 +15,13 @@ import { useLocation } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 interface Activity {
+  [x: string]: string;
   code: string;
   activityName: string;
   prerequisite: string;
   slack: string;
   level: string;
-  duration: number;
+  duration: string;
   start: string | null;
   end: string | null;
   activityStatus: string | null;
@@ -311,6 +312,9 @@ const TimeBuilder = () => {
   
     function updateActivities(activities: any) {
       return activities.map((activity: any) => {
+        if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
+          return activity;
+        }
         if (activity.code === code) {
           activity.duration = newDuration;
           const startDate = activity.start;
@@ -347,6 +351,9 @@ const TimeBuilder = () => {
 
     function updateActivities(activities: any) {
       return activities.map((activity: any) => {
+        if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
+          return activity;
+        }
         if (activity.code === code) {
           activity.slack = newSlack;
           const prerequisiteEndDate = activity.prerequisite
@@ -502,6 +509,15 @@ const TimeBuilder = () => {
 
   const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
     if (isDeletionInProgress) return;
+    const module = sequencedModules.find(m => m.parentModuleCode === "moduleCode");
+    const hasCompletedActivities = module?.activities.some(activity => 
+      activity.activityStatus === "completed" || activity.fin_status === "completed"
+    );
+  
+    if (hasCompletedActivities) {
+      message.warning("Cannot delete module with completed activities");
+      return;
+    }
 
     setSelectedActivities((prevSelectedActivities) => {
       if (!isChecked) {
@@ -1064,27 +1080,44 @@ const TimeBuilder = () => {
         dataIndex: "code",
         key: "code",
         align: "left",
-        render: (_: any, record: any) => record.code,
+        render: (_: any, record: any) => (
+          <span className={record.activityStatus === "completed" ? "completed-field" : ""}>
+            {record.code}
+          </span>
+        ),
       },
       {
         title: "Activity Name",
         dataIndex: "activityName",
         key: "activityName",
         align: "left",
+        render: (text: any, record: any) => (
+          <span className={record.activityStatus === "completed" ? "completed-field" : ""}>
+            {text}
+          </span>
+        ),
       },
       {
         title: "Duration",
         dataIndex: "duration",
         key: "duration",
         align: "center",
-        render: (duration: any, record: any) =>
-          step === 1 ? (
+        render: (duration: any, record: any) => {
+          if (record.activityStatus === "completed") {
+            return (
+              <span className="completed-field">
+                {duration || "0"}
+              </span>
+            );
+          }
+          
+          return step === 1 ? (
             <Input
               placeholder="Duration"
               type="text"
               value={record.duration || 0}
               onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, ""); // Allow only numbers
+                const value = e.target.value.replace(/\D/g, "");
                 handleDurationChange(record.code, value);
               }}
               onKeyDown={(e) => {
@@ -1102,7 +1135,8 @@ const TimeBuilder = () => {
             />
           ) : (
             duration || "0"
-          ),
+          );
+        },
       },
     ];
 
@@ -1117,7 +1151,11 @@ const TimeBuilder = () => {
             <Checkbox
               checked={selectedActivities.includes(record.code)}
               onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-              disabled={isDeletionInProgress && deletingActivity !== record.code}
+              disabled={
+                isDeletionInProgress && 
+                deletingActivity !== record.code ||
+                record.activityStatus === "completed"
+              }
             />
           </div>
         ),
@@ -1129,40 +1167,52 @@ const TimeBuilder = () => {
         key: "prerequisite",
         className: step === 2 ? "active-column first-column-red" : "",
         onCell: () => ({ className: step === 2 ? "first-column-red" : "" }),
-        render: (_: any, record: any) => (
-          <Select
-            showSearch
-            placeholder="Select Prerequisite"
-            value={record.prerequisite === "-" ? undefined : record.prerequisite}
-            onChange={(value) => {
-              setSequencedModules((prevModules) =>
-                prevModules.map((module) => ({
-                  ...module,
-                  activities: module.activities.map((activity) =>
-                    activity.code === record.code
-                      ? { ...activity, prerequisite: value }
-                      : activity
-                  ),
-                }))
-              );
-            }}
-            disabled={step !== 2}
-            filterOption={(input: any, option: any) =>
-              option?.label?.toLowerCase().includes(input.toLowerCase())
-            }
-            options={[
-              { value: "", label: "-" },
-              ...sequencedModules.flatMap((module) =>
-                module.activities.map((activity) => ({
-                  value: activity.code,
-                  label: activity.code,
-                }))
-              ),
-            ]}
-            style={{ width: "100%" }}
-            allowClear
-          />
-        ),
+        render: (_: any, record: any) => {
+          if (record.activityStatus === "completed") {
+            return (
+              <span className="completed-field">
+                {record.prerequisite === "-" ? "" : record.prerequisite}
+              </span>
+            );
+          }
+          
+          return (
+            <Select
+              showSearch
+              placeholder="Select Prerequisite"
+              value={record.prerequisite === "-" ? undefined : record.prerequisite}
+              onChange={(value) => {
+                setSequencedModules((prevModules) =>
+                  prevModules.map((module) => ({
+                    ...module,
+                    activities: module.activities.map((activity) =>
+                      activity.code === record.code
+                        ? { ...activity, prerequisite: value }
+                        : activity
+                    ),
+                  }))
+                );
+              }}
+              disabled={step !== 2}
+              filterOption={(input: any, option: any) =>
+                option?.label?.toLowerCase().includes(input.toLowerCase())
+              }
+              options={[
+                { value: "", label: "-" },
+                ...sequencedModules.flatMap((module) =>
+                  module.activities
+                    .filter(activity => activity.activityStatus !== "completed")
+                    .map((activity) => ({
+                      value: activity.code,
+                      label: activity.code,
+                    }))
+                ),
+              ]}
+              style={{ width: "100%" }}
+              allowClear
+            />
+          );
+        },
       });
     }
 
@@ -1171,29 +1221,39 @@ const TimeBuilder = () => {
         key: "slack",
         className: step === 3 ? "active-column first-column-red" : "",
         onCell: () => ({ className: step === 3 ? "first-column-red" : "" }),
-        render: (_: any, record: any) => (
-          <Input
-            placeholder="Slack"
-            type="text"
-            value={record.slack || 0}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, "");
-              handleSlackChange(record.code, value);
-            }}
-            onKeyDown={(e) => {
-              if (
-                !/^\d$/.test(e.key) &&
-                e.key !== "Backspace" &&
-                e.key !== "Delete" &&
-                e.key !== "ArrowLeft" &&
-                e.key !== "ArrowRight"
-              ) {
-                e.preventDefault();
-              }
-            }}
-            disabled={step !== 3}
-          />
-        ),
+        render: (_: any, record: any) => {
+          if (record.activityStatus === "completed") {
+            return (
+              <span className="completed-field">
+                {record.slack || "0"}
+              </span>
+            );
+          }
+          
+          return (
+            <Input
+              placeholder="Slack"
+              type="text"
+              value={record.slack || 0}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                handleSlackChange(record.code, value);
+              }}
+              onKeyDown={(e) => {
+                if (
+                  !/^\d$/.test(e.key) &&
+                  e.key !== "Backspace" &&
+                  e.key !== "Delete" &&
+                  e.key !== "ArrowLeft" &&
+                  e.key !== "ArrowRight"
+                ) {
+                  e.preventDefault();
+                }
+              }}
+              disabled={step !== 3}
+            />
+          );
+        },
       });
     }
 
@@ -1202,14 +1262,24 @@ const TimeBuilder = () => {
         key: "start",
         className: step === 4 ? "active-column first-column-red" : "",
         onCell: () => ({ className: step === 4 ? "first-column-red" : "" }),
-        render: (_: any, record: any) => (
-          <DatePicker
-            placeholder="Start Date"
-            value={record.prerequisite === "" && record.start ? dayjs(record.start) : null}
-            onChange={(date) => handleStartDateChange(record.code, date)}
-            disabled={step !== 4 || record.prerequisite !== ""}
-          />
-        ),
+        render: (_: any, record: any) => {
+          if (record.activityStatus === "completed") {
+            return (
+              <span className="completed-field">
+                {record.start ? dayjs(record.start).format("DD-MM-YYYY") : ""}
+              </span>
+            );
+          }
+          
+          return (
+            <DatePicker
+              placeholder="Start Date"
+              value={record.prerequisite === "" && record.start ? dayjs(record.start) : null}
+              onChange={(date) => handleStartDateChange(record.code, date)}
+              disabled={step !== 4 || record.prerequisite !== ""}
+            />
+          );
+        },
       });
     }
 
