@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, {  useState } from "react";
 import "../styles/sign-in.css";
-import { Input, Button, Typography, Row, Col, message } from "antd";
-import { Card, CardMedia } from "@mui/material";
+import { Input, Button, Typography, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
-const images = [
-    "../public/images/auths/m5.jpg",
-    "../public/images/auths/m6.jpg",
-    "../public/images/auths/m7.jpg",
-    "../public/images/auths/m8.jpg",
-];
 
 const { Title, Text } = Typography;
 
@@ -42,7 +35,7 @@ const SignInSignUp: React.FC = () => {
                 message.success("Login Successful!");
                 const isProfileComplete = isProfileCompleted(user);
                 setTimeout(() => {
-                    navigate(isProfileComplete ? "/home" : "/profile");
+                    navigate(isProfileComplete ? "/landing-page" : "/profile");
                 }, 1000);
             } else {
                 message.error("Invalid Email or Password");
@@ -97,25 +90,24 @@ const SignInSignUp: React.FC = () => {
                 height: "100vh",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                margin: 0,
-                padding: 0,
-                maxWidth: "100%"
             }}
         >
             <div
                 style={{
-                    display: "flex",
-                    flexDirection: "row",
                     width: "100%",
                     height: "100vh",
                     borderRadius: 0,
+                    alignItems: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
                     margin: 0,
                     background: "linear-gradient(135deg, #257180 10%, #4C585B 60%, #92C7CF 80%)",
-                    color: "#e0e0e0"
+                    color: "#e0e0e0",
+                    padding:"20px"
                 }}
             >
-                <div style={{ padding: 32, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     <Title level={3} style={{ color: "#fff", marginBottom: 24, fontSize: "30px" }}>
                         Mine Development Tracking System
                     </Title>

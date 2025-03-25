@@ -48,7 +48,6 @@ const Home = () => {
                     </Button>
                 </div>
             </div>
-            
             <Hero />
             <div>
                 <ContactUs />

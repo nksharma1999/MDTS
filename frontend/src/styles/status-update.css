@@ -88,15 +88,18 @@
   .status-select.yetToStart .ant-select-selection-item {
     color: #B0BEC5;
     text-transform: uppercase;
+    font-size: 12px !important;
   }
   
   .status-select.inProgress .ant-select-selection-item {
     color: #FFA500;
     text-transform: uppercase;
+    font-size: 12px !important;
   }
   
   .status-select.completed .ant-select-selection-item {
     color: #2E7D32;
     text-transform: uppercase;
+    font-size: 12px !important;
   }
   
