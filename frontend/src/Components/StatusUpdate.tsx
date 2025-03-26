@@ -43,6 +43,7 @@ export const StatusUpdate = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [selectedTimelineId, setSelectedTimelineId] = useState<any>("");
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -99,19 +100,38 @@ export const StatusUpdate = () => {
     }
   }, [location.state]);
 
+  const getProjectTimeline = async (project: any) => {
+
+    if (Array.isArray(project?.projectTimeline)) {
+      try {
+        const timelineId = project.projectTimeline[0].timelineId;
+        const timeline = await db.getProjectTimelineById(timelineId);
+
+        setSelectedTimelineId(timelineId);
+
+        console.log(timeline);
+        const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
+        return finTimeline;
+      } catch (err) {
+        console.error("Error fetching timeline:", err);
+        return [];
+      }
+    }
+
+    if (Array.isArray(project?.initialStatus?.items)) {
+      return project.initialStatus.items.filter(
+        (item: any) => item?.status?.toLowerCase() !== "completed"
+      );
+    }
+
+    return [];
+  };
+
+
   const defaultSetup = async () => {
     try {
       const storedData = (await db.getProjects()).filter((p) => p.projectTimeline);
       setAllProjects(storedData);
-
-      const getProjectTimeline = (project: any) => {
-        if (Array.isArray(project?.projectTimeline)) return project.projectTimeline;
-        if (Array.isArray(project?.initialStatus?.items)) {
-          return project.initialStatus.items.filter((item: any) => item?.status?.toLowerCase() !== "completed");
-        }
-        return [];
-      };
-
       let selectedProject = null;
 
       if (storedData.length === 1) {
@@ -128,7 +148,8 @@ export const StatusUpdate = () => {
       if (selectedProject) {
         setSelectedProjectId(selectedProject.id);
         setSelectedProject(selectedProject);
-        handleLibraryChange(getProjectTimeline(selectedProject));
+        const timelineData = await getProjectTimeline(selectedProject);
+        handleLibraryChange(timelineData);
       } else {
         handleLibraryChange([]);
       }
@@ -137,13 +158,16 @@ export const StatusUpdate = () => {
     }
   };
 
-  const handleProjectChange = (projectId: any) => {
+  const handleProjectChange = async (projectId: any) => {
     setSelectedProjectId(projectId);
     const project = allProjects.find((p) => p.id === projectId);
     localStorage.setItem('selectedProjectId', projectId)
+    const timelineId = project.projectTimeline[0].timelineId;
+    const timeline = await db.getProjectTimelineById(timelineId);
+    const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
     setSelectedProject(project);
     if (project?.projectTimeline) {
-      handleLibraryChange(project?.projectTimeline);
+      handleLibraryChange(finTimeline);
     } else {
       handleLibraryChange([]);
     }
@@ -308,7 +332,6 @@ export const StatusUpdate = () => {
     if (libraryItems) {
       setSequencedModules(libraryItems);
       let editingRequired = false;
-
       const finDataSource = libraryItems.map((module: any, moduleIndex: number) => {
         const children = (module.activities || []).map((activity: any, actIndex: number) => {
           if (activity.activityStatus === "completed" || activity.activityStatus === "inProgress") {
@@ -346,7 +369,6 @@ export const StatusUpdate = () => {
           children,
         };
       });
-
       setDataSource(finDataSource);
       setExpandedKeys(finDataSource.map((_: any, index: any) => `module-${index}`));
       if (editingRequired) {
@@ -554,7 +576,13 @@ export const StatusUpdate = () => {
     setSequencedModules(updatedSequencedModules);
     let updatedProject = selectedProject;
     updatedProject.projectTimeline = updatedSequencedModules;
-    await db.updateProject(selectedProjectId, updatedProject);
+    const payload:any = [
+      ...updatedSequencedModules
+    ];
+
+    console.log(payload);
+
+    await db.updateProjectTimeline(selectedTimelineId, payload);
     message.success("Status updated successfully!");
   };
 

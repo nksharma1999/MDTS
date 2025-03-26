@@ -22,11 +22,10 @@ interface Activity {
   slack: string;
   level: string;
   duration: string;
-  start: string | null;
-  end: string | null;
-  activityStatus: string | null;
+  start: any;
+  end: any;
+  activityStatus: any;
 }
-
 interface Module {
   parentModuleCode: string;
   moduleName: string;
@@ -305,11 +304,11 @@ const TimeBuilder = () => {
     setFinalData(items);
     setSequencedModules(items);
   };
-  
+
   const handleDurationChange = (code: any, newDuration: any) => {
     let updatedFinalData = [...finalData];
     let updatedSequencedModules = [...sequencedModules];
-  
+
     function updateActivities(activities: any) {
       return activities.map((activity: any) => {
         if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
@@ -319,28 +318,28 @@ const TimeBuilder = () => {
           activity.duration = newDuration;
           const startDate = activity.start;
           const duration = parseInt(newDuration, 10) || 0;
-  
+
           const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
-          
+
           activity.end = endDate;
           activity.holidays = [...(activity.holidays || []), ...durationHolidays];
-  
+
           updateDependentActivities(activity.code, endDate);
         }
         return activity;
       });
     }
-  
+
     updatedFinalData = updatedFinalData.map((module) => ({
       ...module,
       activities: updateActivities(module.activities),
     }));
-  
+
     updatedSequencedModules = updatedSequencedModules.map((module) => ({
       ...module,
       activities: updateActivities(module.activities),
     }));
-  
+
     setFinalData(updatedFinalData);
     setSequencedModules(updatedSequencedModules);
   };
@@ -510,10 +509,10 @@ const TimeBuilder = () => {
   const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
     if (isDeletionInProgress) return;
     const module = sequencedModules.find(m => m.parentModuleCode === "moduleCode");
-    const hasCompletedActivities = module?.activities.some(activity => 
+    const hasCompletedActivities = module?.activities.some(activity =>
       activity.activityStatus === "completed" || activity.fin_status === "completed"
     );
-  
+
     if (hasCompletedActivities) {
       message.warning("Cannot delete module with completed activities");
       return;
@@ -672,7 +671,7 @@ const TimeBuilder = () => {
     });
   };
 
-  const restoreDeletedActivity=(activityCode: string)=>{
+  const restoreDeletedActivity = (activityCode: string) => {
     setDeletedActivities((prevDeleted: any) => {
       const restoredActivity = prevDeleted.find(
         (activity: any) => activity.code == activityCode
@@ -892,12 +891,15 @@ const TimeBuilder = () => {
       if (!selectedProject || !selectedProjectId) {
         throw new Error("Project or Project ID is missing.");
       }
+      if(!isUpdateMode){
+      }
+      const createdTimeLineId = await db.addProjectTimeline(sequencedModules);
       const updatedProjectWithTimeline = {
         ...selectedProject,
-        projectTimeline: sequencedModules
+        projectTimeline: [{ timelineId: createdTimeLineId, status: 'pending' }],
+        processedTimelineData:sequencedModules
       };
       await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
-      await db.addProjectTimeline(sequencedModules);
       message.success(isUpdateMode
         ? "Project timeline updated successfully!"
         : "Project timeline saved successfully!"
@@ -1110,7 +1112,7 @@ const TimeBuilder = () => {
               </span>
             );
           }
-          
+
           return step === 1 ? (
             <Input
               placeholder="Duration"
@@ -1147,12 +1149,12 @@ const TimeBuilder = () => {
         className: step === 1 ? "active-column" : "",
         onCell: () => ({ className: step === 1 ? "first-column-red" : "" }),
         render: (_: any, record: any) => (
-          <div style={{marginRight:'20px'}}>
+          <div style={{ marginRight: '20px' }}>
             <Checkbox
               checked={selectedActivities.includes(record.code)}
               onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
               disabled={
-                isDeletionInProgress && 
+                isDeletionInProgress &&
                 deletingActivity !== record.code ||
                 record.activityStatus === "completed"
               }
@@ -1175,17 +1177,17 @@ const TimeBuilder = () => {
               </span>
             );
           }
-          
+
           return (
             <Select
               showSearch
               placeholder="Select Prerequisite"
               value={record.prerequisite === "-" ? undefined : record.prerequisite}
               onChange={(value) => {
-                setSequencedModules((prevModules) =>
-                  prevModules.map((module) => ({
+                setSequencedModules((prevModules: any) =>
+                  prevModules.map((module: any) => ({
                     ...module,
-                    activities: module.activities.map((activity) =>
+                    activities: module.activities.map((activity: any) =>
                       activity.code === record.code
                         ? { ...activity, prerequisite: value }
                         : activity
@@ -1229,7 +1231,7 @@ const TimeBuilder = () => {
               </span>
             );
           }
-          
+
           return (
             <Input
               placeholder="Slack"
@@ -1270,7 +1272,7 @@ const TimeBuilder = () => {
               </span>
             );
           }
-          
+
           return (
             <DatePicker
               placeholder="Start Date"
@@ -1337,7 +1339,7 @@ const TimeBuilder = () => {
     if (currentStep == 1) {
       columns.push({
         title: (
-          <div style={{ display: "flex", alignItems: "right", justifyContent: "right", position: "relative",marginRight:"20px" }}>
+          <div style={{ display: "flex", alignItems: "right", justifyContent: "right", position: "relative", marginRight: "20px" }}>
             <span>Actions</span>
             {/* {deletedModules.length > 0 && (
               <div style={{ position: "absolute", right: 0 }}>
