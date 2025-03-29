@@ -270,3 +270,10 @@
 .ant-steps-item-title {
     font-size: 14px !important;
 }
+
+.highlighted-select .ant-select-selector,
+.highlighted-input .ant-input,
+.highlighted-datepicker .ant-picker {
+    border: 2px solid rgb(17, 205, 83) !important;
+    box-shadow: 0 0 5px rgba(7, 125, 13, 0.5);
+}

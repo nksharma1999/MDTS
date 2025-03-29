@@ -6,8 +6,6 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 const { Option } = Select;
 const { Step } = Steps;
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
 import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
 import moment from 'moment';
@@ -68,7 +66,6 @@ const TimeBuilder = () => {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<any>(null);
   const [libraryName, setLibraryName] = useState<any>();
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isCancelEditModalVisible, setIsCancelEditModalVisiblVisible] = useState(false);
   const [selectedProjectMineType, setSelectedProjectMineType] = useState("");
   const [finalHolidays, setFinalHolidays] = useState<HolidayData[]>();
@@ -87,6 +84,8 @@ const TimeBuilder = () => {
   const [isDeletionInProgress, setIsDeletionInProgress] = useState(false);
   const [_deletedActivities, setDeletedActivities] = useState<any[]>([]);
   const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
+  const [selectedTimelineId, setSelectedTimelineId] = useState<any>("");
+  const [isReplanMode, setIsReplanMode] = useState(false);
 
   useEffect(() => {
     defaultSetup();
@@ -173,36 +172,59 @@ const TimeBuilder = () => {
   }, [isSaturdayWorking, isSundayWorking, finalHolidays]);
 
   useEffect(() => {
-    if (location.state && location.state.selectedProject) {
-      const project = location.state.selectedProject;
+    const fetchData = async () => {
+      const state = location.state;
+      if (!state?.selectedProject || !state?.selectedTimeline) return;
+  
+      setIsReplanMode(state.rePlanTimeline || false);
+  
+      const { selectedProject, selectedTimeline } = state;
+      const { projectParameters, id, holidays, projectTimeline, initialStatus } = selectedProject || {};
+  
+      const timelineId = selectedTimeline.versionId || selectedTimeline.timelineId;
+      setSelectedTimelineId(timelineId);
+      getProjectTimeline(timelineId);
+  
       setIsUpdateMode(true);
-      setSelectedProjectName(project.projectParameters.projectName);
-      setSelectedProjectId(project.id);
-      setSelectedProject(project);
-      setFinalHolidays(project.holidays);
-
-      const selectedProjectLibrary = project.initialStatus.library || [];
-      setLibraryName(selectedProjectLibrary);
-      if (project && project.projectTimeline) {
-        if (project.projectParameters) {
-          setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
-        }
-        setIsSaturdayWorking(project.projectTimeline[0].saturdayWorking)
-        setIsSundayWorking(project.projectTimeline[0].sundayWorking)
-
-        if (Array.isArray(project.projectTimeline)) {
-          handleLibraryChange(project.projectTimeline);
+      setSelectedProjectName(projectParameters?.projectName || "");
+      setSelectedProjectId(id || "");
+      setSelectedProject(selectedProject || {});
+      setFinalHolidays(holidays || []);
+  
+      setLibraryName(initialStatus?.library || []);
+  
+      if (projectTimeline?.length) {
+        setIsSaturdayWorking(projectTimeline[0]?.saturdayWorking || false);
+        setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
+        setSelectedProjectMineType(projectParameters?.typeOfMine || "");
+      } else {
+        setLibraryName([]);
+      }
+  
+      setIsMenualTimeline(true);
+    };
+  
+    fetchData();
+  }, [location.state]);
+  
+  const getProjectTimeline = async (timelineId: any) => {
+    if (timelineId) {
+      try {
+        const timeline = await db.getProjectTimelineById(timelineId);
+        const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
+        if (Array.isArray(finTimeline)) {
+          handleLibraryChange(finTimeline);
         } else {
           handleLibraryChange([]);
         }
+        return finTimeline;
+      } catch (err) {
+        console.error("Error fetching timeline:", err);
+        return [];
       }
-      else {
-        setLibraryName([]);
-      }
-      setTimeout(() => navigate(".", { replace: true }), 0);
-      setIsMenualTimeline(true);
     }
-  }, [location.state]);
+    return [];
+  };
 
   const defaultSetup = async () => {
     try {
@@ -282,12 +304,13 @@ const TimeBuilder = () => {
       setCurrentStep(currentStep + 1);
     } else {
       if (isUpdateMode) {
-        saveProjectTimeline(sequencedModules);
-        navigate("/create/project-timeline")
+        handleSaveProjectTimeline(sequencedModules);
+        setTimeout(() => {
+          navigate("/create/project-timeline");
+        }, 1000);
       }
       else {
-        saveProjectTimeline(sequencedModules);
-        setIsModalVisible(true);
+        handleSaveProjectTimeline(sequencedModules);
       }
     }
   };
@@ -737,184 +760,62 @@ const TimeBuilder = () => {
     }
   };
 
-  const handleDownload = async () => {
-    const workbook: any = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Project Report");
-    const currentUser = getCurrentUser();
-    const titleStyle = {
-      font: { bold: true, size: 16, color: { argb: "004d99" } },
-      alignment: { horizontal: "center", vertical: "middle" },
-    };
-
-    const subtitleStyle = {
-      font: { bold: true, size: 12, color: { argb: "333333" } },
-      alignment: { horizontal: "center", vertical: "middle" },
-    };
-
-    const tableHeaderStyle = {
-      font: { bold: true, size: 12, color: { argb: "FFFFFF" } },
-      fill: { type: "pattern", pattern: "solid", fgColor: { argb: "258790" } },
-      alignment: { horizontal: "center", vertical: "middle" },
-      border: {
-        top: { style: "thin" },
-        bottom: { style: "thin" },
-        left: { style: "thin" },
-        right: { style: "thin" },
-      },
-    };
-
-    const moduleHeaderStyle = {
-      font: { bold: true, size: 12, color: { argb: "000000" } },
-      fill: { type: "pattern", pattern: "solid", fgColor: { argb: "DDDDDD" } },
-      alignment: { horizontal: "left", vertical: "middle" },
-    };
-
-    const dataRowStyle = {
-      font: { size: 11 },
-      alignment: { horizontal: "left", vertical: "middle" },
-      border: { top: { style: "thin" }, bottom: { style: "thin" } },
-    };
-
-    worksheet.mergeCells("B1:G1");
-    const projectTitle = worksheet.getCell("B1");
-    projectTitle.value = `Project Report: ${selectedProject?.projectParameters.projectName}`;
-    projectTitle.font = titleStyle.font;
-    projectTitle.alignment = titleStyle.alignment;
-
-    worksheet.mergeCells("B2:G2");
-    const companyTitle = worksheet.getCell("B2");
-    companyTitle.value = `Company: ${currentUser.company}`;
-    companyTitle.font = subtitleStyle.font;
-    companyTitle.alignment = subtitleStyle.alignment;
-
-    worksheet.mergeCells("B3:G3");
-    const timestamp = worksheet.getCell("B3");
-    timestamp.value = `Generated On: ${dayjs().format("DD-MM-YYYY HH:mm:ss")}`;
-    timestamp.font = { italic: true, size: 12, color: { argb: "555555" } };
-    timestamp.alignment = subtitleStyle.alignment;
-
-    worksheet.addRow([]);
-
-    const globalHeader = [
-      "Sr No.",
-      "Key Activity",
-      "Duration (Days)",
-      "Pre-Requisite",
-      "Slack",
-      "Planned Start",
-      "Planned Finish",
-    ];
-    const headerRow = worksheet.addRow(globalHeader);
-
-    headerRow.eachCell((cell: any) => {
-      Object.assign(cell, tableHeaderStyle);
-    });
-
-    worksheet.getRow(5).height = 25;
-
-    let rowIndex = 6;
-    sequencedModules.forEach((module, moduleIndex) => {
-      const moduleHeaderRow = worksheet.addRow([
-        `Module: ${module.parentModuleCode}`,
-        module.moduleName,
-        "",
-        "",
-        "",
-        "",
-        "",
-      ]);
-
-      moduleHeaderRow.eachCell((cell: any) => {
-        Object.assign(cell, moduleHeaderStyle);
-      });
-
-      rowIndex++;
-
-      module.activities.forEach((activity, activityIndex) => {
-        const row = worksheet.addRow([
-          `${moduleIndex + 1}.${activityIndex + 1}`,
-          activity.activityName,
-          activity.duration || 0,
-          activity.prerequisite,
-          activity.slack || 0,
-          activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
-          activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-        ]);
-
-        row.eachCell((cell: any) => {
-          Object.assign(cell, dataRowStyle);
-        });
-
-        if (activityIndex % 2 === 0) {
-          row.eachCell((cell: any) => {
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: "F7F7F7" },
-            };
-          });
-        }
-        rowIndex++;
-      });
-
-      worksheet.addRow([]);
-      rowIndex++;
-    });
-
-    worksheet.columns = [
-      { width: 10 },
-      { width: 35 },
-      { width: 18 },
-      { width: 30 },
-      { width: 15 },
-      { width: 20 },
-      { width: 20 },
-    ];
-
-    worksheet.mergeCells(`B${rowIndex + 2}:G${rowIndex + 2}`);
-    const createdByRow = worksheet.getCell(`B${rowIndex + 2}`);
-    createdByRow.value = `Created by: ${currentUser.name || ""}`;
-    createdByRow.font = { italic: true, size: 12, color: { argb: "777777" } };
-    createdByRow.alignment = { horizontal: "right", vertical: "middle" };
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-    message.success("Download started!");
-    setIsModalVisible(false);
-  };
-
-  const saveProjectTimeline = async (sequencedModules: any) => {
+  const handleSaveProjectTimeline = async (sequencedModules: any) => {
     try {
       if (!selectedProject || !selectedProjectId) {
         throw new Error("Project or Project ID is missing.");
       }
-      if(!isUpdateMode){
-      }
-      const createdTimeLineId = await db.addProjectTimeline(sequencedModules);
-      const updatedProjectWithTimeline = {
-        ...selectedProject,
-        projectTimeline: [{ timelineId: createdTimeLineId, status: 'pending' }],
-        processedTimelineData:sequencedModules
+  
+      const currentUser = getCurrentUser();
+      const currentTimestamp = new Date().toISOString();
+  
+      const createTimelineEntry = (timelineId: string, existingTimeline: any[]) => {
+        const newVersion = `${existingTimeline.length + 1}.0`;
+        localStorage.setItem("latestProjectVersion", newVersion);
+        return {
+          timelineId,
+          status: "pending",
+          version: newVersion,
+          addedBy: currentUser.name,
+          addedUserEmail: currentUser.email,
+          createdAt: currentTimestamp,
+          updatedAt: currentTimestamp,
+        };
       };
-      await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
-      message.success(isUpdateMode
-        ? "Project timeline updated successfully!"
-        : "Project timeline saved successfully!"
-      );
-      localStorage.setItem('selectedProjectId', selectedProjectId);
-      setSelectedProject(null);
-      setSelectedProjectId(null);
-      setIsMenualTimeline(false);
-      defaultSetup();
+  
+      if (!isUpdateMode || isReplanMode) {
+        const createdTimeLineId:any = await db.addProjectTimeline(sequencedModules);
+        const existingTimeline = selectedProject.projectTimeline || [];
+        
+        const updatedProjectWithTimeline = {
+          ...selectedProject,
+          projectTimeline: [...existingTimeline, createTimelineEntry(createdTimeLineId, existingTimeline)],
+          processedTimelineData: sequencedModules,
+        };
+  
+        await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
+      } else {
+        await db.updateProjectTimeline(selectedTimelineId, sequencedModules);
+      }
+  
+      setTimeout(() => navigate(".", { replace: true }), 0);
+      message.success(isUpdateMode ? "Project timeline updated successfully!" : "Project timeline saved successfully!");
+  
+      localStorage.setItem("selectedProjectId", selectedProjectId);
+      resetProjectState();
     } catch (error) {
       console.error("Error saving project timeline:", error);
       message.error("Failed to save project timeline. Please try again.");
     }
   };
-
+  
+  const resetProjectState = () => {
+    setSelectedProject(null);
+    setSelectedProjectId(null);
+    setIsMenualTimeline(false);
+    defaultSetup();
+  };
+  
   const holidayColumns: any = [
     {
       title: "From Date",
@@ -1156,7 +1057,7 @@ const TimeBuilder = () => {
               disabled={
                 isDeletionInProgress &&
                 deletingActivity !== record.code ||
-                record.activityStatus === "completed"
+                record.activityStatus == "completed" || record.activityStatus == "inProgress"
               }
             />
           </div>
@@ -1167,9 +1068,11 @@ const TimeBuilder = () => {
     if (step >= 2) {
       baseColumns.push({
         key: "prerequisite",
-        className: step === 2 ? "active-column first-column-red" : "",
-        onCell: () => ({ className: step === 2 ? "first-column-red" : "" }),
+        className: step === 2 ? "active-column" : "",
         render: (_: any, record: any) => {
+          const isDisabled = step !== 2;
+          const selectClass = step === 2 && !isDisabled ? "highlighted-select" : "";
+
           if (record.activityStatus === "completed") {
             return (
               <span className="completed-field">
@@ -1179,40 +1082,42 @@ const TimeBuilder = () => {
           }
 
           return (
-            <Select
-              showSearch
-              placeholder="Select Prerequisite"
-              value={record.prerequisite === "-" ? undefined : record.prerequisite}
-              onChange={(value) => {
-                setSequencedModules((prevModules: any) =>
-                  prevModules.map((module: any) => ({
-                    ...module,
-                    activities: module.activities.map((activity: any) =>
-                      activity.code === record.code
-                        ? { ...activity, prerequisite: value }
-                        : activity
-                    ),
-                  }))
-                );
-              }}
-              disabled={step !== 2}
-              filterOption={(input: any, option: any) =>
-                option?.label?.toLowerCase().includes(input.toLowerCase())
-              }
-              options={[
-                { value: "", label: "-" },
-                ...sequencedModules.flatMap((module) =>
-                  module.activities
-                    .filter(activity => activity.activityStatus !== "completed")
-                    .map((activity) => ({
-                      value: activity.code,
-                      label: activity.code,
+            <div className={selectClass}>
+              <Select
+                showSearch
+                placeholder="Select Prerequisite"
+                value={record.prerequisite === "-" ? undefined : record.prerequisite}
+                onChange={(value) => {
+                  setSequencedModules((prevModules: any) =>
+                    prevModules.map((module: any) => ({
+                      ...module,
+                      activities: module.activities.map((activity: any) =>
+                        activity.code === record.code
+                          ? { ...activity, prerequisite: value }
+                          : activity
+                      ),
                     }))
-                ),
-              ]}
-              style={{ width: "100%" }}
-              allowClear
-            />
+                  );
+                }}
+                disabled={isDisabled}
+                filterOption={(input: any, option: any) =>
+                  option?.label?.toLowerCase().includes(input.toLowerCase())
+                }
+                options={[
+                  { value: "", label: "-" },
+                  ...sequencedModules.flatMap((module) =>
+                    module.activities
+                      .filter((activity) => activity.activityStatus !== "completed")
+                      .map((activity) => ({
+                        value: activity.code,
+                        label: activity.code,
+                      }))
+                  ),
+                ]}
+                style={{ width: "95%" }}
+                allowClear
+              />
+            </div>
           );
         },
       });
@@ -1221,9 +1126,11 @@ const TimeBuilder = () => {
     if (step >= 3) {
       baseColumns.push({
         key: "slack",
-        className: step === 3 ? "active-column first-column-red" : "",
-        onCell: () => ({ className: step === 3 ? "first-column-red" : "" }),
+        className: step === 3 ? "active-column" : "",
         render: (_: any, record: any) => {
+          const isDisabled = step !== 3;
+          const inputClass = step === 3 && !isDisabled ? "highlighted-input" : "";
+
           if (record.activityStatus === "completed") {
             return (
               <span className="completed-field">
@@ -1233,27 +1140,30 @@ const TimeBuilder = () => {
           }
 
           return (
-            <Input
-              placeholder="Slack"
-              type="text"
-              value={record.slack || 0}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "");
-                handleSlackChange(record.code, value);
-              }}
-              onKeyDown={(e) => {
-                if (
-                  !/^\d$/.test(e.key) &&
-                  e.key !== "Backspace" &&
-                  e.key !== "Delete" &&
-                  e.key !== "ArrowLeft" &&
-                  e.key !== "ArrowRight"
-                ) {
-                  e.preventDefault();
-                }
-              }}
-              disabled={step !== 3}
-            />
+            <div className={inputClass}>
+              <Input
+                placeholder="Slack"
+                type="text"
+                value={record.slack || 0}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  handleSlackChange(record.code, value);
+                }}
+                style={{ width: "95%" }}
+                onKeyDown={(e) => {
+                  if (
+                    !/^\d$/.test(e.key) &&
+                    e.key !== "Backspace" &&
+                    e.key !== "Delete" &&
+                    e.key !== "ArrowLeft" &&
+                    e.key !== "ArrowRight"
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
+                disabled={isDisabled}
+              />
+            </div>
           );
         },
       });
@@ -1262,9 +1172,11 @@ const TimeBuilder = () => {
     if (step >= 4) {
       baseColumns.push({
         key: "start",
-        className: step === 4 ? "active-column first-column-red" : "",
-        onCell: () => ({ className: step === 4 ? "first-column-red" : "" }),
+        className: step === 4 ? "active-column" : "", // removed first-column-red
         render: (_: any, record: any) => {
+          const isDisabled = step !== 4 || record.prerequisite !== "";
+          const datePickerClass = step === 4 && !isDisabled ? "highlighted-datepicker" : "";
+
           if (record.activityStatus === "completed") {
             return (
               <span className="completed-field">
@@ -1274,12 +1186,19 @@ const TimeBuilder = () => {
           }
 
           return (
-            <DatePicker
-              placeholder="Start Date"
-              value={record.prerequisite === "" && record.start ? dayjs(record.start) : null}
-              onChange={(date) => handleStartDateChange(record.code, date)}
-              disabled={step !== 4 || record.prerequisite !== ""}
-            />
+            <div className={datePickerClass}>
+              <DatePicker
+                placeholder="Start Date"
+                value={
+                  record.prerequisite === "" && record.start
+                    ? dayjs(record.start)
+                    : null
+                }
+                onChange={(date) => handleStartDateChange(record.code, date)}
+                disabled={isDisabled}
+                style={{ width: "95%" }}
+              />
+            </div>
           );
         },
       });
@@ -1378,7 +1297,13 @@ const TimeBuilder = () => {
                 padding: "6px 10px",
                 borderRadius: "4px",
               }}
-              disabled={isDeletionInProgress}
+              disabled={
+                isDeletionInProgress ||
+                record.activities.some((activity: any) =>
+                  ["completed", "inProgress"].includes(activity.activityStatus)
+                )
+              }
+
             >
               Delete
             </Button>
@@ -1441,6 +1366,7 @@ const TimeBuilder = () => {
     setSelectedProjectId(null);
     setIsMenualTimeline(false);
     defaultSetup();
+    setTimeout(() => navigate(".", { replace: true }), 0);
   };
 
   const isNextStepAllowed = () => {
@@ -1639,9 +1565,9 @@ const TimeBuilder = () => {
                   disabled={!selectedProjectId}
                   icon={<CloseCircleOutlined />}
                   onClick={() => setIsCancelEditModalVisiblVisible(true)}
-                  style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
+                  style={{ marginLeft: "15px", backgroundColor: "#e74c3c", borderColor: "#e74c3c" }}
                 >
-                  Cancel
+                  Discard
                 </Button>
               </div>
             </>)}
@@ -1825,9 +1751,9 @@ const TimeBuilder = () => {
                   {currentStep === 7
                     ? isUpdateMode
                       ? "Update"
-                      : "Save & Download"
+                      : "Save"
                     : currentStep === 6
-                      ? "Mark as Reviewed"
+                      ? "Send For Review"
                       : "Next"}
                 </Button>
 
@@ -1886,18 +1812,6 @@ const TimeBuilder = () => {
           </div>}
         </div>
       </div>
-      <Modal
-        title="Confirm Download"
-        visible={isModalVisible}
-        onOk={handleDownload}
-        onCancel={() => setIsModalVisible(false)}
-        okText="Download"
-        cancelText="Cancel"
-        className="modal-container"
-        okButtonProps={{ className: "bg-secondary" }}
-      >
-        <p style={{ padding: "10px" }}>Are you sure you want to download the data in Excel format?</p>
-      </Modal>
 
       <Modal
         title="Confirm Discard Changes"
@@ -1953,12 +1867,6 @@ const TimeBuilder = () => {
                   style={{ width: "100%" }}
                   allowClear={true}
                 >
-                  {/* {(allProjectsTimelines.filter((projects: any) => projects.projectParameters.typeOfMine === selectedProject?.projectParameters?.typeOfMine &&
-                    projects.initialStatus.library === selectedProject?.projects?.initialStatus?.library)).map((project) => (
-                      <Option key={project.id} value={project.id}>
-                        {project.projectParameters.projectName}
-                      </Option>
-                    ))} */}
                   {allProjectsTimelines.map((project) => (
                     <Option key={project.id} value={project.id}>
                       {project.projectParameters.projectName}

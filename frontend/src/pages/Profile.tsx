@@ -205,7 +205,6 @@ const Profile = () => {
 
     const handlePasswordUpdate = async (values: any) => {
         const currentUser = getCurrentUser();
-        console.log(values);
         if (values.oldPassword == currentUser.password) {
             const users = {
                 ...currentUser, password: values.newPassword,
@@ -279,6 +278,7 @@ const Profile = () => {
                                                     value={formData.company}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter Company"
+                                                    disabled={formData.role!='Admin'}
                                                 />
                                             </Form.Item>
                                         </Col>

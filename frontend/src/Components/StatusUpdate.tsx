@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Button, Select, Modal, Input, message, Table, DatePicker } from "antd";
-import { DownloadOutlined, EditOutlined, FormOutlined, ShareAltOutlined } from "@ant-design/icons";
+import { DownloadOutlined, EditOutlined, FormOutlined, ReloadOutlined, ShareAltOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -41,9 +41,12 @@ export const StatusUpdate = () => {
   const [sequencedModules, setSequencedModules] = useState<Module[]>([]);
   const [dataSource, setDataSource] = useState<any>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedTimelineId, setSelectedTimelineId] = useState<any>("");
+  const [selectedProjectTimeline, setSelectedProjectTimeline] = useState<any>([]);
+  const [selectedVersionId, setSelectedVersionId] = useState(null);
+  const [allVersions, setAllVersions] = useState<any>();
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -71,7 +74,6 @@ export const StatusUpdate = () => {
           }
           return project;
         });
-        localStorage.setItem(userProjectsKey, JSON.stringify(updatedData));
       }
     } catch (error) {
       console.error("An unexpected error occurred while fetching projects:", error);
@@ -101,15 +103,12 @@ export const StatusUpdate = () => {
   }, [location.state]);
 
   const getProjectTimeline = async (project: any) => {
-
     if (Array.isArray(project?.projectTimeline)) {
       try {
-        const timelineId = project.projectTimeline[0].timelineId;
+        const latestVersionId = localStorage.getItem("latestProjectVersion");
+        const foundTimeline = project?.projectTimeline.filter((item: any) => item.version == latestVersionId);
+        const timelineId = !latestVersionId ? project.projectTimeline[0].timelineId : foundTimeline[0].timelineId;
         const timeline = await db.getProjectTimelineById(timelineId);
-
-        setSelectedTimelineId(timelineId);
-
-        console.log(timeline);
         const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
         return finTimeline;
       } catch (err) {
@@ -127,31 +126,54 @@ export const StatusUpdate = () => {
     return [];
   };
 
-
   const defaultSetup = async () => {
     try {
       const storedData = (await db.getProjects()).filter((p) => p.projectTimeline);
       setAllProjects(storedData);
+
       let selectedProject = null;
+      const lastVisitedProjectId = localStorage.getItem("selectedProjectId");
 
       if (storedData.length === 1) {
         selectedProject = storedData[0];
-      } else {
-        try {
-          const lastVisitedProjectId = localStorage.getItem("selectedProjectId");
-          selectedProject = storedData.find((p) => p.id == lastVisitedProjectId) || null;
-        } catch (error) {
-          console.error("Error selecting project:", error);
-        }
+      } else if (lastVisitedProjectId) {
+        selectedProject = storedData.find((p) => p.id == lastVisitedProjectId) || null;
       }
 
       if (selectedProject) {
         setSelectedProjectId(selectedProject.id);
         setSelectedProject(selectedProject);
+
         const timelineData = await getProjectTimeline(selectedProject);
         handleLibraryChange(timelineData);
       } else {
         handleLibraryChange([]);
+      }
+
+      const projectTimeline = selectedProject?.projectTimeline || [];
+      const latestVersionId = localStorage.getItem("latestProjectVersion");
+
+      const extractedTimelines = projectTimeline.map((version: any) => ({
+        versionId: version.timelineId,
+        version: version.version,
+        status: version.status,
+        addedBy: version.addedBy,
+        addedUserEmail: version.addedUserEmail,
+        createdAt: version.createdAt || new Date().toISOString(),
+        updatedAt: version.updatedAt || new Date().toISOString(),
+      }));
+
+      setAllVersions(extractedTimelines);
+
+      if (extractedTimelines.length > 0) {
+        const selectedTimeline = latestVersionId
+          ? extractedTimelines.find((timeline: any) => timeline.version == latestVersionId) || extractedTimelines[0]
+          : extractedTimelines[0];
+
+        setSelectedVersionId(latestVersionId ?? extractedTimelines[0].versionId);
+        setSelectedProjectTimeline(selectedTimeline);
+      } else {
+        console.warn("No project timeline data available.");
       }
     } catch (error) {
       console.error("An unexpected error occurred while fetching projects:", error);
@@ -161,7 +183,9 @@ export const StatusUpdate = () => {
   const handleProjectChange = async (projectId: any) => {
     setSelectedProjectId(projectId);
     const project = allProjects.find((p) => p.id === projectId);
-    localStorage.setItem('selectedProjectId', projectId)
+    localStorage.setItem('selectedProjectId', projectId);
+    setSelectedProjectTimeline(project.projectTimeline[0]);
+    defaultSetup();
     const timelineId = project.projectTimeline[0].timelineId;
     const timeline = await db.getProjectTimelineById(timelineId);
     const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
@@ -328,6 +352,30 @@ export const StatusUpdate = () => {
     setEmail("");
   };
 
+  const handleApproveTimeline = async () => {
+    const approvedTimelinesCount = selectedProject.projectTimeline.filter(
+      (timeline: any) => timeline.status === "Approved"
+    ).length;
+
+    const nextVersion = `${approvedTimelinesCount + 1}.0`;
+
+    const updatedProjectTimeline = selectedProject.projectTimeline.map((timeline: any) => {
+      if (timeline.timelineId === selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId) {
+        return { ...timeline, status: "Approved", version: nextVersion };
+      }
+      return timeline;
+    });
+
+    const updatedSelectedProject = {
+      ...selectedProject,
+      projectTimeline: updatedProjectTimeline,
+    };
+    await db.updateProject(selectedProjectId, updatedSelectedProject);
+    message.success("Timeline approved successfully");
+    setIsApproveModalOpen(false);
+    defaultSetup();
+  };
+
   const handleLibraryChange = (libraryItems: any) => {
     if (libraryItems) {
       setSequencedModules(libraryItems);
@@ -385,7 +433,12 @@ export const StatusUpdate = () => {
 
   const editTimeBuilder = () => {
     eventBus.emit("updateTab", "/create/timeline-builder");
-    navigate("/create/timeline-builder", { state: { selectedProject: selectedProject } });
+    navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline } });
+  };
+
+  const rePlanTimeline = () => {
+    eventBus.emit("updateTab", "/create/timeline-builder");
+    navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline, rePlanTimeline: true } });
   };
 
   const renderStatusSelect = (status: string, recordKey: string, fin_status: any) => {
@@ -454,7 +507,7 @@ export const StatusUpdate = () => {
           <DatePicker
             value={actualFinish ? dayjs(actualFinish) : null}
             onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualFinish")}
-            disabled={activityStatus == "yetToStart" || fin_status == 'completed'}
+            disabled={activityStatus == "yetToStart" || activityStatus == "inProgress" || fin_status == 'completed'}
             className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "highlighted-field" : ""}
           />
         ) : (
@@ -504,7 +557,7 @@ export const StatusUpdate = () => {
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
+  const handleSaveStatus = async () => {
     let isValid = true;
     let errorMessage = "";
 
@@ -576,41 +629,121 @@ export const StatusUpdate = () => {
     setSequencedModules(updatedSequencedModules);
     let updatedProject = selectedProject;
     updatedProject.projectTimeline = updatedSequencedModules;
-    const payload:any = [
-      ...updatedSequencedModules
-    ];
-
-    console.log(payload);
-
-    await db.updateProjectTimeline(selectedTimelineId, payload);
+    await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
+    defaultSetup();
     message.success("Status updated successfully!");
   };
+
+  const getProjectTimelineById = (id: any) => {
+    const data = selectedProject.projectTimeline.filter((item: any) => item.timelineId == id);
+    if (data.length > 0) {
+      setSelectedProjectTimeline(data[0]);
+      localStorage.setItem("latestProjectVersion", data[0].version);
+    } else {
+      console.warn("No matching timeline found for id:", id);
+    }
+  };
+
+  const handleChangeVersionTimeline = async (id: any) => {
+    const timelineData = await db.getProjectTimelineById(id);
+    getProjectTimelineById(id);
+    handleLibraryChange(timelineData);
+  }
 
   return (
     <>
       <div className="status-heading">
-        <p>Project Timeline</p>
+        <div className="status-update-header">
+          <p>Project Timeline</p>
+          {allProjects.length != 0 && (
+            <div style={{ display: "flex", gap: "10px" }}>
+              <span>Approval Status:</span>
+              <span
+                style={{ fontWeight: 'bold', textTransform: "uppercase" }}
+                className={
+                  selectedProjectTimeline?.status?.toLowerCase() === "approved"
+                    ? "text-approved"
+                    : selectedProjectTimeline?.status?.toLowerCase() === "pending"
+                      ? "text-warning"
+                      : "text-danger"
+                }
+              >
+                {selectedProjectTimeline?.status}
+              </span>
+            </div>
+          )}
+          {allProjects.length != 0 && (
+            <div className="times-stamps" style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created By</p>
+                <p style={{ fontWeight: "bold", color: "#007bff" }}>
+                  {selectedProjectTimeline?.addedBy}
+                </p>
+              </div>
+              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created At</p>
+                <p style={{ fontWeight: "bold", color: "#007bff" }}>
+                  {new Date(selectedProjectTimeline?.createdAt).toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="main-status-update">
         {allProjects.length != 0 && (
           <>
             <div className="status-toolbar">
-              <div className="filters">
-                <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Select Project</label>
-                <Select
-                  placeholder="Select Project"
-                  value={selectedProjectId}
-                  onChange={handleProjectChange}
-                  popupMatchSelectWidth={false}
-                  style={{ width: "100%" }}
-                >
-                  {allProjects.map((project) => (
-                    <Option key={project.id} value={project.id}>
-                      {project.projectParameters.projectName}
-                    </Option>
-                  ))}
-                </Select>
+              <div className="select-item">
+                <div className="flex-item">
+                  <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Project</label>
+                  <Select
+                    placeholder="Select Project"
+                    value={selectedProjectId}
+                    onChange={handleProjectChange}
+                    popupMatchSelectWidth={false}
+                    style={{ width: "100%" }}
+                  >
+                    {allProjects.map((project) => (
+                      <Option key={project.id} value={project.id}>
+                        {project.projectParameters.projectName}
+                      </Option>
+                    ))}
+                  </Select>
+                </div>
+                {allVersions?.length > 0 && (
+                  <div className="flex-item">
+                    <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>
+                      Version
+                    </label>
+                    <Select
+                      placeholder="Select Version"
+                      value={selectedVersionId}
+                      onChange={(value) => {
+                        const selectedVersion = allVersions.find((version: any) => version.versionId === value);
+                        setSelectedProjectTimeline(selectedVersion);
+                        setSelectedVersionId(value);
+                        handleChangeVersionTimeline(value);
+                      }}
+                      popupMatchSelectWidth={false}
+                      style={{ width: "100%" }}
+                    >
+                      {allVersions?.map((version: any) => (
+                        <Option key={version.versionId} value={version.versionId}>
+                          {version.version}
+                        </Option>
+                      ))}
+                    </Select>
+                  </div>
+                )}
               </div>
               <div className="actions">
                 <Button
@@ -618,38 +751,57 @@ export const StatusUpdate = () => {
                   disabled={!selectedProjectId}
                   icon={<DownloadOutlined />}
                   onClick={handleDownload}
-                  style={{ backgroundColor: "grey", borderColor: "#4CAF50" }}
+                  style={{ backgroundColor: "#4CAF50" }}
                 >
                   Download Timeline
                 </Button>
                 <Button
                   type="primary"
                   disabled={!selectedProjectId}
-                  icon={<EditOutlined />}
-                  onClick={editTimeBuilder}
-                  style={{ backgroundColor: "#D35400", borderColor: "#FF9800" }}
+                  icon={selectedProjectTimeline?.status != 'Approved' ? <EditOutlined /> : <ReloadOutlined />}
+                  onClick={selectedProjectTimeline?.status != 'Approved' ? editTimeBuilder : rePlanTimeline}
+                  style={{ backgroundColor: "#FF8A65" }}
                 >
-                  Edit Timeline
+                  {selectedProjectTimeline?.status != 'Approved' ? 'Edit Timeline' : 'Replan Timeline'}
                 </Button>
                 <Button
                   type="primary"
-                  className="bg-secondary"
                   disabled={!selectedProjectId}
                   icon={<ShareAltOutlined />}
                   onClick={showModal}
-                  style={{ backgroundColor: "#4169E1", borderColor: "#007BFF" }}
+                  style={{ backgroundColor: "#00BFA6" }}
                 >
                   Share
                 </Button>
 
                 {isEditing ? (
-                  <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
+                  <Button type="primary" style={{ backgroundColor: "#AB47BC" }} icon={<SaveOutlined />} onClick={handleSaveStatus}>
                     Save Status
                   </Button>
                 ) : (
-                  <Button type="primary" icon={<FormOutlined />} onClick={handleUpdateStatus}>
+                  <Button style={{ backgroundColor: "#5C6BC0", color: "#fff" }} icon={<FormOutlined />} onClick={handleUpdateStatus}>
                     Update Status
                   </Button>
+                )}
+
+                {selectedProjectTimeline?.status != 'Approved' && getCurrentUser().role == 'Admin' && (
+                  <div className="action-btn">
+                    <Button
+                      type="primary"
+                      disabled={!selectedProjectId}
+                      style={{ backgroundColor: "#E57373" }}
+                    >
+                      Revise
+                    </Button>
+                    <Button
+                      type="primary"
+                      disabled={!selectedProjectId}
+                      onClick={() => setIsApproveModalOpen(true)}
+                      style={{ backgroundColor: "#258780" }}
+                    >
+                      Approve
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -680,7 +832,7 @@ export const StatusUpdate = () => {
                 bordered
                 scroll={{
                   x: "max-content",
-                  y: "calc(100vh - 252px)",
+                  y: "calc(100vh - 255px)",
                 }}
               />
             </div>
@@ -726,6 +878,20 @@ export const StatusUpdate = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
+        </div>
+      </Modal>
+
+      <Modal
+        title="Project Timeline Confirmation"
+        visible={isApproveModalOpen}
+        onCancel={() => setIsApproveModalOpen(false)}
+        onOk={handleApproveTimeline}
+        okText="Yes"
+        className="modal-container"
+        okButtonProps={{ className: "bg-secondary" }}
+      >
+        <div style={{ padding: "0px 10px", fontWeight: "400", fontSize: "16px" }}>
+          <p>Are You sure you want to confirm?</p>
         </div>
       </Modal>
     </>

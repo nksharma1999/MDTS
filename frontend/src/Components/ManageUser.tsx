@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/user-management.css";
 import { Notifications, DeleteOutlined } from "@mui/icons-material";
 import { Button, Col, Form, Input, List, message, Modal, Row, Select, Table, Typography } from "antd";
-import { ExclamationCircleOutlined } from "@ant-design/icons";
+import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
 
 const { Option } = Select;
@@ -59,7 +59,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [openRACIModal, setOpenRACIModal] = useState<boolean>(false);
   const [_isRACIValid, _setIsRACIValid] = useState<boolean>(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isEditModalVisible, setEditIsModalVisible] = useState(false);
+  const [_isEditModalVisible, setEditIsModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -70,7 +70,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   });
   const [form] = Form.useForm();
   const [selectedEmails, setSelectedEmails] = useState<any>([]);
-
   const [currentUser, setCurrentUser] = useState<any>({});
 
   useEffect(() => {
@@ -100,7 +99,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     setCurrentUser(getCurrentUser());
     saveModulesData();
     getAllUsersData();
-  }, []);
+  }, [])
 
   const saveModulesData = async () => {
     const savedModules: Module[] = await db.getModules();
@@ -177,11 +176,52 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     }
   };
 
-  const handleSendInvites = () => {
-    form.validateFields().then(values => {
-      console.log('Inviting:', { ...values, emails: selectedEmails });
+  const handleSendInvites = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const { employeeFullName, permissionProfile, emails } = values;
+
+      if (!employeeFullName || !permissionProfile || !emails) {
+        return message.error("Please fill all required fields");
+      }
+
+      const users = await db.getUsers();
+      const emailExists = users.some((user) => user.email === emails);
+      const currentUser = getCurrentUser();
+
+      if (emailExists) {
+        return message.error("Email already registered");
+      }
+
+      const password = emails.slice(0, 6);
+      const newUser = {
+        id: Date.now(),
+        name: employeeFullName,
+        company: currentUser.company,
+        designation: "",
+        mobile: "",
+        email: emails,
+        whatsapp: "",
+        registeredOn: new Date().toISOString(),
+        profilePhoto: "",
+        password: password,
+        isTempPassword: true,
+        role: permissionProfile,
+      };
+
+      await db.addUsers(newUser);
+
+      message.success("Member added successfully!");
+      form.resetFields();
       setAddMemberModalVisible(false);
-    });
+      handleClose();
+      const allUsers = await db.getUsers();
+      setUsers(allUsers);
+    } catch (error: any) {
+      console.error(error);
+      message.error(error.message || "Error adding member!");
+    }
   };
 
   const handleClose = () => {
@@ -193,22 +233,42 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     setIsDeleteModalVisible(true);
   }
 
-  const dataSource: any = users.map((user, index) => ({
-    ...user,
-    key: user.id,
-    serialNumber: index + 1,
-  }));
+  const [dataSource, setDataSource] = useState<any>([]);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
+  useEffect(() => {
+    setDataSource(users.map((user: any, index: any) => ({
+      ...user,
+      key: user.id,
+      serialNumber: index + 1,
+    })));
+  }, [users]);
+
+
+  const handleRoleChange = async (userId: any, newRole: any) => {
     try {
-      const selectedUser=await db.getUserById(userId);
-      const updatedUser = {...selectedUser, role: newRole };
+      const selectedUser = await db.getUserById(userId);
+      const updatedUser = { ...selectedUser, role: newRole };
+
       await db.updateUsers(userId, updatedUser);
       message.success("Role updated successfully.");
+
+      setDataSource((prev: any) =>
+        prev.map((user: any) =>
+          user.id === userId ? { ...user, role: newRole } : user
+        )
+      );
     } catch (error) {
+      console.error(error);
       message.error("Failed to update role.");
     }
   };
+
+  const handleRefresh = async() => {
+    const allUsers = await db.getUsers();
+    setUsers(allUsers);
+  };
+
+
 
   const columns: any = [
     {
@@ -240,10 +300,10 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       dataIndex: "role",
       key: "role",
       align: "center",
-      render: (role: string, record: any) => (
+      render: (role: any, record: any) => (
         <Select
           value={role}
-          onChange={(value: any) => handleRoleChange(record.id, value)}
+          onChange={(value) => handleRoleChange(record.id, value)}
           style={{ width: 120 }}
           disabled={currentUser?.id === record.id}
         >
@@ -293,24 +353,38 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
             </Tooltip>
           )}
         </div>
-        {options?.isToolbar !== false && (
-          <Toolbar className="toolbar" style={{ paddingRight: "5px" }}>
-            {[
-              { title: "Delete User", icon: <DeleteOutlined style={{ color: "red" }} />, action: () => setIsDeleteModalVisible(true) },
-              { title: "Alerts", icon: <Notifications sx={{ color: "#d32f2f" }} />, action: () => setOpenAlertModal(true) }
-            ].map(({ title, icon, action }, index) => (
-              <Tooltip key={index} title={title}>
-                <IconButton
-                  onClick={action}
-                  disabled={!selectedUser && title !== "Add new member"}
-                  className={`toolbar-icon ${selectedUser ? "enabled" : "disabled"}`}
-                >
-                  {icon}
-                </IconButton>
-              </Tooltip>
-            ))}
-          </Toolbar>
-        )}
+        {
+          options?.isToolbar !== false && (
+            <Toolbar className="toolbar" style={{ paddingRight: '5px' }}>
+              {[
+                {
+                  title: 'Delete User',
+                  icon: <DeleteOutlined style={{ color: 'red' }} />,
+                  action: () => setIsDeleteModalVisible(true),
+                },
+                {
+                  title: 'Alerts',
+                  icon: <Notifications sx={{ color: '#d32f2f' }} />,
+                  action: () => setOpenAlertModal(true),
+                },
+                {
+                  title: 'Refresh',
+                  icon: <ReloadOutlined style={{ color: '#1890ff' }} />,
+                  action: handleRefresh,
+                },
+              ].map(({ title, icon, action }, index) => (
+                <Tooltip key={index} title={title}>
+                  <IconButton
+                    onClick={action}
+                    disabled={!selectedUser && title !== 'Add new member' && title !== 'Refresh'}
+                    className={`toolbar-icon ${selectedUser || title === 'Refresh' ? 'enabled' : 'disabled'}`}
+                  >
+                    {icon}
+                  </IconButton>
+                </Tooltip>
+              ))}
+            </Toolbar>
+          )}
       </div>
       <hr style={{ marginTop: "5px" }} />
       <Table
@@ -534,7 +608,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         visible={addMemberModalVisible}
         onCancel={handleClose}
         onOk={handleSendInvites}
-        okText="Send Invites"
+        okText="Save"
         okButtonProps={{ className: "bg-secondary" }}
         cancelButtonProps={{ className: "bg-tertiary" }}
         closable={false}
@@ -542,7 +616,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         className="modal-container"
       >
         <div className="modal-body" style={{ padding: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          {/* <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Text strong style={{ fontSize: "16px" }}>Invite your Team</Text>
             <Button
               size="small"
@@ -552,11 +626,21 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
             >
               Create Member Manually
             </Button>
-          </div>
+          </div> */}
+
           <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+            <Form.Item
+              name="employeeFullName"
+              label="Full Name"
+              rules={[{ required: true, message: 'Please enter the employee full name!' }]}
+            >
+              <Input placeholder="Enter full name" />
+            </Form.Item>
+
             <Form.Item
               name="permissionProfile"
               label="Set permission profile"
+              className="mt-2"
               rules={[{ required: true, message: 'Please select a permission profile!' }]}
             >
               <Select placeholder="Select...">
@@ -566,12 +650,12 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
               </Select>
             </Form.Item>
 
-            <Form.Item name="emails" label="Add multiple email addresses">
-              <Input placeholder="Enter email addresse" />
+            <Form.Item name="emails" className="mt-2" label="Enter email addresses">
+              <Input placeholder="Enter email address" />
             </Form.Item>
           </Form>
 
-          <div style={{ marginTop: 24 }}>
+          {/* <div style={{ marginTop: 24 }}>
             <Text strong>Invitation Suggestions</Text>
             <List
               dataSource={invitationSuggestions}
@@ -586,63 +670,9 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
                 </List.Item>
               )}
             />
-          </div>
+          </div> */}
         </div>
       </Modal>
-
-      {/* <Modal
-        visible={isEditModalVisible}
-        onCancel={handleClose}
-        onOk={saveUsers}
-        okText="Update Member"
-        okButtonProps={{ className: "bg-primary" }}
-        cancelButtonProps={{ className: "bg-tertiary" }}
-        closable={false}
-        width={"50%"}
-        className="modal-container"
-      >
-        <div className="modal-body" style={{ padding: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Text strong style={{ fontSize: "16px" }}>Update Member</Text>
-            <Button
-              size="small"
-              className="bg-secondary"
-              style={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
-              onClick={() => navigate("/employee-registration")}
-            >
-              Manage Members
-            </Button>
-          </div>
-          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-            <Form.Item
-              name="permissionProfile"
-              label="Set permission profile"
-              rules={[{ required: true, message: 'Please select a permission profile!' }]}
-            >
-              <Select placeholder="Select...">
-                <Option value="admin">Admin</Option>
-                <Option value="manager">Manager</Option>
-                <Option value="employee">Employee</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item
-              name="email"
-              label="Email Address"
-              rules={[
-                { required: true, message: "Email is required!" },
-                { type: "email", message: "Enter a valid email!" },
-              ]}
-            >
-              <Input placeholder="Enter email address" />
-            </Form.Item>
-
-            <Form.Item name="name" label="Member Name">
-              <Input placeholder="Enter member name" />
-            </Form.Item>
-          </Form>
-        </div>
-      </Modal> */}
 
       <Modal
         title="Confirm Delete"

@@ -28,22 +28,28 @@ const SignInSignUp: React.FC = () => {
 
     const handleLogin = async () => {
         const users = await db.getUsers();
-        const user = users.find((user: any) => user.email === email && user.password === password);
-        try {
-            if (users) {
-                localStorage.setItem("user", JSON.stringify(user));
-                message.success("Login Successful!");
-                const isProfileComplete = isProfileCompleted(user);
-                setTimeout(() => {
-                    navigate(isProfileComplete ? "/landing-page" : "/profile");
-                }, 1000);
-            } else {
-                message.error("Invalid Email or Password");
+        if (users) {
+            const user = users.find((user: any) => user.email === email && (user.password === password || user.Password === password));
+    
+            try {
+                if (user) {
+                    localStorage.setItem("user", JSON.stringify(user));
+                    message.success("Login Successful!");
+                    const isProfileComplete = isProfileCompleted(user);
+                    setTimeout(() => {
+                        navigate(isProfileComplete ? "/landing-page" : "/profile");
+                    }, 1000);
+                } else {
+                    message.error("Invalid Email or Password");
+                }
+            } catch (error: any) {
+                message.error(error);
             }
-        } catch (error: any) {
-            message.error(error);
+        } else {
+            message.error("Error retrieving users");
         }
     };
+    
 
     const handleSignUp = async () => {
         if (!workEmail) {

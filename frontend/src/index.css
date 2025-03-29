@@ -9,6 +9,18 @@
     color: #6c757d !important;
 }
 
+.text-approved {
+    color: #4cd137;
+}
+
+.text-danger {
+    color: #EA2027;
+}
+
+.text-warning {
+    color: #F79F1F;
+}
+
 .bg-secondary {
     background-color: #257180 !important;
     color: white !important;

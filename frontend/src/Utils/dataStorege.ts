@@ -259,21 +259,25 @@ export class DataStorage extends Dexie {
   async getProjectTimelineById(id: any): Promise<any> {
     return this.projectTimelines.get(id);
   }
-
+  
   async updateProjectTimeline(id: number, newRecord: any): Promise<void> {
     try {
-      const existingprojectTimeline = await this.projectTimelines.get(id);
-      if (existingprojectTimeline) {
-        const updatedprojectTimeline = { ...newRecord, id };
-        await this.projectTimelines.put(updatedprojectTimeline);
-        message.success(`Project Timeline with ID ${id} updated successfully.`);
+      const existingProjectTimeline = await this.projectTimelines.get(id);
+      if (existingProjectTimeline) {
+        const sanitizedRecord = JSON.parse(JSON.stringify(newRecord));
+        sanitizedRecord['id'] = id;
+  
+        await this.projectTimelines.put(sanitizedRecord);
       } else {
         message.warning(`Project Timeline with ID ${id} not found.`);
       }
     } catch (error) {
-      message.error("Error updating Project Timeline in IndexedDB:");
+      console.error("Error updating Project Timeline in IndexedDB:", error);
+      message.error("Error updating Project Timeline in IndexedDB");
     }
   }
+  
+
 
   async deleteProjectTimeline(id: number): Promise<void> {
     try {

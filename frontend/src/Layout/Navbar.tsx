@@ -16,7 +16,7 @@ interface NavItem {
 
 const initialNavLinks: any = [
     { label: "Home", action: "/home" },
-    { label: "About", action: "/about" },
+    { label: "About", action: "/landing-page" },
     { label: "Projects", action: "/projects-details" },
     { label: "Document", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
@@ -54,6 +54,7 @@ const Navbar: React.FC = () => {
     const showLogoutModal = () => {
         setIsLogoutModalVisible(true);
     };
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const storedNavLinks = localStorage.getItem('navLinks');
@@ -90,7 +91,9 @@ const Navbar: React.FC = () => {
     }, [location.pathname, navLinks]);
 
     const handleLogout = () => {
+        setLoading(true);
         localStorage.removeItem("user");
+        setLoading(false);
         setUser(null);
         setIsLogoutModalVisible(false);
         navigate("/home");
@@ -142,19 +145,20 @@ const Navbar: React.FC = () => {
     return (
         <>
             <div className="navbar" style={{ background: "linear-gradient(90deg, #257180, #257180,rgb(241, 76, 76))", display: "flex", alignItems: "center", padding: "3px 10px" }}>
-                <div className="logo-sections">
-                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
-                        <img
-                            src="/images/logos/main-logo.png"
-                            alt="Logo"
-                            className="logo-image"
-                        />
-                    </Link>
-                </div>
-                <div className="project-title">
-                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
-                        <p>Mine Development Tracking System</p>
-                    </Link>
+                <div className="logo-and-text">
+                    <div className="logo-sections">
+                        <Link to="/home">
+                            <img
+                                src="/images/logos/main-logo.png"
+                                alt="Logo"
+                                className="logo-image"
+                            />
+                        </Link>
+                    </div>
+                    <div>
+                        <p>Mine Development</p>
+                        <p>Tracking System</p>
+                    </div>
                 </div>
                 <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
                 {navLinks.map((link, index) => (
@@ -225,7 +229,7 @@ const Navbar: React.FC = () => {
                 visible={isLogoutModalVisible}
                 onOk={handleLogout}
                 onCancel={() => setIsLogoutModalVisible(false)}
-                okText="Logout"
+                okText={loading?'Logging out...':'Logout'}
                 cancelText="Cancel"
                 okButtonProps={{ danger: true }}
             >
