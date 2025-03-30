@@ -1,41 +1,41 @@
 .button-container {
+    margin-top: 16px;
     display: flex;
-    gap: 20px;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.auth-button {
+    color: #ffffff;
+    font-weight: bold;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    }
 }
 
 .google-btn {
-    border-color: #DB4437 !important;
-    color: #DB4437 !important;
-    border-radius: 8px !important;
-    text-transform: none !important;
-}
+    background-color: #DB4437;
 
-.google-btn:hover {
-    background-color: #DB4437 !important;
-    color: #fff !important;
+    &:hover {
+        background-color: #c1351d;
+    }
 }
 
 .microsoft-btn {
-    border-color: #2F2F2F !important;
-    color: #2F2F2F !important;
-    border-radius: 8px !important;
-    color: #fff;
-    text-transform: none !important;
+    background-color: #0078D4;
+
+    &:hover {
+        background-color: #005ea6;
+    }
 }
 
 .otp-btn {
-    border-color: #FFA500 !important;
-    color: #FFA500 !important;
-    border-radius: 8px !important;
-    text-transform: none !important;
-}
+    background-color: #FFA500;
 
-.otp-btn:hover {
-    background-color: #FFA500 !important;
-    color: #fff !important;
-}
-
-.microsoft-btn:hover {
-    background-color: #2F2F2F !important;
-    color: #fff !important;
+    &:hover {
+        background-color: #e69500;
+    }
 }

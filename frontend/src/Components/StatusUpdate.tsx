@@ -58,29 +58,6 @@ export const StatusUpdate = () => {
   };
 
   useEffect(() => {
-    try {
-      const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const userId = loggedInUser?.id;
-      if (!userId) return;
-
-      const userProjectsKey = `projects_${userId}`;
-      const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
-      if (Array.isArray(storedData)) {
-        const updatedData = storedData.map((project, index) => {
-          if (index === 1 || index === 2) {
-            const { projectTimeline, ...rest } = project;
-            return rest;
-          }
-          return project;
-        });
-      }
-    } catch (error) {
-      console.error("An unexpected error occurred while fetching projects:", error);
-    }
-  }, []);
-
-  useEffect(() => {
     defaultSetup();
   }, []);
 

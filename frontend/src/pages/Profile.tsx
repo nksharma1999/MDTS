@@ -22,6 +22,7 @@ const Profile = () => {
         whatsapp: null as string | null,
         registeredOn: null as string | null,
         profilePhoto: null as string | null,
+        companyLogo: null as string | null,
         password: null as string | null,
         isTempPassword: null as boolean | null,
         role: null as string | null,
@@ -75,6 +76,7 @@ const Profile = () => {
                 whatsapp: userData.whatsapp || "",
                 registeredOn: userData.registeredOn || "",
                 profilePhoto: userData.profilePhoto || "",
+                companyLogo: userData.companyLogo || "",
                 address: userData.address,
                 city: userData.city,
                 state: userData.state,
@@ -220,7 +222,7 @@ const Profile = () => {
                 fillUsersData();
             }, 1000)
         }
-        else{
+        else {
             message.error("Current password is incorrect");
         }
 
@@ -232,7 +234,7 @@ const Profile = () => {
                 return (
                     <div style={{ marginTop: "10px" }} className="card">
                         <div className="card-body">
-                            <div className="profile-cover bg-secondary">
+                            <div className="profile-cover" style={{ backgroundColor: '#258790' }}>
                                 <div className="profile-item">
                                     <div className="profile-image-container">
                                         <img src={image || "https://via.placeholder.com/100"} alt={getInitials()} className="profile-image" />
@@ -278,7 +280,7 @@ const Profile = () => {
                                                     value={formData.company}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter Company"
-                                                    disabled={formData.role!='Admin'}
+                                                    disabled={formData.role != 'Admin'}
                                                 />
                                             </Form.Item>
                                         </Col>
@@ -523,7 +525,7 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {['Profile Information', 'Team Members', "Accessibility"].map((tab) => {
+                    {['Profile Information', 'Team Members'].map((tab) => {
                         if (tab === 'Team Members' && formData?.role?.toUpperCase() !== 'ADMIN') {
                             return null;
                         }

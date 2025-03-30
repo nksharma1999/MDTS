@@ -89,6 +89,10 @@ body::-webkit-scrollbar {
     width: 6px;
 }
 
+body{
+    background-color: #f2f4f7;
+}
+
 .top-heading {
     font-size: 18px;
     margin: 8px;

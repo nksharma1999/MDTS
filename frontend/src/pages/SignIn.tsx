@@ -1,9 +1,9 @@
-import React, {  useState } from "react";
+import React, { useState } from "react";
 import "../styles/sign-in.css";
 import { Input, Button, Typography, message } from "antd";
 import { useNavigate } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
-
+import { GoogleOutlined, WindowsOutlined, KeyOutlined } from '@ant-design/icons';
 const { Title, Text } = Typography;
 
 const SignInSignUp: React.FC = () => {
@@ -30,7 +30,7 @@ const SignInSignUp: React.FC = () => {
         const users = await db.getUsers();
         if (users) {
             const user = users.find((user: any) => user.email === email && (user.password === password || user.Password === password));
-    
+
             try {
                 if (user) {
                     localStorage.setItem("user", JSON.stringify(user));
@@ -49,7 +49,7 @@ const SignInSignUp: React.FC = () => {
             message.error("Error retrieving users");
         }
     };
-    
+
 
     const handleSignUp = async () => {
         if (!workEmail) {
@@ -110,14 +110,13 @@ const SignInSignUp: React.FC = () => {
                     margin: 0,
                     background: "linear-gradient(135deg, #257180 10%, #4C585B 60%, #92C7CF 80%)",
                     color: "#e0e0e0",
-                    padding:"20px"
+                    padding: "20px"
                 }}
             >
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     <Title level={3} style={{ color: "#fff", marginBottom: 24, fontSize: "30px" }}>
                         Mine Development Tracking System
                     </Title>
-
                     {!isSignUp ? (
                         <>
                             <Title level={4} style={{ color: "#fff", marginBottom: 16 }}>
@@ -135,7 +134,7 @@ const SignInSignUp: React.FC = () => {
                                         onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}> Privacy Policy</span>
                                 </Text>
 
-                                <Button type="primary" onClick={handleLogin} style={{ backgroundColor: "#258790", color:'#fff', borderRadius: "8px", fontWeight: "bold" }}>
+                                <Button type="primary" onClick={handleLogin} style={{ backgroundColor: "#258790", color: '#fff', borderRadius: "8px", fontWeight: "bold" }}>
                                     Login
                                 </Button>
 
@@ -158,11 +157,16 @@ const SignInSignUp: React.FC = () => {
                                 <Text style={{ color: "#fff" }}>OR</Text>
                                 <div style={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 16 }} />
                             </div>
-
-                            <div className="button-container" style={{ marginTop: 16 }}>
-                                <Button type="default" block style={{ marginBottom: 8 }}>Google</Button>
-                                <Button type="default" block style={{ marginBottom: 8 }}>Microsoft</Button>
-                                <Button type="default" block>OTP</Button>
+                            <div className="button-container">
+                                <Button type="default" block icon={<GoogleOutlined />} className="auth-button google-btn">
+                                    Google
+                                </Button>
+                                <Button type="default" block icon={<WindowsOutlined />} className="auth-button microsoft-btn">
+                                    Microsoft
+                                </Button>
+                                <Button type="default" block icon={<KeyOutlined />} className="auth-button otp-btn">
+                                    OTP
+                                </Button>
                             </div>
                         </>
                     ) : (
@@ -190,11 +194,16 @@ const SignInSignUp: React.FC = () => {
                                 <Text style={{ color: "#fff" }}>OR</Text>
                                 <div style={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 16 }} />
                             </div>
-
-                            <div className="button-container" style={{ marginTop: 16 }}>
-                                <Button type="default" block style={{ marginBottom: 8 }}>Google</Button>
-                                <Button type="default" block style={{ marginBottom: 8 }}>Microsoft</Button>
-                                <Button type="default" block>OTP</Button>
+                            <div className="button-container">
+                                <Button type="default" block icon={<GoogleOutlined />} className="auth-button google-btn">
+                                    Google
+                                </Button>
+                                <Button type="default" block icon={<WindowsOutlined />} className="auth-button microsoft-btn">
+                                    Microsoft
+                                </Button>
+                                <Button type="default" block icon={<KeyOutlined />} className="auth-button otp-btn">
+                                    OTP
+                                </Button>
                             </div>
                         </>
                     )}
