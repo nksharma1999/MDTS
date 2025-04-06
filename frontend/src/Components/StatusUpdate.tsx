@@ -504,7 +504,7 @@ export const StatusUpdate = () => {
             value={actualStart ? dayjs(actualStart) : null}
             onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualStart")}
             disabled={activityStatus == "yetToStart" || fin_status == 'completed'}
-            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "highlighted-field" : ""}
+            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
           />
         ) : (
           actualStart || ""
@@ -522,7 +522,7 @@ export const StatusUpdate = () => {
             value={actualFinish ? dayjs(actualFinish) : null}
             onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualFinish")}
             disabled={activityStatus == "yetToStart" || activityStatus == "inProgress" || fin_status == 'completed'}
-            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "highlighted-field" : ""}
+            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
           />
         ) : (
           actualFinish || ""
