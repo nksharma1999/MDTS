@@ -8,10 +8,10 @@ const { Option } = Select;
 const { Step } = Steps;
 import { useNavigate } from "react-router-dom";
 import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
-import moment from 'moment';
 import { useLocation } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
+
 interface Activity {
   [x: string]: string;
   code: string;
@@ -24,6 +24,7 @@ interface Activity {
   end: any;
   activityStatus: any;
 }
+
 interface Module {
   parentModuleCode: string;
   moduleName: string;
@@ -86,6 +87,15 @@ const TimeBuilder = () => {
   const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
   const [selectedTimelineId, setSelectedTimelineId] = useState<any>("");
   const [isReplanMode, setIsReplanMode] = useState(false);
+  const finalColumns: ColumnsType = [
+    { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
+    { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
+    { title: "Duration", dataIndex: "duration", key: "duration", width: 80, align: "center" },
+    { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
+    { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
+    { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
+    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
+  ];
 
   useEffect(() => {
     defaultSetup();
@@ -126,7 +136,6 @@ const TimeBuilder = () => {
   useEffect(() => {
     if (currentStep === 6) {
       setExpandedKeys(finalData.map((_, index) => `module-${index}`));
-
       const finDataSource = sequencedModules.map((module: any, moduleIndex: number) => {
         return {
           key: `module-${moduleIndex}`,
@@ -145,8 +154,8 @@ const TimeBuilder = () => {
               slack: activity.slack ?? "0",
               plannedStart: activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
               plannedFinish: activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-              actualStart: "",
-              actualFinish: "",
+              actualStart: activity.actualStart,
+              actualFinish: activity.actualFinish,
               actualDuration: "",
               remarks: "",
               expectedStart: "",
@@ -158,6 +167,59 @@ const TimeBuilder = () => {
         };
       });
       setDataSource(finDataSource);
+      const hasStatus = sequencedModules.some((item: any) => !!item.status);
+      const hasActualStart = sequencedModules.some((item: any) => !!item.actualStart);
+      const hasActualFinish = sequencedModules.some((item: any) => !!item.actualFinish);
+      if (hasStatus) {
+        finalColumns.push({
+          title: "Status",
+          dataIndex: "status",
+          key: "status",
+          align: "center",
+          render: (text: string) => {
+            const status = text?.toLowerCase();
+            let color = "", label = "";
+
+            switch (status) {
+              case "completed":
+                color = "green";
+                label = "COMPLETED";
+                break;
+              case "inprogress":
+                color = "#faad14";
+                label = "IN PROGRESS";
+                break;
+              case "yettostart":
+                color = "#8c8c8c";
+                label = "YET TO START";
+                break;
+              default:
+                color = "#000";
+                label = status?.toUpperCase() || "";
+            }
+
+            return <span style={{ fontWeight: 'bold', color }}>{label}</span>;
+          }
+        });
+      }
+
+      if (hasActualStart) {
+        finalColumns.push({
+          title: "Actual Start",
+          dataIndex: "actualStart",
+          key: "actualStart",
+          align: "center",
+        });
+      }
+
+      if (hasActualFinish) {
+        finalColumns.push({
+          title: "Actual Finish",
+          dataIndex: "actualFinish",
+          key: "actualFinish",
+          align: "center",
+        });
+      }
     }
   }, [currentStep, finalData]);
 
@@ -175,24 +237,24 @@ const TimeBuilder = () => {
     const fetchData = async () => {
       const state = location.state;
       if (!state?.selectedProject || !state?.selectedTimeline) return;
-  
+
       setIsReplanMode(state.rePlanTimeline || false);
-  
+
       const { selectedProject, selectedTimeline } = state;
       const { projectParameters, id, holidays, projectTimeline, initialStatus } = selectedProject || {};
-  
+
       const timelineId = selectedTimeline.versionId || selectedTimeline.timelineId;
       setSelectedTimelineId(timelineId);
       getProjectTimeline(timelineId);
-  
+
       setIsUpdateMode(true);
       setSelectedProjectName(projectParameters?.projectName || "");
       setSelectedProjectId(id || "");
       setSelectedProject(selectedProject || {});
       setFinalHolidays(holidays || []);
-  
+
       setLibraryName(initialStatus?.library || []);
-  
+
       if (projectTimeline?.length) {
         setIsSaturdayWorking(projectTimeline[0]?.saturdayWorking || false);
         setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
@@ -200,13 +262,13 @@ const TimeBuilder = () => {
       } else {
         setLibraryName([]);
       }
-  
+
       setIsMenualTimeline(true);
     };
-  
+
     fetchData();
   }, [location.state]);
-  
+
   const getProjectTimeline = async (timelineId: any) => {
     if (timelineId) {
       try {
@@ -328,6 +390,44 @@ const TimeBuilder = () => {
     setSequencedModules(items);
   };
 
+  // const handleDurationChange = (code: any, newDuration: any) => {
+  //   let updatedFinalData = [...finalData];
+  //   let updatedSequencedModules = [...sequencedModules];
+  //   function updateActivities(activities: any) {
+  //     return activities.map((activity: any) => {
+  //       if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
+  //         return activity;
+  //       }
+  //       if (activity.code === code) {
+  //         activity.duration = newDuration;
+  //         const startDate = activity.start;
+  //         const duration = parseInt(newDuration, 10) || 0;
+
+  //         const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
+
+  //         activity.end = endDate;
+  //         activity.holidays = [...(activity.holidays || []), ...durationHolidays];
+
+  //         updateDependentActivities(activity.code, endDate);
+  //       }
+  //       return activity;
+  //     });
+  //   }
+
+  //   updatedFinalData = updatedFinalData.map((module) => ({
+  //     ...module,
+  //     activities: updateActivities(module.activities),
+  //   }));
+
+  //   updatedSequencedModules = updatedSequencedModules.map((module) => ({
+  //     ...module,
+  //     activities: updateActivities(module.activities),
+  //   }));
+
+  //   setFinalData(updatedFinalData);
+  //   setSequencedModules(updatedSequencedModules);
+  // };
+
   const handleDurationChange = (code: any, newDuration: any) => {
     let updatedFinalData = [...finalData];
     let updatedSequencedModules = [...sequencedModules];
@@ -337,18 +437,22 @@ const TimeBuilder = () => {
         if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
           return activity;
         }
+
         if (activity.code === code) {
           activity.duration = newDuration;
-          const startDate = activity.start;
-          const duration = parseInt(newDuration, 10) || 0;
+          if (activity.start && !isUpdateMode && !isReplanMode) {
+            const startDate = activity.start;
+            const duration = parseInt(newDuration, 10) || 0;
 
-          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
+            const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
 
-          activity.end = endDate;
-          activity.holidays = [...(activity.holidays || []), ...durationHolidays];
+            activity.end = endDate;
+            activity.holidays = [...(activity.holidays || []), ...durationHolidays];
 
-          updateDependentActivities(activity.code, endDate);
+            updateDependentActivities(activity.code, endDate);
+          }
         }
+
         return activity;
       });
     }
@@ -420,35 +524,46 @@ const TimeBuilder = () => {
     return endDate;
   };
 
-  const addBusinessDays = (startDate: any, days: any) => {
-    let date = moment(startDate);
+  const addBusinessDays = (startDate: string, days: number) => {
+    let date = new Date(startDate);
     let addedDays = 0;
-    let holidays = [];
+    let holidays: { date: string; reason: string }[] = [];
 
     while (addedDays < days) {
-      date = date.add(1, "day");
+      date.setDate(date.getDate() + 1);
 
-      const isSaturday = date.day() === 6;
-      const isSunday = date.day() === 0;
-      const holidayEntry: any = finalHolidays?.find((holiday) => {
-        const holidayDate = moment(holiday.from).format("YYYY-MM-DD");
-        return holidayDate === date.format("YYYY-MM-DD");
+      const day = date.getDay();
+      const formattedDate = date.toISOString().split("T")[0];
+
+      const isSaturday = day === 6;
+      const isSunday = day === 0;
+
+      const holidayEntry: any = finalHolidays?.find((holiday: any) => {
+        const holidayDate = new Date(holiday.from).toISOString().split("T")[0];
+        return holidayDate === formattedDate;
       });
 
       if (isSaturday && !isSaturdayWorking) {
-        holidays.push({ date: date.format("YYYY-MM-DD"), reason: "Saturday" });
+        holidays.push({ date: formattedDate, reason: "Saturday" });
       } else if (isSunday && !isSundayWorking) {
-        holidays.push({ date: date.format("YYYY-MM-DD"), reason: "Sunday" });
+        holidays.push({ date: formattedDate, reason: "Sunday" });
       } else if (holidayEntry) {
         holidays.push({
-          date: date.format("YYYY-MM-DD"),
+          date: formattedDate,
           reason: holidayEntry.holiday || "Holiday",
         });
       } else {
         addedDays++;
       }
     }
-    return { date, holidays };
+
+    const finalDate = date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    return { date: finalDate, holidays };
   };
 
   const handleStartDateChange = (code: any, date: any) => {
@@ -760,6 +875,55 @@ const TimeBuilder = () => {
     }
   };
 
+  // const handleSaveProjectTimeline = async (sequencedModules: any) => {
+  //   try {
+  //     if (!selectedProject || !selectedProjectId) {
+  //       throw new Error("Project or Project ID is missing.");
+  //     }
+
+  //     const currentUser = getCurrentUser();
+  //     const currentTimestamp = new Date().toISOString();
+
+  //     const createTimelineEntry = (timelineId: string, existingTimeline: any[]) => {
+  //       const newVersion = `${existingTimeline.length + 1}.0`;
+  //       localStorage.setItem("latestProjectVersion", newVersion);
+  //       return {
+  //         timelineId,
+  //         status: "pending",
+  //         version: newVersion,
+  //         addedBy: currentUser.name,
+  //         addedUserEmail: currentUser.email,
+  //         createdAt: currentTimestamp,
+  //         updatedAt: currentTimestamp,
+  //       };
+  //     };
+
+  //     if (!isUpdateMode || isReplanMode) {
+  //       const createdTimeLineId: any = await db.addProjectTimeline(sequencedModules);
+  //       const existingTimeline = selectedProject.projectTimeline || [];
+
+  //       const updatedProjectWithTimeline = {
+  //         ...selectedProject,
+  //         projectTimeline: [...existingTimeline, createTimelineEntry(createdTimeLineId, existingTimeline)],
+  //         processedTimelineData: sequencedModules,
+  //       };
+
+  //       await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
+  //     } else {
+  //       await db.updateProjectTimeline(selectedTimelineId, sequencedModules);
+  //     }
+
+  //     setTimeout(() => navigate(".", { replace: true }), 0);
+  //     message.success(isUpdateMode ? "Project timeline updated successfully!" : "Project timeline saved successfully!");
+
+  //     localStorage.setItem("selectedProjectId", selectedProjectId);
+  //     resetProjectState();
+  //   } catch (error) {
+  //     console.error("Error saving project timeline:", error);
+  //     message.error("Failed to save project timeline. Please try again.");
+  //   }
+  // };
+
   const handleSaveProjectTimeline = async (sequencedModules: any) => {
     try {
       if (!selectedProject || !selectedProjectId) {
@@ -769,27 +933,41 @@ const TimeBuilder = () => {
       const currentUser = getCurrentUser();
       const currentTimestamp = new Date().toISOString();
   
-      const createTimelineEntry = (timelineId: string, existingTimeline: any[]) => {
-        const newVersion = `${existingTimeline.length + 1}.0`;
-        localStorage.setItem("latestProjectVersion", newVersion);
-        return {
-          timelineId,
-          status: "pending",
-          version: newVersion,
-          addedBy: currentUser.name,
-          addedUserEmail: currentUser.email,
-          createdAt: currentTimestamp,
-          updatedAt: currentTimestamp,
-        };
-      };
+      const createTimelineEntry = (
+        timelineId: string,
+        version: string
+      ) => ({
+        timelineId,
+        status: "pending",
+        version,
+        addedBy: currentUser.name,
+        addedUserEmail: currentUser.email,
+        createdAt: currentTimestamp,
+        updatedAt: currentTimestamp,
+      });
   
       if (!isUpdateMode || isReplanMode) {
-        const createdTimeLineId:any = await db.addProjectTimeline(sequencedModules);
+        const createdTimeLineId: any = await db.addProjectTimeline(sequencedModules);
         const existingTimeline = selectedProject.projectTimeline || [];
-        
+  
+        const newVersion = `${existingTimeline.length + 1}.0`;
+        localStorage.setItem("latestProjectVersion", newVersion);
+  
+        let updatedTimeline = [...existingTimeline];
+        if (isReplanMode && existingTimeline.length > 0) {
+          const lastIndex = existingTimeline.length - 1;
+          updatedTimeline[lastIndex] = {
+            ...updatedTimeline[lastIndex],
+            status: "replanned",
+          };
+        }
+  
         const updatedProjectWithTimeline = {
           ...selectedProject,
-          projectTimeline: [...existingTimeline, createTimelineEntry(createdTimeLineId, existingTimeline)],
+          projectTimeline: [
+            ...updatedTimeline,
+            createTimelineEntry(createdTimeLineId, newVersion),
+          ],
           processedTimelineData: sequencedModules,
         };
   
@@ -813,9 +991,11 @@ const TimeBuilder = () => {
     setSelectedProject(null);
     setSelectedProjectId(null);
     setIsMenualTimeline(false);
+    setLibraryName(null);
+    setSelectedProjectMineType("");
     defaultSetup();
   };
-  
+
   const holidayColumns: any = [
     {
       title: "From Date",
@@ -966,16 +1146,6 @@ const TimeBuilder = () => {
     setEditedImpact({});
   };
 
-  const finalColumns: ColumnsType = [
-    { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
-    { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
-    { title: "Duration", dataIndex: "duration", key: "duration", width: 80, align: "center" },
-    { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
-    { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
-    { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
-    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
-  ];
-
   const getColumnsForStep = (step: number) => {
     const baseColumns: any = [
       {
@@ -1005,20 +1175,14 @@ const TimeBuilder = () => {
         dataIndex: "duration",
         key: "duration",
         align: "center",
-        render: (duration: any, record: any) => {
-          if (record.activityStatus === "completed") {
-            return (
-              <span className="completed-field">
-                {duration || "0"}
-              </span>
-            );
-          }
+        render: (_duration: any, record: any) => {
+          const isDisabled = record.activityStatus === "completed" || step !== 1;
 
-          return step === 1 ? (
+          return (
             <Input
               placeholder="Duration"
               type="text"
-              value={record.duration || 0}
+              value={record.duration || "0"}
               onChange={(e) => {
                 const value = e.target.value.replace(/\D/g, "");
                 handleDurationChange(record.code, value);
@@ -1034,35 +1198,74 @@ const TimeBuilder = () => {
                   e.preventDefault();
                 }
               }}
-              disabled={step !== 1}
+              disabled={isDisabled}
             />
-          ) : (
-            duration || "0"
           );
-        },
+        }
+
       },
     ];
 
+    if (step === 1 && (isUpdateMode || isReplanMode)) {
+      baseColumns.push(
+        {
+          title: "Status",
+          dataIndex: "activityStatus",
+          key: "activityStatus",
+          render: (text: string) => {
+            const status = text?.toLowerCase();
+
+            let color = "";
+            let label = "";
+
+            switch (status) {
+              case "completed":
+                color = "green";
+                label = "COMPLETED";
+                break;
+              case "inprogress":
+                color = "#faad14";
+                label = "IN PROGRESS";
+                break;
+              case "yettostart":
+                color = "#8c8c8c";
+                label = "YET TO START";
+                break;
+              default:
+                color = "#000000";
+                label = status?.toUpperCase() || "";
+            }
+
+            return (
+              <span style={{ fontWeight: 'bold', color }}>
+                {label}
+              </span>
+            );
+          },
+        });
+    }
+
     if (step === 1) {
-      baseColumns.push({
-        key: "finalize",
-        align: "right",
-        className: step === 1 ? "active-column" : "",
-        onCell: () => ({ className: step === 1 ? "first-column-red" : "" }),
-        render: (_: any, record: any) => (
-          <div style={{ marginRight: '20px' }}>
-            <Checkbox
-              checked={selectedActivities.includes(record.code)}
-              onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-              disabled={
-                isDeletionInProgress &&
-                deletingActivity !== record.code ||
-                record.activityStatus == "completed" || record.activityStatus == "inProgress"
-              }
-            />
-          </div>
-        ),
-      });
+      baseColumns.push(
+        {
+          key: "finalize",
+          align: "right",
+          className: step === 1 ? "active-column" : "",
+          onCell: () => ({ className: step === 1 ? "first-column-red" : "" }),
+          render: (_: any, record: any) => (
+            <div style={{ marginRight: '20px' }}>
+              <Checkbox
+                checked={selectedActivities.includes(record.code)}
+                onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
+                disabled={
+                  isDeletionInProgress &&
+                  deletingActivity !== record.code ||
+                  record.activityStatus == "completed" || record.activityStatus == "inProgress"
+                }
+              />
+            </div>
+          ),
+        });
     }
 
     if (step >= 2) {
@@ -1070,16 +1273,8 @@ const TimeBuilder = () => {
         key: "prerequisite",
         className: step === 2 ? "active-column" : "",
         render: (_: any, record: any) => {
-          const isDisabled = step !== 2;
+          const isDisabled = step !== 2 || record.activityStatus === "completed";
           const selectClass = step === 2 && !isDisabled ? "highlighted-select" : "";
-
-          if (record.activityStatus === "completed") {
-            return (
-              <span className="completed-field">
-                {record.prerequisite === "-" ? "" : record.prerequisite}
-              </span>
-            );
-          }
 
           return (
             <div className={selectClass}>
@@ -1128,28 +1323,19 @@ const TimeBuilder = () => {
         key: "slack",
         className: step === 3 ? "active-column" : "",
         render: (_: any, record: any) => {
-          const isDisabled = step !== 3;
+          const isDisabled = step !== 3 || record.activityStatus === "completed";
           const inputClass = step === 3 && !isDisabled ? "highlighted-input" : "";
-
-          if (record.activityStatus === "completed") {
-            return (
-              <span className="completed-field">
-                {record.slack || "0"}
-              </span>
-            );
-          }
 
           return (
             <div className={inputClass}>
               <Input
                 placeholder="Slack"
                 type="text"
-                value={record.slack || 0}
+                value={record.slack || "0"}
                 onChange={(e) => {
                   const value = e.target.value.replace(/\D/g, "");
                   handleSlackChange(record.code, value);
                 }}
-                style={{ width: "95%" }}
                 onKeyDown={(e) => {
                   if (
                     !/^\d$/.test(e.key) &&
@@ -1161,6 +1347,7 @@ const TimeBuilder = () => {
                     e.preventDefault();
                   }
                 }}
+                style={{ width: "95%" }}
                 disabled={isDisabled}
               />
             </div>
@@ -1172,35 +1359,145 @@ const TimeBuilder = () => {
     if (step >= 4) {
       baseColumns.push({
         key: "start",
-        className: step === 4 ? "active-column" : "", // removed first-column-red
+        className: step === 4 ? "active-column" : "",
         render: (_: any, record: any) => {
-          const isDisabled = step !== 4 || record.prerequisite !== "";
+          const isDisabled =
+            step !== 4 || record.activityStatus === "completed" || record.prerequisite !== "";
           const datePickerClass = step === 4 && !isDisabled ? "highlighted-datepicker" : "";
-
-          if (record.activityStatus === "completed") {
-            return (
-              <span className="completed-field">
-                {record.start ? dayjs(record.start).format("DD-MM-YYYY") : ""}
-              </span>
-            );
-          }
 
           return (
             <div className={datePickerClass}>
               <DatePicker
                 placeholder="Start Date"
                 value={
-                  record.prerequisite === "" && record.start
-                    ? dayjs(record.start)
-                    : null
+                  record.start ? dayjs(record.start) : null
                 }
                 onChange={(date) => handleStartDateChange(record.code, date)}
                 disabled={isDisabled}
                 style={{ width: "95%" }}
+                format="DD-MM-YYYY"
               />
             </div>
           );
         },
+      });
+    }
+    const hasStatus = sequencedModules.some((mod: any) =>
+      mod.activities?.some((act: any) => !!act.activityStatus)
+    );
+    const hasActualStart = sequencedModules.some((mod: any) =>
+      mod.activities?.some((act: any) => !!act.actualStart)
+    );
+    const hasActualFinish = sequencedModules.some((mod: any) =>
+      mod.activities?.some((act: any) => !!act.actualFinish)
+    );
+
+    // if (hasStatus && step != 1) {
+    //   baseColumns.push({
+    //     title: "Status",
+    //     dataIndex: "activityStatus",
+    //     key: "activityStatus",
+    //     render: (text: string) => {
+    //       const status = text?.toLowerCase();
+
+    //       let color = "";
+    //       let label = "";
+
+    //       switch (status) {
+    //         case "completed":
+    //           color = "green";
+    //           label = "COMPLETED";
+    //           break;
+    //         case "inprogress":
+    //           color = "#faad14";
+    //           label = "IN PROGRESS";
+    //           break;
+    //         case "yettostart":
+    //           color = "#8c8c8c";
+    //           label = "YET TO START";
+    //           break;
+    //         default:
+    //           color = "#000000";
+    //           label = status?.toUpperCase() || "";
+    //       }
+
+    //       return (
+    //         <span style={{ fontWeight: 'bold', color }}>
+    //           {label}
+    //         </span>
+    //       );
+    //     },
+    //   });
+    // }
+
+    // if (hasActualStart && step != 1) {
+    //   baseColumns.push({
+    //     title: "Actual Start",
+    //     dataIndex: "actualStart",
+    //     key: "actualStart",
+    //     render: (text: any) => <span style={{ fontWeight: 'bold' }}>{text}</span>,
+    //   });
+    // }
+
+    // if (hasActualFinish && step != 1) {
+    //   baseColumns.push({
+    //     title: "Actual Finish",
+    //     dataIndex: "actualFinish",
+    //     key: "actualFinish",
+    //     render: (text: any) => <span style={{ fontWeight: 'bold' }}>{text}</span>,
+    //   });
+    // }
+
+    if (hasStatus && step != 1) {
+      baseColumns.push({
+        title: "Status",
+        dataIndex: "activityStatus",
+        key: "activityStatus",
+        align: 'center',
+        render: (_: any, record: any) => (
+          <Select
+            value={record.activityStatus?.toLowerCase() || ""}
+            disabled
+            style={{ fontWeight: "bold", width: 160 }}
+            options={[
+              { value: "completed", label: "COMPLETED" },
+              { value: "inprogress", label: "IN PROGRESS" },
+              { value: "yettostart", label: "YET TO START" },
+            ]}
+          />
+        ),
+      });
+    }
+
+    if (hasActualStart && step != 1) {
+      baseColumns.push({
+        title: "Actual Start",
+        dataIndex: "actualStart",
+        key: "actualStart",
+        render: (_: any, record: any) => (
+          <Input
+            placeholder="Actual Start"
+            value={record.actualStart || ""}
+            disabled
+            style={{ fontWeight: "bold" }}
+          />
+        ),
+      });
+    }
+
+    if (hasActualFinish && step != 1) {
+      baseColumns.push({
+        title: "Actual Finish",
+        dataIndex: "actualFinish",
+        key: "actualFinish",
+        render: (_: any, record: any) => (
+          <Input
+            placeholder="Actual Finish"
+            value={record.actualFinish || ""}
+            disabled
+            style={{ fontWeight: "bold" }}
+          />
+        ),
       });
     }
 
@@ -1229,6 +1526,16 @@ const TimeBuilder = () => {
       },
     ];
 
+    if (step == 1 && (isUpdateMode || isReplanMode)) {
+      columns.push({
+        title: "Status",
+        dataIndex: "activityStatus",
+        key: "activityStatus",
+        align: "center",
+        render: (text: any) => <span style={{ fontWeight: 'bold' }}>{text}</span>,
+      },);
+    }
+
     if (step >= 2) {
       columns.push({
         title: "Prerequisite",
@@ -1255,31 +1562,48 @@ const TimeBuilder = () => {
       });
     }
 
-    if (currentStep == 1) {
+    // Check if any activity in any module has these fields
+    const hasStatus = sequencedModules.some((mod: any) =>
+      mod.activities?.some((act: any) => !!act.activityStatus)
+    );
+    const hasActualStart = sequencedModules.some((mod: any) =>
+      mod.activities?.some((act: any) => !!act.actualStart)
+    );
+    const hasActualFinish = sequencedModules.some((mod: any) =>
+      mod.activities?.some((act: any) => !!act.actualFinish)
+    );
+
+    // Append status-related columns at the end
+    if (hasStatus && step != 1) {
+      columns.push({
+        title: "Status",
+        dataIndex: "status",
+        key: "status",
+      });
+    }
+
+    if (hasActualStart && step != 1) {
+      columns.push({
+        title: "Actual Start",
+        dataIndex: "actualStart",
+        key: "actualStart",
+      });
+    }
+
+    if (hasActualFinish && step != 1) {
+      columns.push({
+        title: "Actual Finish",
+        dataIndex: "actualFinish",
+        key: "actualFinish",
+      });
+    }
+
+    // Add actions column only in step 1, and keep it at the very end
+    if (step === 1) {
       columns.push({
         title: (
-          <div style={{ display: "flex", alignItems: "right", justifyContent: "right", position: "relative", marginRight: "20px" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginRight: "20px" }}>
             <span>Actions</span>
-            {/* {deletedModules.length > 0 && (
-              <div style={{ position: "absolute", right: 0 }}>
-                <Dropdown
-                  overlay={(
-                    <Menu>
-                      {deletedModules.map((module: any) => (
-                        <Menu.Item key={module.parentModuleCode} onClick={() => restoreDeletedModule(module.parentModuleCode)}>
-                          {module.moduleName}
-                        </Menu.Item>
-                      ))}
-                    </Menu>
-                  )}
-                  trigger={["click"]}
-                  visible={restoreDropdownVisible}
-                  onVisibleChange={(visible) => setRestoreDropdownVisible(visible)}
-                >
-                  <Button icon={<DownOutlined />} />
-                </Dropdown>
-              </div>
-            )} */}
           </div>
         ),
         dataIndex: "actions",
@@ -1303,12 +1627,10 @@ const TimeBuilder = () => {
                   ["completed", "inProgress"].includes(activity.activityStatus)
                 )
               }
-
             >
               Delete
             </Button>
           </div>
-
         ),
       });
     }
@@ -1546,19 +1868,7 @@ const TimeBuilder = () => {
                 </div>
               )}
             </div>
-            {(isMenualTimeline && !isUpdateMode) ? (
-              <div style={{ padding: "0px 8px 0px 0px" }}>
-                <Button
-                  type="primary"
-                  disabled={!selectedProjectId}
-                  icon={<LinkOutlined />}
-                  onClick={() => setOpenExistingTimelineModal(true)}
-                  style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
-                >
-                  Link Existing Timeline
-                </Button>
-              </div>
-            ) : isUpdateMode && (<>
+            {(isUpdateMode ||isMenualTimeline) && (<>
               <div style={{ paddingRight: "5px" }}>
                 <Button
                   type="primary"
@@ -1622,31 +1932,31 @@ const TimeBuilder = () => {
                   </DragDropContext>
                 ) : currentStep === 5 ? (
                   <div>
+                    <div className="holiday-actions">
+                      <div className="st-sun-field">
+                        <Checkbox
+                          className="saturday-sunday-checkbox"
+                          checked={isSaturdayWorking}
+                          onChange={(e) => setIsSaturdayWorking(e.target.checked)}
+                        >
+                          Saturday Working
+                        </Checkbox>
+                        <Checkbox
+                          className="saturday-sunday-checkbox"
+                          checked={isSundayWorking}
+                          onChange={(e) => setIsSundayWorking(e.target.checked)}
+                        >
+                          Sunday Working
+                        </Checkbox>
+                      </div>
+                      <div className="add-new-holiday">
+                        <Button type="primary" className="bg-secondary" size="small" onClick={() => navigate("/create/non-working-days")}>
+                          Manage Holiday
+                        </Button>
+                      </div>
+                    </div>
                     {holidayData.length > 0 ? (
                       <>
-                        <div className="holiday-actions">
-                          <div className="st-sun-field">
-                            <Checkbox
-                              className="saturday-sunday-checkbox"
-                              checked={isSaturdayWorking}
-                              onChange={(e) => setIsSaturdayWorking(e.target.checked)}
-                            >
-                              Saturday Working
-                            </Checkbox>
-                            <Checkbox
-                              className="saturday-sunday-checkbox"
-                              checked={isSundayWorking}
-                              onChange={(e) => setIsSundayWorking(e.target.checked)}
-                            >
-                              Sunday Working
-                            </Checkbox>
-                          </div>
-                          <div className="add-new-holiday">
-                            <Button type="primary" className="bg-secondary" size="small" onClick={() => navigate("/create/non-working-days")}>
-                              Manage Holiday
-                            </Button>
-                          </div>
-                        </div>
                         <Table
                           className="project-timeline-table"
                           dataSource={isUpdateMode ? finalHolidays : holidayData}

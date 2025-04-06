@@ -2,11 +2,12 @@
     margin-left: -8px !important;
 }
 
-.navbar {
+.main-navbar {
     background-color: #ffffff;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    padding: 5px 10px;
+    padding: 5px 15px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
@@ -281,4 +282,30 @@
     padding: 5px 12px;
     color: black;
     font-weight: bold;
+}
+
+.user-data{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification-icon-wrapper {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 50%;
+    background-color: #2e2e2e;
+    transition: background-color 0.3s ease;
+}
+
+.notification-icon-wrapper:hover {
+    background-color: #3a3a3a;
+}
+
+.bell-icon {
+    font-size: 25px;
+    color: white;
 }

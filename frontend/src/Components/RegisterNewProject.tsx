@@ -571,7 +571,11 @@ export const RegisterNewProject: React.FC = () => {
                   >
                     <Select
                       value={selectedLibrary}
-                      onChange={(value) => setSelectedLibrary(value)}
+                      onChange={(value) => {
+                        setSelectedLibrary(value);
+                        const filterdLibrary=allLibrariesName.filter((item:any)=>item.name==value);
+                        setSelectedItems(filterdLibrary[0].items)
+                      }}
                       allowClear={true}
                     >
                       {allLibrariesName.map((lib: any) => (

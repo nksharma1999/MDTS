@@ -89,7 +89,7 @@ body::-webkit-scrollbar {
     width: 6px;
 }
 
-body{
+body {
     background-color: #f2f4f7;
 }
 
@@ -118,4 +118,8 @@ hr {
 
 .image-container {
     margin-top: 10px;
+}
+
+.text-replanned {
+    color: #6f42c1;
 }

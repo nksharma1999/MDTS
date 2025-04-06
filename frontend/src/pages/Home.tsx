@@ -13,9 +13,9 @@ const Home = () => {
 
     return (
         <>
-            <div className="navbar" style={{ background: "linear-gradient(90deg, #257180, #257180, #4C585B)", display: "flex", alignItems: "center", padding: "3px 10px" }}>
-                <div className="logo-and-text">
-                    <div className="logo-sections">
+            <div className="home-navbar">
+                <div className="logo-and-text-item">
+                    <div className="logo-sections-cant">
                         <Link to="/home">
                             <img
                                 src="/images/logos/main-logo.png"
@@ -48,7 +48,9 @@ const Home = () => {
                     </Button>
                 </div>
             </div>
+            <div style={{marginTop:'65px'}}>
             <Hero />
+            </div>
             <div>
                 <ContactUs />
             </div>
@@ -68,9 +70,8 @@ const Home = () => {
                         top: "10px",
                         right: "10px",
                         border: "none",
-                        background: "transparent",
                         fontSize: "18px",
-                        color: "#fff"
+                        zIndex:'2'
                     }}
                 >
                     <CloseOutlined />

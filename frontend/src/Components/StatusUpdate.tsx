@@ -7,10 +7,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Button, Select, Modal, Input, message, Table, DatePicker } from "antd";
-import { DownloadOutlined, EditOutlined, FormOutlined, ReloadOutlined, ShareAltOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, DownloadOutlined, EditOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
+import TextArea from "antd/es/input/TextArea";
 interface Activity {
   code: string;
   activityName: string;
@@ -47,7 +48,17 @@ export const StatusUpdate = () => {
   const [selectedProjectTimeline, setSelectedProjectTimeline] = useState<any>([]);
   const [selectedVersionId, setSelectedVersionId] = useState(null);
   const [allVersions, setAllVersions] = useState<any>();
+  const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
+  const [reviseRemarks, setReviseRemarks] = useState("");
+  const tabs = [
+    "In-Progress",
+    "Upcoming 1 Month",
+    "Recent Completed",
+    "Yet To Start",
+    "Can be started with in a week"
+  ];
 
+  const [activeTab, setActiveTab] = useState(0);
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -136,12 +147,12 @@ export const StatusUpdate = () => {
         status: version.status,
         addedBy: version.addedBy,
         addedUserEmail: version.addedUserEmail,
+        currentStatus: version.currentStatus ? version.currentStatus : '',
         createdAt: version.createdAt || new Date().toISOString(),
         updatedAt: version.updatedAt || new Date().toISOString(),
       }));
 
       setAllVersions(extractedTimelines);
-
       if (extractedTimelines.length > 0) {
         const selectedTimeline = latestVersionId
           ? extractedTimelines.find((timeline: any) => timeline.version == latestVersionId) || extractedTimelines[0]
@@ -330,15 +341,9 @@ export const StatusUpdate = () => {
   };
 
   const handleApproveTimeline = async () => {
-    const approvedTimelinesCount = selectedProject.projectTimeline.filter(
-      (timeline: any) => timeline.status === "Approved"
-    ).length;
-
-    const nextVersion = `${approvedTimelinesCount + 1}.0`;
-
     const updatedProjectTimeline = selectedProject.projectTimeline.map((timeline: any) => {
       if (timeline.timelineId === selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId) {
-        return { ...timeline, status: "Approved", version: nextVersion };
+        return { ...timeline, status: "Approved" };
       }
       return timeline;
     });
@@ -351,6 +356,29 @@ export const StatusUpdate = () => {
     message.success("Timeline approved successfully");
     setIsApproveModalOpen(false);
     defaultSetup();
+  };
+
+  const isPreReqCompleted = (preRequisiteCode: string, allData: any[]): boolean => {
+    let isCompleted = false;
+
+    const findActivityByCode = (data: any[]): any => {
+      for (const item of data) {
+        if (item.children && item.children.length > 0) {
+          const found = findActivityByCode(item.children);
+          if (found) return found;
+        } else if (item.Code === preRequisiteCode) {
+          return item;
+        }
+      }
+      return null;
+    };
+
+    if (!preRequisiteCode) return true;
+
+    const preReqActivity = findActivityByCode(allData);
+    isCompleted = preReqActivity?.activityStatus === 'completed';
+
+    return isCompleted;
   };
 
   const handleLibraryChange = (libraryItems: any) => {
@@ -418,7 +446,12 @@ export const StatusUpdate = () => {
     navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline, rePlanTimeline: true } });
   };
 
-  const renderStatusSelect = (status: string, recordKey: string, fin_status: any) => {
+  const renderStatusSelect = (
+    status: string,
+    recordKey: string,
+    fin_status: string,
+    disabled: boolean = false // default false, can be overridden
+  ) => {
     return (
       <Select
         value={status}
@@ -428,12 +461,12 @@ export const StatusUpdate = () => {
           { label: "In Progress", value: "inProgress" },
           { label: "Completed", value: "completed" },
         ]}
-        disabled={fin_status === "completed"}
+        disabled={disabled || fin_status === "completed"} // disable if param is true or status is already completed
         className={`status-select ${status}`}
         style={{ width: "100%", fontWeight: "bold" }}
       />
     );
-  }
+  };
 
   const baseColumns: ColumnsType = [
     { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
@@ -452,8 +485,12 @@ export const StatusUpdate = () => {
       key: "activityStatus",
       width: 150,
       align: "center",
-      render: (_, { activityStatus, key, isModule, fin_status }) =>
-        isEditing && !isModule ? renderStatusSelect(activityStatus, key, fin_status) : activityStatus,
+      render: (_, record) => {
+        const preReqDone = isPreReqCompleted(record.preRequisite, dataSource);
+        return isEditing && !record.isModule
+          ? renderStatusSelect(record.activityStatus, record.key, record.fin_status, !preReqDone)
+          : record.activityStatus;
+      },
     },
     {
       title: "Actual Start",
@@ -627,6 +664,11 @@ export const StatusUpdate = () => {
     handleLibraryChange(timelineData);
   }
 
+  const handleReviseConfirm = () => {
+    setIsReviseModalOpen(false);
+  };
+
+
   return (
     <>
       <div className="status-heading">
@@ -642,7 +684,9 @@ export const StatusUpdate = () => {
                     ? "text-approved"
                     : selectedProjectTimeline?.status?.toLowerCase() === "pending"
                       ? "text-warning"
-                      : "text-danger"
+                      : selectedProjectTimeline?.status?.toLowerCase() === "replanned"
+                        ? "text-replanned"
+                        : "text-danger"
                 }
               >
                 {selectedProjectTimeline?.status}
@@ -652,13 +696,13 @@ export const StatusUpdate = () => {
           {allProjects.length != 0 && (
             <div className="times-stamps" style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created By</p>
+                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created&nbsp;/&nbsp;Updated By</p>
                 <p style={{ fontWeight: "bold", color: "#007bff" }}>
                   {selectedProjectTimeline?.addedBy}
                 </p>
               </div>
               <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created At</p>
+                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created&nbsp;/&nbsp;Updated At</p>
                 <p style={{ fontWeight: "bold", color: "#007bff" }}>
                   {new Date(selectedProjectTimeline?.createdAt).toLocaleString('en-US', {
                     year: 'numeric',
@@ -703,18 +747,41 @@ export const StatusUpdate = () => {
                     </label>
                     <Select
                       placeholder="Select Version"
-                      value={selectedVersionId}
-                      onChange={(value) => {
+                      value={{
+                        value: selectedVersionId,
+                        label: (
+                          <>
+                            {selectedProjectTimeline?.status === 'pending' ? (
+                              <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
+                            ) : selectedProjectTimeline?.status === 'replanned' ? (
+                              <SyncOutlined style={{ color: '#6f42c1', marginRight: 8 }} />
+                            ) : (
+                              <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
+                            )}
+                            {selectedProjectTimeline?.version}
+                          </>
+                        ),
+                      }}
+                      onChange={(valueObj) => {
+                        const value = valueObj.value;
                         const selectedVersion = allVersions.find((version: any) => version.versionId === value);
                         setSelectedProjectTimeline(selectedVersion);
                         setSelectedVersionId(value);
                         handleChangeVersionTimeline(value);
                       }}
                       popupMatchSelectWidth={false}
-                      style={{ width: "100%" }}
+                      style={{ width: '100%' }}
+                      labelInValue
                     >
                       {allVersions?.map((version: any) => (
                         <Option key={version.versionId} value={version.versionId}>
+                          {version.status === 'pending' ? (
+                            <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
+                          ) : version.status === 'replanned' ? (
+                            <SyncOutlined style={{ color: 'blue', marginRight: 8 }} />
+                          ) : (
+                            <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
+                          )}
                           {version.version}
                         </Option>
                       ))}
@@ -732,15 +799,17 @@ export const StatusUpdate = () => {
                 >
                   Download Timeline
                 </Button>
-                <Button
-                  type="primary"
-                  disabled={!selectedProjectId}
-                  icon={selectedProjectTimeline?.status != 'Approved' ? <EditOutlined /> : <ReloadOutlined />}
-                  onClick={selectedProjectTimeline?.status != 'Approved' ? editTimeBuilder : rePlanTimeline}
-                  style={{ backgroundColor: "#FF8A65" }}
-                >
-                  {selectedProjectTimeline?.status != 'Approved' ? 'Edit Timeline' : 'Replan Timeline'}
-                </Button>
+                {selectedProjectTimeline?.status != 'replanned' && (
+                  <Button
+                    type="primary"
+                    disabled={!selectedProjectId}
+                    icon={selectedProjectTimeline?.status != 'Approved' ? <EditOutlined /> : <ReloadOutlined />}
+                    onClick={selectedProjectTimeline?.status != 'Approved' ? editTimeBuilder : rePlanTimeline}
+                    style={{ backgroundColor: "#FF8A65" }}
+                  >
+                    {selectedProjectTimeline?.status != 'Approved' ? 'Edit Timeline' : 'Replan Timeline'}
+                  </Button>
+                )}
                 <Button
                   type="primary"
                   disabled={!selectedProjectId}
@@ -751,22 +820,27 @@ export const StatusUpdate = () => {
                   Share
                 </Button>
 
-                {isEditing ? (
-                  <Button type="primary" style={{ backgroundColor: "#AB47BC" }} icon={<SaveOutlined />} onClick={handleSaveStatus}>
-                    Save Status
-                  </Button>
-                ) : (
-                  <Button style={{ backgroundColor: "#5C6BC0", color: "#fff" }} icon={<FormOutlined />} onClick={handleUpdateStatus}>
-                    Update Status
+                {(selectedProjectTimeline?.status == 'Approved') && (
+                  <Button
+                    type={isEditing ? "primary" : "default"}
+                    style={{
+                      backgroundColor: isEditing ? "#AB47BC" : "#5C6BC0",
+                      color: isEditing ? undefined : "#fff",
+                    }}
+                    icon={isEditing ? <SaveOutlined /> : <FormOutlined />}
+                    onClick={isEditing ? handleSaveStatus : handleUpdateStatus}
+                  >
+                    {isEditing ? "Save Status" : "Update Status"}
                   </Button>
                 )}
 
-                {selectedProjectTimeline?.status != 'Approved' && getCurrentUser().role == 'Admin' && (
+                {(selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && getCurrentUser().role == 'Admin' && (
                   <div className="action-btn">
                     <Button
                       type="primary"
                       disabled={!selectedProjectId}
                       style={{ backgroundColor: "#E57373" }}
+                      onClick={() => setIsReviseModalOpen(true)}
                     >
                       Revise
                     </Button>
@@ -786,34 +860,49 @@ export const StatusUpdate = () => {
           </>
         )}
         {selectedProject != null ? (
-          <div className="status-update-items">
-            <div style={{ overflowX: "hidden" }}>
-              <Table
-                columns={finalColumns}
-                dataSource={dataSource}
-                className="project-timeline-table"
-                pagination={false}
-                expandable={{
-                  expandedRowRender: () => null,
-                  rowExpandable: (record) => record.children && record.children.length > 0,
-                  expandedRowKeys: expandedKeys,
-                  onExpand: (expanded, record) => {
-                    setExpandedKeys(
-                      expanded
-                        ? [...expandedKeys, record.key]
-                        : expandedKeys.filter((key: any) => key !== record.key)
-                    );
-                  },
-                }}
-                rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
-                bordered
-                scroll={{
-                  x: "max-content",
-                  y: "calc(100vh - 255px)",
-                }}
-              />
+          <>
+          <div className="main-filter-container">
+            <div className="tabs-container">
+              {tabs.map((tab, index) => (
+                <div
+                  key={index}
+                  className={`tab ${activeTab === index ? "active" : ""}`}
+                  onClick={() => setActiveTab(index)}
+                >
+                  {tab}
+                </div>
+              ))}
             </div>
           </div>
+            <div className="status-update-items">
+              <div style={{ overflowX: "hidden" }}>
+                <Table
+                  columns={finalColumns}
+                  dataSource={dataSource}
+                  className="project-timeline-table"
+                  pagination={false}
+                  expandable={{
+                    expandedRowRender: () => null,
+                    rowExpandable: (record) => record.children && record.children.length > 0,
+                    expandedRowKeys: expandedKeys,
+                    onExpand: (expanded, record) => {
+                      setExpandedKeys(
+                        expanded
+                          ? [...expandedKeys, record.key]
+                          : expandedKeys.filter((key: any) => key !== record.key)
+                      );
+                    },
+                  }}
+                  rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
+                  bordered
+                  scroll={{
+                    x: "max-content",
+                    y: "calc(100vh - 285px)",
+                  }}
+                />
+              </div>
+            </div>
+          </>
         ) : (
           <div className="container-msg">
             <div className="no-project-message">
@@ -869,6 +958,48 @@ export const StatusUpdate = () => {
       >
         <div style={{ padding: "0px 10px", fontWeight: "400", fontSize: "16px" }}>
           <p>Are You sure you want to confirm?</p>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Revise Project Timeline"
+        visible={isReviseModalOpen}
+        onCancel={() => setIsReviseModalOpen(false)}
+        onOk={handleReviseConfirm}
+        okText="Confirm"
+        cancelText="Cancel"
+        className="modal-container"
+        okButtonProps={{ danger: true }}
+      >
+        <div style={{ padding: "0px 20px" }}>
+          <div className="times-stamps revise" style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created By</p>
+              <p style={{ fontWeight: "bold", color: "#007bff" }}>
+                {selectedProjectTimeline?.addedBy}
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created At</p>
+              <p style={{ fontWeight: "bold", color: "#007bff" }}>
+                {new Date(selectedProjectTimeline?.createdAt).toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true
+                })}
+              </p>
+            </div>
+          </div>
+
+          <TextArea
+            rows={4}
+            value={reviseRemarks}
+            onChange={(e) => setReviseRemarks(e.target.value)}
+            placeholder="Enter revision notes..."
+          />
         </div>
       </Modal>
     </>

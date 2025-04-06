@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Typography, Divider, Modal } from "antd";
-import { DownOutlined, LogoutOutlined, QuestionCircleOutlined, SettingOutlined } from "@ant-design/icons";
+import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge } from "antd";
+import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SettingOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 const { Title } = Typography;
 interface NavItem {
@@ -15,12 +15,17 @@ interface NavItem {
 }
 
 const initialNavLinks: any = [
-    { label: "Home", action: "/landing-page" },
     { label: "About", action: "/about" },
     { label: "Projects", action: "/projects-details" },
-    { label: "Document", action: "/document" },
+    { label: "Documents", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
-    { label: "Data Master", action: "/data-master" },
+    { label: "Data Master",
+        subItems: [
+            { label: "Module Library", action: "/create/module-library" },
+            { label: "Notification", action: "/create/notification", isNull: true },
+            { label: "Dashboard", action: "/create/dashboard", isNull: true },
+        ]
+    },
     {
         label: "Create",
         subItems: [
@@ -28,11 +33,8 @@ const initialNavLinks: any = [
             { label: "Modules", action: "/modules" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
             { label: "Project Timeline", action: "/create/project-timeline" },
-            { label: "Module Library", action: "/create/module-library" },
             { label: "Non-working Days", action: "/create/non-working-days" },
-            { label: "Notification", action: "/create/notification", isNull: true },
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
-            { label: "Dashboard", action: "/create/dashboard", isNull: true },
             { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
         ]
@@ -157,7 +159,7 @@ const Navbar: React.FC = () => {
 
     return (
         <>
-            <div className="navbar">
+            <div className="main-navbar">
                 <div className="logo-and-text">
                     <div className="logo-sections">
                         <Link to="/home">
@@ -219,6 +221,11 @@ const Navbar: React.FC = () => {
                     ))}
                 </div>
                 <div className="user-data">
+                    <span className="notification-icon-wrapper">
+                        <Badge count={5} size="small" offset={[-2, 4]}>
+                            <BellOutlined className="bell-icon" />
+                        </Badge>
+                    </span>
                     {user ? (
                         <Dropdown overlay={profileMenu}>
                             <Button
@@ -237,7 +244,6 @@ const Navbar: React.FC = () => {
                         </Button>
                     )}
                 </div>
-
             </div>
             <Modal
                 title="Confirm Logout"
