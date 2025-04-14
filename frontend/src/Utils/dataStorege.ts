@@ -277,8 +277,6 @@ export class DataStorage extends Dexie {
     }
   }
   
-
-
   async deleteProjectTimeline(id: number): Promise<void> {
     try {
       const existingprojectTimelines = await this.projectTimelines.get(id);

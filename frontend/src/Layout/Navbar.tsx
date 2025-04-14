@@ -16,14 +16,13 @@ interface NavItem {
 
 const initialNavLinks: any = [
     { label: "About", action: "/about" },
-    { label: "Projects", action: "/projects-details" },
+    { label: "Dashboard", action: "/projects-details" },
     { label: "Documents", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
     { label: "Data Master",
         subItems: [
             { label: "Module Library", action: "/create/module-library" },
-            { label: "Notification", action: "/create/notification", isNull: true },
-            { label: "Dashboard", action: "/create/dashboard", isNull: true },
+            { label: "Notification", action: "/create/notification", isNull: true }
         ]
     },
     {

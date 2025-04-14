@@ -41,6 +41,7 @@ const Document: React.FC = () => {
     const [documentName, setDocumentName] = useState<string>("");
     const [description, setDescription] = useState<string>("");
     const [milestone, setMilestone] = useState<string>("");
+    const [linkedActivity, SetLinkedActivity] = useState<string>("");
     const [files, setFiles] = useState<File[]>([]);
     const [milestones, setMilestones] = useState<Module[]>([]);
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -285,6 +286,28 @@ const Document: React.FC = () => {
                                             placeholder="Select Milestone"
                                             value={milestone}
                                             onChange={setMilestone}
+                                            style={{ marginBottom: "15px" }}
+                                        >
+                                            {milestones.map((option, index) => (
+                                                <Option key={index} value={option.moduleName}>
+                                                    {option.moduleName}
+                                                </Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+
+
+                                    <Form.Item
+                                        label={<span style={{ textAlign: "left" }}> Linked Activity </span>}
+                                        name="linked-activity"
+                                        rules={[{ required: true, message: "Linked-Activity is required" }]}
+                                        labelAlign="left"
+                                        colon={false}
+                                    >
+                                        <Select
+                                            placeholder="Select Linked Activity"
+                                            value={linkedActivity}
+                                            onChange={SetLinkedActivity}
                                             style={{ marginBottom: "15px" }}
                                         >
                                             {milestones.map((option, index) => (
