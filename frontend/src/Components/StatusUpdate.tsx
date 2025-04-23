@@ -50,15 +50,7 @@ export const StatusUpdate = () => {
   const [allVersions, setAllVersions] = useState<any>();
   const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
   const [reviseRemarks, setReviseRemarks] = useState("");
-  const tabs = [
-    "In-Progress",
-    "Upcoming 1 Month",
-    "Recent Completed",
-    "Yet To Start",
-    "Can be started with in a week"
-  ];
 
-  const [activeTab, setActiveTab] = useState(0);
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -861,21 +853,8 @@ export const StatusUpdate = () => {
         )}
         {selectedProject != null ? (
           <>
-          <div className="main-filter-container">
-            <div className="tabs-container">
-              {tabs.map((tab, index) => (
-                <div
-                  key={index}
-                  className={`tab ${activeTab === index ? "active" : ""}`}
-                  onClick={() => setActiveTab(index)}
-                >
-                  {tab}
-                </div>
-              ))}
-            </div>
-          </div>
             <div className="status-update-items">
-              <div style={{ overflowX: "hidden" }}>
+              <div className="status-update-table">
                 <Table
                   columns={finalColumns}
                   dataSource={dataSource}
@@ -897,7 +876,7 @@ export const StatusUpdate = () => {
                   bordered
                   scroll={{
                     x: "max-content",
-                    y: "calc(100vh - 285px)",
+                    y: "calc(100vh - 200px)",
                   }}
                 />
               </div>

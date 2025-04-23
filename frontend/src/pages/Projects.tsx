@@ -81,7 +81,6 @@ const Projects = () => {
     const tabs = [
         { key: 'fdpp', label: 'FDPP' },
         { key: 'project-timeline', label: 'Project Timeline' },
-        { key: 'timeline', label: 'Timeline Performance' },
         { key: 'capex', label: 'CAPEX-Performance' },
         { key: 'documents', label: 'Documents' },
         { key: 'csr', label: 'Corporate Social Responsibility' },
@@ -122,8 +121,6 @@ const Projects = () => {
             </div>
         </div>;
     }
-
-    const { projectParameters }: any = projectDetails;
 
     const handleProjectClick = (projectName: string) => {
         const selectedProject = allProjects.find(
@@ -210,7 +207,7 @@ const Projects = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'fdpp':
-                return <FDPP code={projectDetails.id}/>;
+                return <FDPP code={projectDetails.id} />;
             case 'project-timeline':
                 return <ProjectTimeline code={projectDetails.id} />;
             case 'timeline':
@@ -281,30 +278,21 @@ const Projects = () => {
                 </div>
                 <section className="project-info">
                     <div className="base-details">
-                        <div>
-                            <p>{selectedProjectName}</p>
-                            <div style={{ fontSize: "12px", color: "#c5c5c5" }}>{projectParameters.companyName}</div>
-                        </div>
-                        <div>
-                            <Button className="bg-secondary" onClick={() => setIsModalOpen(true)}>
-                                Add Member
-                            </Button>
+                        <div className="">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    className={`tab-button ${activeTab === tab.key ? "active" : ""}`}
+                                    onClick={() => setActiveTab(tab.key)}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                     <div className="details-paremeters">
                         <div className="info-item">
                             <div className="tab-container">
-                                <div className="tab-header">
-                                    {tabs.map((tab) => (
-                                        <button
-                                            key={tab.key}
-                                            className={`tab-button ${activeTab === tab.key ? "active" : ""}`}
-                                            onClick={() => setActiveTab(tab.key)}
-                                        >
-                                            {tab.label}
-                                        </button>
-                                    ))}
-                                </div>
                                 <div className="tab-content">
                                     {renderTabContent()}
                                 </div>

@@ -130,7 +130,7 @@ const CAPEXPerformance: React.FC = () => {
   return (
     <div className="capex-container">
       <div className="title-and-filter">
-        <Title level={3} className="capex-title">Dhiruali - CAPEX PERFORMANCE</Title>
+        <Title level={3} className="capex-title"></Title>
         <div className="capex-date-row">
           <Text>Date:</Text>
           <DatePicker

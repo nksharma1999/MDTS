@@ -57,7 +57,6 @@ const ProjectDocs = () => {
         <div className="">
             <div className="project-document-cont table-and-not">
                 <div style={{width:'70%'}}>
-                    <Title level={3} className="capex-title">Dhirauli - Doccuments</Title>
                     <div className="summary-cards-flex">
                         {dataSummary.map((item, index) => (
                             <div className="summary-card-wrapper" key={index}>
