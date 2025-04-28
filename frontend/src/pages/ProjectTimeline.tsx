@@ -150,23 +150,6 @@ const ProjectTimeline = (project: any) => {
         }
     };
 
-    const handleProjectChange = async (projectId: any) => {
-        setSelectedProjectId(projectId);
-        const project = allProjects.find((p: any) => p.id === projectId);
-        localStorage.setItem('selectedProjectId', projectId);
-        setSelectedProjectTimeline(project.projectTimeline[0]);
-        defaultSetup();
-        const timelineId = project.projectTimeline[0].timelineId;
-        const timeline = await db.getProjectTimelineById(timelineId);
-        const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
-        setSelectedProject(project);
-        if (project?.projectTimeline) {
-            handleLibraryChange(finTimeline);
-        } else {
-            handleLibraryChange([]);
-        }
-    };
-
     const handleDownload = async () => {
         const workbook: any = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Project Report");
@@ -421,8 +404,8 @@ const ProjectTimeline = (project: any) => {
     const renderStatusSelect = (
         status: string,
         recordKey: string,
-        fin_status: string,
-        disabled: boolean = false // default false, can be overridden
+        _fin_status: string,
+        _disabled: boolean = false
     ) => {
         return (
             <Select
@@ -433,7 +416,7 @@ const ProjectTimeline = (project: any) => {
                     { label: "In Progress", value: "inProgress" },
                     { label: "Completed", value: "completed" },
                 ]}
-                disabled={disabled || fin_status === "completed"} // disable if param is true or status is already completed
+                disabled
                 className={`status-select ${status}`}
                 style={{ width: "100%", fontWeight: "bold" }}
             />
@@ -443,14 +426,43 @@ const ProjectTimeline = (project: any) => {
     const baseColumns: ColumnsType = [
         { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
         { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
-        { title: "Duration", dataIndex: "duration", key: "duration", width: 80, align: "center" },
-        { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
-        { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
-        { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
-        { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
+        { title: "Duration", dataIndex: "duration", key: "duration", width: 150, align: "center" },
+        { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 150, align: "center" },
+        { title: "Slack", dataIndex: "slack", key: "slack", width: 150, align: "center" },
+        { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 150, align: "center" },
+        { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 180, align: "center" },
     ];
 
     const editingColumns: ColumnsType = [
+        {
+            title: "Actual/Expected Duration",
+            dataIndex: "duration",
+            key: "duration",
+            width: 250,
+            align: "center",
+            render: (_, record) => {
+                const { activityStatus, actualStart, actualFinish, duration } = record;
+
+                if (activityStatus === "completed") {
+                    if (actualStart && actualFinish) {
+                        const start = dayjs(actualStart);
+                        const finish = dayjs(actualFinish);
+                        const diffDays = finish.diff(start, 'day');
+                        return isNaN(diffDays) ? "" : `${diffDays} days`;
+                    }
+                    return "";
+                }
+
+                if (activityStatus === "inProgress") {
+                    if (actualStart && duration != null) {
+                        return `${duration} days`;
+                    }
+                    return "";
+                }
+
+                return duration != null ? `${duration} days` : "";
+            },
+        },
         {
             title: "Status",
             dataIndex: "activityStatus",
@@ -475,7 +487,7 @@ const ProjectTimeline = (project: any) => {
                     <DatePicker
                         value={actualStart ? dayjs(actualStart) : null}
                         onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualStart")}
-                        disabled={activityStatus == "yetToStart" || fin_status == 'completed'}
+                        disabled
                         className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
                     />
                 ) : (
@@ -486,14 +498,14 @@ const ProjectTimeline = (project: any) => {
             title: "Actual Finish",
             dataIndex: "actualFinish",
             key: "actualFinish",
-            width: 120,
+            width: 320,
             align: "center",
             render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
                 isEditing && !isModule ? (
                     <DatePicker
                         value={actualFinish ? dayjs(actualFinish) : null}
                         onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualFinish")}
-                        disabled={activityStatus == "yetToStart" || activityStatus == "inProgress" || fin_status == 'completed'}
+                        disabled
                         className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
                     />
                 ) : (
@@ -576,32 +588,63 @@ const ProjectTimeline = (project: any) => {
         onClick: () => setActiveTab(index),
     }));
 
+    const flattenActivities = (modules: any) => {
+        return modules.flatMap((module: any) => module.children);
+    };
+
+    const filterActivities = (activities: any, activeTab: any) => {
+        const today = dayjs();
+        const oneMonthLater = today.add(1, 'month');
+        const oneWeekLater = today.add(7, 'day');
+
+        switch (activeTab) {
+            case 0:
+                return activities;
+
+            case 1:
+                return activities.filter((a: any) => a.activityStatus === 'inProgress');
+
+            case 2:
+                return activities.filter((a: any) => {
+                    if (!a.plannedStart) return false;
+                    const plannedStart = dayjs(a.plannedStart, "DD-MM-YYYY");
+                    return plannedStart.isAfter(today) && plannedStart.isBefore(oneMonthLater);
+                });
+
+            case 3:
+                return activities.filter((a: any) => {
+                    if (!a.actualFinish) return false;
+                    const actualFinish = dayjs(a.actualFinish);
+                    return actualFinish.isAfter(today.subtract(30, 'days')) && actualFinish.isBefore(today);
+                });
+
+            case 4:
+                return activities.filter((a: any) => a.activityStatus === 'yetToStart');
+
+            case 5:
+                return activities.filter((a: any) => {
+                    if (!a.plannedStart) return false;
+                    const plannedStart = dayjs(a.plannedStart, "DD-MM-YYYY");
+                    return plannedStart.isAfter(today) && plannedStart.isBefore(oneWeekLater);
+                });
+
+            default:
+                return activities;
+        }
+    };
+
+    const allActivities = flattenActivities(dataSource);
+    const filteredActivities = filterActivities(allActivities, activeTab);
     return (
         <>
             <div className="timeline-main">
-                {(allProjects[0]?.projectTimeline) ? (
+                {allProjects[0]?.projectTimeline ? (
                     <>
                         <div className="status-toolbar">
-                            <div className="select-item">
-                                <div className="flex-item">
-                                    <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Project</label>
-                                    <Select
-                                        placeholder="Select Project"
-                                        value={selectedProjectId}
-                                        onChange={handleProjectChange}
-                                        popupMatchSelectWidth={false}
-                                        style={{ width: "100%" }}
-                                    >
-                                        {allProjects.map((project: any) => (
-                                            <Option key={project.id} value={project.id}>
-                                                {project.projectParameters.projectName}
-                                            </Option>
-                                        ))}
-                                    </Select>
-                                </div>
-                                {allVersions?.length > 0 && (
+                            {allVersions?.length > 0 && (
+                                <div className="select-item">
                                     <div className="flex-item">
-                                        <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>
+                                        <label style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>
                                             Version
                                         </label>
                                         <Select
@@ -623,7 +666,7 @@ const ProjectTimeline = (project: any) => {
                                             }}
                                             onChange={(valueObj) => {
                                                 const value = valueObj.value;
-                                                const selectedVersion = allVersions.find((version: any) => version.versionId === value);
+                                                const selectedVersion = allVersions.find((v: any) => v.versionId === value);
                                                 setSelectedProjectTimeline(selectedVersion);
                                                 setSelectedVersionId(value);
                                                 handleChangeVersionTimeline(value);
@@ -632,7 +675,7 @@ const ProjectTimeline = (project: any) => {
                                             style={{ width: '100%' }}
                                             labelInValue
                                         >
-                                            {allVersions?.map((version: any) => (
+                                            {allVersions.map((version: any) => (
                                                 <Option key={version.versionId} value={version.versionId}>
                                                     {version.status === 'pending' ? (
                                                         <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
@@ -646,8 +689,8 @@ const ProjectTimeline = (project: any) => {
                                             ))}
                                         </Select>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                             <div style={{ display: "flex", gap: "10px" }}>
                                 <span>Status:</span>
                                 <span
@@ -665,7 +708,6 @@ const ProjectTimeline = (project: any) => {
                                     {selectedProjectTimeline?.status}
                                 </span>
                             </div>
-
                             <div className="actions">
                                 <Tooltip title="Download Project">
                                     <Button
@@ -676,7 +718,6 @@ const ProjectTimeline = (project: any) => {
                                         style={{ backgroundColor: "#4CAF50" }}
                                     />
                                 </Tooltip>
-
                                 <Tooltip title="Share Project">
                                     <Button
                                         type="primary"
@@ -686,10 +727,9 @@ const ProjectTimeline = (project: any) => {
                                         style={{ backgroundColor: "#00BFA6" }}
                                     />
                                 </Tooltip>
-
                                 <Tooltip
                                     title={
-                                        <div className="times-stamps custom-tooltip">
+                                        <div className="times-stamps">
                                             <div className="time-row">
                                                 <p className="time-label">Created / Updated By</p>
                                                 <p className="time-value">{selectedProjectTimeline?.addedBy || "N/A"}</p>
@@ -702,13 +742,8 @@ const ProjectTimeline = (project: any) => {
                                     }
                                     overlayClassName="custom-tooltip"
                                 >
-                                    <Button
-                                        type="primary"
-                                        icon={<InfoCircleOutlined />}
-                                        className="styled-button"
-                                    />
+                                    <Button type="primary" icon={<InfoCircleOutlined />} className="styled-button" />
                                 </Tooltip>
-
                                 <div className="main-filter-container">
                                     <Button.Group>
                                         <Button icon={<FilterOutlined />} />
@@ -722,7 +757,6 @@ const ProjectTimeline = (project: any) => {
                             </div>
                         </div>
                         <hr />
-
                         <div className="status-update-item">
                             <div className="table-container">
                                 <Table
@@ -732,25 +766,22 @@ const ProjectTimeline = (project: any) => {
                                     pagination={false}
                                     expandable={{
                                         expandedRowRender: () => null,
-                                        rowExpandable: (record) => record.children && record.children.length > 0,
+                                        rowExpandable: (record) => record.children?.length > 0,
                                         expandedRowKeys: expandedKeys,
                                         onExpand: (expanded, record) => {
-                                            setExpandedKeys(
-                                                expanded
-                                                    ? [...expandedKeys, record.key]
-                                                    : expandedKeys.filter((key: any) => key !== record.key)
-                                            );
+                                            setExpandedKeys(expanded
+                                                ? [...expandedKeys, record.key]
+                                                : expandedKeys.filter((key: any) => key !== record.key));
                                         },
-                                        expandIconColumnIndex: 0, // ensures icon is in the first column
+                                        expandIconColumnIndex: 0,
                                     }}
-
                                     rowClassName={(record) =>
                                         record.isModule ? "module-header" : "activity-row"
                                     }
                                     bordered
                                     scroll={{
                                         x: true,
-                                        y: "calc(100vh - 310px)",
+                                        y: "calc(100vh - 260px)",
                                     }}
                                 />
                             </div>
@@ -759,15 +790,17 @@ const ProjectTimeline = (project: any) => {
                 ) : (
                     <div className="container-msg">
                         <div className="no-project-message">
-                            <FolderOpenOutlined style={{ fontSize: "50px", color: "grey",marginTop:"0px" }} />
-                            <>
-                                <h3>No Projects Timeline Found</h3>
-                                <p>Please defining the timeline.</p>
-                                <button onClick={() => {
+                            <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
+                            <h3>No Projects Timeline Found</h3>
+                            <p>Please define the timeline.</p>
+                            <button
+                                onClick={() => {
                                     eventBus.emit("updateTab", "/create/register-new-project");
                                     navigate("/create/timeline-builder");
-                                }}>Create Project Timeline</button>
-                            </>
+                                }}
+                            >
+                                Create Project Timeline
+                            </button>
                         </div>
                     </div>
                 )}

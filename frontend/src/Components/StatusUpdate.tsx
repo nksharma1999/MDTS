@@ -442,7 +442,7 @@ export const StatusUpdate = () => {
     status: string,
     recordKey: string,
     fin_status: string,
-    disabled: boolean = false // default false, can be overridden
+    disabled: boolean = false
   ) => {
     return (
       <Select
@@ -453,7 +453,7 @@ export const StatusUpdate = () => {
           { label: "In Progress", value: "inProgress" },
           { label: "Completed", value: "completed" },
         ]}
-        disabled={disabled || fin_status === "completed"} // disable if param is true or status is already completed
+        disabled={disabled || fin_status === "completed"}
         className={`status-select ${status}`}
         style={{ width: "100%", fontWeight: "bold" }}
       />
@@ -472,6 +472,35 @@ export const StatusUpdate = () => {
 
   const editingColumns: ColumnsType = [
     {
+      title: "Actual/Expected Duration",
+      dataIndex: "duration",
+      key: "duration",
+      width: 200,
+      align: "center",
+      render: (_, record) => {
+        const { activityStatus, actualStart, actualFinish, duration } = record;
+
+        if (activityStatus === "completed") {
+          if (actualStart && actualFinish) {
+            const start = dayjs(actualStart);
+            const finish = dayjs(actualFinish);
+            const diffDays = finish.diff(start, 'day');
+            return isNaN(diffDays) ? "" : `${diffDays} days`;
+          }
+          return "";
+        }
+
+        if (activityStatus === "inProgress") {
+          if (actualStart && duration != null) {
+            return `${duration} days`;
+          }
+          return "";
+        }
+
+        return duration != null ? `${duration} days` : "";
+      },
+    },    
+    {
       title: "Status",
       dataIndex: "activityStatus",
       key: "activityStatus",
@@ -488,7 +517,7 @@ export const StatusUpdate = () => {
       title: "Actual Start",
       dataIndex: "actualStart",
       key: "actualStart",
-      width: 120,
+      width: 150,
       align: "center",
       render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
         isEditing && !isModule ? (
@@ -506,7 +535,7 @@ export const StatusUpdate = () => {
       title: "Actual Finish",
       dataIndex: "actualFinish",
       key: "actualFinish",
-      width: 120,
+      width: 150,
       align: "center",
       render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
         isEditing && !isModule ? (
@@ -876,7 +905,7 @@ export const StatusUpdate = () => {
                   bordered
                   scroll={{
                     x: "max-content",
-                    y: "calc(100vh - 200px)",
+                    y: "calc(100vh - 250px)",
                   }}
                 />
               </div>
