@@ -1,5 +1,5 @@
 .timeline-main {
-    
+
     .status-toolbar {
         display: flex;
         justify-content: space-between;
@@ -218,4 +218,16 @@
         display: flex;
         gap: 10px;
     }
+
+    .dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    .dropdown-item.active {
+        background-color: #e6f4ff;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
 }

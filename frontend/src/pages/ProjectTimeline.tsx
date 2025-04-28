@@ -584,57 +584,60 @@ const ProjectTimeline = (project: any) => {
 
     const items = tabs.map((tab, index) => ({
         key: index,
-        label: tab,
+        label: (
+            <div className={activeTab === index ? 'dropdown-item active' : 'dropdown-item'}>
+                {tab}
+            </div>
+        ),
         onClick: () => setActiveTab(index),
     }));
 
-    const flattenActivities = (modules: any) => {
-        return modules.flatMap((module: any) => module.children);
-    };
-
-    const filterActivities = (activities: any, activeTab: any) => {
+    const filterActivitiesWithinModules = (modules: any, activeTab: any) => {
         const today = dayjs();
         const oneMonthLater = today.add(1, 'month');
         const oneWeekLater = today.add(7, 'day');
 
-        switch (activeTab) {
-            case 0:
-                return activities;
+        return modules.map((module: any) => {
+            const filteredChildren = (module.children || []).filter((a: any) => {
+                switch (activeTab) {
+                    case 0:
+                        return true;
 
-            case 1:
-                return activities.filter((a: any) => a.activityStatus === 'inProgress');
+                    case 1:
+                        return a.activityStatus === 'inProgress';
 
-            case 2:
-                return activities.filter((a: any) => {
-                    if (!a.plannedStart) return false;
-                    const plannedStart = dayjs(a.plannedStart, "DD-MM-YYYY");
-                    return plannedStart.isAfter(today) && plannedStart.isBefore(oneMonthLater);
-                });
+                    case 2:
+                        if (!a.plannedStart) return false;
+                        const plannedStart = dayjs(a.plannedStart, "DD-MM-YYYY");
+                        return plannedStart.isAfter(today) && plannedStart.isBefore(oneMonthLater);
 
-            case 3:
-                return activities.filter((a: any) => {
-                    if (!a.actualFinish) return false;
-                    const actualFinish = dayjs(a.actualFinish);
-                    return actualFinish.isAfter(today.subtract(30, 'days')) && actualFinish.isBefore(today);
-                });
+                    case 3:
+                        if (!a.actualFinish) return false;
+                        const actualFinish = dayjs(a.actualFinish);
+                        return actualFinish.isAfter(today.subtract(30, 'days')) && actualFinish.isBefore(today);
 
-            case 4:
-                return activities.filter((a: any) => a.activityStatus === 'yetToStart');
+                    case 4:
+                        return a.activityStatus === 'yetToStart';
 
-            case 5:
-                return activities.filter((a: any) => {
-                    if (!a.plannedStart) return false;
-                    const plannedStart = dayjs(a.plannedStart, "DD-MM-YYYY");
-                    return plannedStart.isAfter(today) && plannedStart.isBefore(oneWeekLater);
-                });
+                    case 5:
+                        if (!a.plannedStart) return false;
+                        const ps = dayjs(a.plannedStart, "DD-MM-YYYY");
+                        return ps.isAfter(today) && ps.isBefore(oneWeekLater);
 
-            default:
-                return activities;
-        }
+                    default:
+                        return true;
+                }
+            });
+
+            return {
+                ...module,
+                children: filteredChildren,
+            };
+        });
     };
 
-    const allActivities = flattenActivities(dataSource);
-    const filteredActivities = filterActivities(allActivities, activeTab);
+    const filteredDataSource = filterActivitiesWithinModules(dataSource, activeTab);
+
     return (
         <>
             <div className="timeline-main">
@@ -761,7 +764,7 @@ const ProjectTimeline = (project: any) => {
                             <div className="table-container">
                                 <Table
                                     columns={finalColumns}
-                                    dataSource={dataSource}
+                                    dataSource={filteredDataSource}
                                     className="project-timeline-table"
                                     pagination={false}
                                     expandable={{

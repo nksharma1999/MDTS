@@ -4,8 +4,8 @@ import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message, Form } from 'antd';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
@@ -37,6 +37,7 @@ const Module = () => {
     const [moduleCodeName, setModuleCodeName] = useState<string>("");
     const [filteredModuleData, setFilteredModuleData] = useState<any>(null);
     const [isFocused, setIsFocused] = useState(false);
+    const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
         moduleName: moduleName,
@@ -673,6 +674,36 @@ const Module = () => {
         setModuleData(lastState); // Restore the last state
     };
 
+    const [form] = Form.useForm();
+    const [formValid, setFormValid] = useState(false);
+
+    const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+    const handleClose = () => {
+        setOpenCostCalcModal(false);
+        form.resetFields();
+        setFormValid(false);
+    };
+
+    const handleValuesChange = () => {
+        const { projectCost, opCost, delayCost } = form.getFieldsValue();
+        if (projectCost && opCost && delayCost) {
+            setFormValid(true);
+        } else {
+            setFormValid(false);
+        }
+    };
+
+    const handleConfirm = () => {
+        form.validateFields()
+            .then(values => {
+                console.log('Confirmed values:', values);
+                handleClose();
+            })
+            .catch(info => {
+                console.log('Validation Failed:', info);
+            });
+    };
+
 
     return (
         <div>
@@ -701,6 +732,16 @@ const Module = () => {
                         <Row justify="space-between" align="middle">
                             <Col>
                                 <Row gutter={16}>
+                                    <Col>
+                                        <Tooltip title="Define Activity Cost">
+                                            <Button
+                                                icon={<DollarOutlined style={{ color: '#52c41a' }} />}
+                                                className="icon-button"
+                                                onClick={handleOpenCostCalcModal}
+                                                disabled={!selectedRow}
+                                            />
+                                        </Tooltip>
+                                    </Col>
                                     <Col>
                                         <Tooltip title="Decrease Level">
                                             <Button
@@ -1084,6 +1125,48 @@ const Module = () => {
                         </p>
                     </div>
                 </Modal >
+
+                <Modal
+                    title="Define Activity Costs"
+                    open={openCostCalcModal}
+                    onCancel={handleClose}
+                    onOk={handleConfirm}
+                    okButtonProps={{ disabled: !formValid }}
+                    destroyOnClose
+                    className="modal-container"
+                >
+                    <Form
+                        form={form}
+                        layout="vertical"
+                        onValuesChange={handleValuesChange}
+                        style={{ padding: "0px 10px" }}
+                    >
+                        <Form.Item
+                            label="Project Cost"
+                            name="projectCost"
+                            rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                        >
+                            <Input type="number" placeholder="Enter Project Cost" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="OP Cost"
+                            name="opCost"
+                            rules={[{ required: true, message: 'Please enter OP Cost' }]}
+                        >
+                            <Input type="number" placeholder="Enter OP Cost" />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Activity Delay Cost"
+                            name="delayCost"
+                            rules={[{ required: true, message: 'Please enter Project Delay Cost' }]}
+                        >
+                            <Input type="number" placeholder="Enter Project Delay Cost" />
+                        </Form.Item>
+                    </Form>
+                </Modal>
+
             </div>
         </div>
     );
