@@ -1142,29 +1142,54 @@ const Module = () => {
                         style={{ padding: "0px 10px" }}
                     >
                         <Form.Item
-                            label="Project Cost"
-                            name="projectCost"
-                            rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                            label=""
+                            style={{ marginBottom: 16 }}
                         >
-                            <Input type="number" placeholder="Enter Project Cost" />
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Project Cost:</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="projectCost"
+                                        noStyle
+                                        rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                                    >
+                                        <Input type="number" placeholder="Enter Project Cost" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
                         </Form.Item>
 
-                        <Form.Item
-                            label="OP Cost"
-                            name="opCost"
-                            rules={[{ required: true, message: 'Please enter OP Cost' }]}
-                        >
-                            <Input type="number" placeholder="Enter OP Cost" />
+                        <Form.Item label="" style={{ marginBottom: 24 }}>
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Opportunity Cost:</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="opCost"
+                                        noStyle
+                                        rules={[{ required: true, message: 'Please enter OP Cost' }]}
+                                    >
+                                        <Input type="number" placeholder="Enter OP Cost" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
                         </Form.Item>
 
-                        <Form.Item
-                            label="Activity Delay Cost"
-                            name="delayCost"
-                            rules={[{ required: true, message: 'Please enter Project Delay Cost' }]}
-                        >
-                            <Input type="number" placeholder="Enter Project Delay Cost" />
+                        <Form.Item label="" style={{ marginBottom: 0 }}>
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Activity Delay Cost:</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="delayCost"
+                                        noStyle
+                                        rules={[{ required: true, message: 'Please enter Project Delay Cost' }]}
+                                    >
+                                        <Input type="number" placeholder="Enter Project Delay Cost" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
                         </Form.Item>
                     </Form>
+
                 </Modal>
 
             </div>

@@ -4,64 +4,62 @@ import dayjs from "dayjs";
 import { db } from "../Utils/dataStorege.ts";
 import { Select, Empty } from "antd";
 import {
-    LineChart,
-    Line,
+    ScatterChart,
+    Scatter,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
-    ResponsiveContainer
+    ResponsiveContainer,
+    Legend
 } from "recharts";
 import '../styles/project-statistic.css';
 
 const { Option } = Select;
 
+const GRAPH_TYPES = {
+    START: "Planned Start vs Actual Start",
+    FINISH: "Planned Finish vs Actual Finish",
+    DELAY: "Planned Date vs Delay (Days)"
+};
+
 const ProjectStatistics = (project: any) => {
     const [dataSource, setDataSource] = useState<any>([]);
-    const [selectedModules, setSelectedModules] = useState<string[]>([]);
-    const [plannedVsActualData, setPlannedVsActualData] = useState<any[]>([]);
-    const [plannedVsDelayData, setPlannedVsDelayData] = useState<any[]>([]);
+    const [selectedModule, setSelectedModule] = useState<string | undefined>();
+    const [selectedGraph, setSelectedGraph] = useState<string>(GRAPH_TYPES.START);
+    const [graphData, setGraphData] = useState<any[]>([]);
 
     useEffect(() => {
         defaultSetup();
     }, []);
 
     useEffect(() => {
-        if (selectedModules.length > 0 && dataSource.length > 0) {
+        if (selectedModule && dataSource.length > 0) {
             const selectedActivities = dataSource
-                .filter((mod: any) => selectedModules.includes(mod.Code))
-                .flatMap((mod: any) => mod.children)
-                .filter((activity: any) => activity.plannedStart !== "-" && activity.actualStart);
+                .filter((mod: any) => mod.Code === selectedModule)
+                .flatMap((mod: any) => mod.children);
 
-            const chart1Formatted = selectedActivities.map((activity: any) => ({
-                x: dayjs(activity.plannedStart, "DD-MM-YYYY").valueOf(),
-                y: dayjs(activity.actualStart, "YYYY-MM-DD").valueOf(),
-                activity: activity.keyActivity,
-                plannedDate: activity.plannedStart,
-                actualDate: dayjs(activity.actualStart).format("DD-MM-YYYY")
-            }));
+            const formatted = selectedActivities.map((activity: any) => {
+                const plannedStart = dayjs(activity.plannedStart, "DD-MM-YYYY");
+                const actualStart = dayjs(activity.actualStart);
+                const plannedFinish = dayjs(activity.plannedFinish, "DD-MM-YYYY");
+                const actualFinish = dayjs(activity.actualFinish);
 
-            const chart2Formatted = selectedActivities.map((activity: any) => {
-                const planned = dayjs(activity.plannedStart, "DD-MM-YYYY");
-                const actual = dayjs(activity.actualStart, "YYYY-MM-DD");
-                const delay = actual.diff(planned, 'day'); // Calculate delay in days
                 return {
-                    x: planned.valueOf(),
-                    delay: delay > 0 ? delay : 0,
                     activity: activity.keyActivity,
-                    plannedDate: activity.plannedStart,
-                    actualDate: dayjs(activity.actualStart).format("DD-MM-YYYY")
+                    plannedStart: plannedStart.valueOf(),
+                    actualStart: actualStart.isValid() ? actualStart.valueOf() : null,
+                    plannedFinish: plannedFinish.valueOf(),
+                    actualFinish: actualFinish.isValid() ? actualFinish.valueOf() : null,
+                    delay: actualStart.isValid() ? Math.max(0, actualStart.diff(plannedStart, 'day')) : null
                 };
             });
 
-            setPlannedVsActualData(chart1Formatted);
-            setPlannedVsDelayData(chart2Formatted);
+            setGraphData(formatted);
         } else {
-            setPlannedVsActualData([]);
-            setPlannedVsDelayData([]);
+            setGraphData([]);
         }
-    }, [selectedModules, dataSource]);
+    }, [selectedModule, dataSource, selectedGraph]);
 
     const getProjectTimeline = async (project: any) => {
         if (Array.isArray(project?.projectTimeline)) {
@@ -127,9 +125,22 @@ const ProjectStatistics = (project: any) => {
                 };
             });
             setDataSource(finDataSource);
-            setSelectedModules(finDataSource.map((mod: any) => mod.Code)); // Default all modules selected
+            setSelectedModule(finDataSource[0]?.Code);
         } else {
             setDataSource([]);
+        }
+    };
+
+    const getScatterData = () => {
+        switch (selectedGraph) {
+            case GRAPH_TYPES.START:
+                return graphData.filter(d => d.actualStart).map(d => ({ x: d.plannedStart, y: d.actualStart, activity: d.activity }));
+            case GRAPH_TYPES.FINISH:
+                return graphData.filter(d => d.actualFinish).map(d => ({ x: d.plannedFinish, y: d.actualFinish, activity: d.activity }));
+            case GRAPH_TYPES.DELAY:
+                return graphData.filter(d => d.delay !== null).map(d => ({ x: d.plannedStart, y: d.delay, activity: d.activity }));
+            default:
+                return [];
         }
     };
 
@@ -137,137 +148,88 @@ const ProjectStatistics = (project: any) => {
         <div className="project-statistics">
             <div className="top-heading-stats">
                 <p className="main-header">Project Statistics</p>
-
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <div className="label">
-                        <p>Select Module</p>
-                    </div>
-                    <div className="select-dropdown">
-                        <Select
-                            mode="multiple"
-                            placeholder="Select Modules"
-                            style={{ width: 400 }}
-                            value={selectedModules}
-                            onChange={(values) => setSelectedModules(values)}
-                            allowClear
-                        >
-                            {dataSource.map((mod: any) => (
-                                <Option key={mod.Code} value={mod.Code}>
-                                    {mod.keyActivity}
-                                </Option>
-                            ))}
-                        </Select>
-                    </div>
+                    <div className="label"><p>Select Module</p></div>
+                    <Select
+                        placeholder="Select Module"
+                        style={{ width: 300 }}
+                        value={selectedModule}
+                        onChange={setSelectedModule}
+                        allowClear
+                    >
+                        {dataSource.map((mod: any) => (
+                            <Option key={mod.Code} value={mod.Code}>{mod.keyActivity}</Option>
+                        ))}
+                    </Select>
+                    <div className="label"><p>Select Graph</p></div>
+                    <Select
+                        value={selectedGraph}
+                        onChange={setSelectedGraph}
+                        style={{ width: 300 }}
+                    >
+                        {Object.values(GRAPH_TYPES).map(graph => (
+                            <Option key={graph} value={graph}>{graph}</Option>
+                        ))}
+                    </Select>
                 </div>
             </div>
 
-            <div className="graph-title">
-                <p>Planned Start vs Actual Start</p>
-            </div>
-
-            {plannedVsActualData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={450}>
-                    <LineChart data={plannedVsActualData} margin={{ top: 10, right: 30, left: 40, bottom: 50 }}>
+            {getScatterData().length > 0 ? (
+                <ResponsiveContainer width="100%" height={445}>
+                    <ScatterChart margin={{ top: 20, right: 30, left: 40, bottom: 30 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
-                            dataKey="x"
                             type="number"
+                            dataKey="x"
                             scale="time"
-                            domain={["auto", "auto"]}
+                            domain={['auto', 'auto']}
                             tickFormatter={(tick) => dayjs(tick).format("DD MMM")}
-                            label={{
-                                value: "Planned Start Date",
-                                position: "insideBottom",
-                                offset: -40,
-                                style: { textAnchor: 'middle' }
-                            }}
+                            label={{ value: selectedGraph.includes("Finish") ? "Planned Finish" : "Planned Start", position: "insideBottom", offset: -40 }}
                         />
                         <YAxis
-                            dataKey="y"
                             type="number"
-                            scale="time"
-                            domain={["auto", "auto"]}
-                            tickFormatter={(tick) => dayjs(tick).format("DD MMM")}
-                            label={{
-                                value: "Actual Start Date",
-                                angle: -90,
-                                position: "insideLeft",
-                                offset: -10,
-                                style: { textAnchor: 'middle' }
-                            }}
+                            dataKey="y"
+                            domain={selectedGraph === GRAPH_TYPES.DELAY ? [0, 'auto'] : ['auto', 'auto']}
+                            tickFormatter={selectedGraph === GRAPH_TYPES.DELAY ? (tick) => `${tick}d` : (tick) => dayjs(tick).format("DD MMM")}
+                            label={{ value: selectedGraph === GRAPH_TYPES.DELAY ? "Delay (Days)" : "Actual", angle: -90, position: "insideLeft" }}
                         />
                         <Tooltip
-                            formatter={(value: number) => dayjs(value).format("DD-MM-YYYY")}
-                            labelFormatter={(label: number) => `Planned: ${dayjs(label).format("DD-MM-YYYY")}`}
-                        />
-                        <Legend verticalAlign="top" height={36} />
-                        <Line
-                            type="monotone"
-                            dataKey="y"
-                            stroke="#8884d8"
-                            fill="#8884d8"
-                            fillOpacity={0.3}
-                            name="Actual Start"
-                            dot={{ r: 5 }}
-                            activeDot={{ r: 8 }}
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
-            ) : (
-                <Empty description="No data available. Select a module." />
-            )}
+                            content={({ active, payload, label }) => {
+                                if (!active || !payload || payload.length === 0) return null;
 
-            {/* Graph 2 */}
-            <div className="graph-title" style={{ marginTop: '60px' }}>
-                <p>Planned Date vs Delay (Days)</p>
-            </div>
+                                const plannedDate = dayjs(label).format("DD-MM-YYYY");
+                                let value = payload[0].value;
+                                if (selectedGraph === GRAPH_TYPES.DELAY) {
+                                    value = Math.round(value as any);
+                                }
 
-            {plannedVsDelayData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={plannedVsDelayData} margin={{ top: 10, right: 30, left: 40, bottom: 50 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                            dataKey="x"
-                            type="number"
-                            scale="time"
-                            domain={["auto", "auto"]}
-                            tickFormatter={(tick) => dayjs(tick).format("DD MMM")}
-                            label={{
-                                value: "Planned Start Date",
-                                position: "insideBottom",
-                                offset: -40,
-                                style: { textAnchor: 'middle' }
+                                if (selectedGraph === GRAPH_TYPES.DELAY) {
+                                    return (
+                                        <div style={{ background: 'white', padding: '8px', border: '1px solid #ccc' }}>
+                                            <p style={{ margin: 0 }}>Planned: {plannedDate}</p>
+                                            <p style={{ margin: 0, color: '#FF8042' }}>Delay (days) : {value} days</p>
+                                        </div>
+                                    );
+                                }
+
+                                const actualDate = dayjs(value as any).format("DD-MM-YYYY");
+                                const axisLabel = selectedGraph === GRAPH_TYPES.START ? 'Actual Start' : 'Actual Finish';
+                                const xLabel = selectedGraph === GRAPH_TYPES.START ? 'Planned Start' : 'Planned Finish';
+
+                                return (
+                                    <div style={{ background: 'white', padding: '8px', border: '1px solid #ccc' }}>
+                                        <p style={{ margin: 0 }}>{xLabel}: {plannedDate}</p>
+                                        <p style={{ margin: 0 }}>{axisLabel}: {actualDate}</p>
+                                    </div>
+                                );
                             }}
                         />
-                        <YAxis
-                            domain={[0, "auto"]}
-                            label={{
-                                value: "Delay (Days)",
-                                angle: -90,
-                                position: "insideLeft",
-                                offset: -10,
-                                style: { textAnchor: 'middle' }
-                            }}
-                        />
-                        <Tooltip
-                            formatter={(value: number) => `${value} days`}
-                            labelFormatter={(label: number) => `Planned: ${dayjs(label).format("DD-MM-YYYY")}`}
-                        />
-                        <Legend verticalAlign="top" height={36} />
-                        <Line
-                            type="monotone"
-                            dataKey="delay"
-                            stroke="#FF8042"
-                            fill="#FF8042"
-                            fillOpacity={0.3}
-                            name="Delay (days)"
-                            dot={{ r: 5 }}
-                            activeDot={{ r: 8 }}
-                        />
-                    </LineChart>
+                        <Legend />
+                        <Scatter data={getScatterData()} name={selectedGraph} fill="#8884d8" />
+                    </ScatterChart>
                 </ResponsiveContainer>
             ) : (
-                <Empty description="No data available. Select a module." />
+                <Empty description="No data available. Select a module or change filter." />
             )}
         </div>
     );

@@ -477,10 +477,10 @@ const ProjectTimeline = (project: any) => {
             },
         },
         {
-            title: "Actual Start",
+            title: "Actual / Expected Start",
             dataIndex: "actualStart",
             key: "actualStart",
-            width: 120,
+            width: 320,
             align: "center",
             render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
                 isEditing && !isModule ? (
@@ -495,7 +495,7 @@ const ProjectTimeline = (project: any) => {
                 ),
         },
         {
-            title: "Actual Finish",
+            title: "Actual / Expected Finish",
             dataIndex: "actualFinish",
             key: "actualFinish",
             width: 320,

@@ -469,7 +469,7 @@ export const StatusUpdate = () => {
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
     { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
   ];
-
+  
   const editingColumns: ColumnsType = [
     {
       title: "Actual/Expected Duration",
@@ -478,28 +478,27 @@ export const StatusUpdate = () => {
       width: 200,
       align: "center",
       render: (_, record) => {
-        const { activityStatus, actualStart, actualFinish, duration } = record;
-
-        if (activityStatus === "completed") {
-          if (actualStart && actualFinish) {
-            const start = dayjs(actualStart);
-            const finish = dayjs(actualFinish);
-            const diffDays = finish.diff(start, 'day');
-            return isNaN(diffDays) ? "" : `${diffDays} days`;
-          }
-          return "";
+        const { activityStatus, duration, key, isModule } = record;
+  
+        if (isEditing && !isModule && activityStatus === "inProgress") {
+          return (
+            <Input
+              type="number"
+              value={duration}
+              onChange={(e) => handleFieldChange(e.target.value, key, "duration")}
+              style={{ width: 80 }}
+            />
+          );
         }
-
-        if (activityStatus === "inProgress") {
-          if (actualStart && duration != null) {
-            return `${duration} days`;
-          }
-          return "";
+  
+        if (activityStatus === "completed" && record.actualStart && record.actualFinish) {
+          const diffDays = dayjs(record.actualFinish).diff(dayjs(record.actualStart), 'day');
+          return isNaN(diffDays) ? "" : `${diffDays} days`;
         }
-
+  
         return duration != null ? `${duration} days` : "";
       },
-    },    
+    },
     {
       title: "Status",
       dataIndex: "activityStatus",
@@ -514,10 +513,10 @@ export const StatusUpdate = () => {
       },
     },
     {
-      title: "Actual Start",
+      title: "Actual / Expected Start",
       dataIndex: "actualStart",
       key: "actualStart",
-      width: 150,
+      width: 180,
       align: "center",
       render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
         isEditing && !isModule ? (
@@ -525,52 +524,76 @@ export const StatusUpdate = () => {
             value={actualStart ? dayjs(actualStart) : null}
             onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualStart")}
             disabled={activityStatus == "yetToStart" || fin_status == 'completed'}
-            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
           />
         ) : (
           actualStart || ""
         ),
     },
     {
-      title: "Actual Finish",
+      title: "Actual / Expected Finish",
       dataIndex: "actualFinish",
       key: "actualFinish",
-      width: 150,
+      width: 180,
       align: "center",
       render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
         isEditing && !isModule ? (
           <DatePicker
             value={actualFinish ? dayjs(actualFinish) : null}
             onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualFinish")}
-            disabled={activityStatus == "yetToStart" || activityStatus == "inProgress" || fin_status == 'completed'}
-            className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
+            disabled={
+              activityStatus == "yetToStart" ||
+              activityStatus == "inProgress" ||
+              fin_status == 'completed'
+            }
           />
         ) : (
           actualFinish || ""
         ),
     },
   ];
-
+  
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
-
+  
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
     setDataSource((prevData: any) => {
       const updateItem = (item: any) => {
         if (item.key === recordKey) {
-          if (fieldName === "activityStatus" && value === "yetToStart") {
-            return {
-              ...item,
-              activityStatus: value,
-              actualStart: null,
-              actualFinish: null,
-            };
+          let updatedItem = { ...item };
+  
+          // Convert duration safely to number
+          const parsedDuration = fieldName === "duration" ? parseInt(value, 10) : item.duration;
+  
+          if (fieldName === "duration") {
+            updatedItem.duration = isNaN(parsedDuration) ? null : parsedDuration;
+          } else {
+            updatedItem[fieldName] = value;
           }
-          return { ...item, [fieldName]: value };
+  
+          // Auto-calculate actualFinish if inProgress
+          if (
+            updatedItem.activityStatus === "inProgress" &&
+            updatedItem.actualStart &&
+            updatedItem.duration
+          ) {
+            const startDate = dayjs(updatedItem.actualStart);
+            const durationInt = parseInt(updatedItem.duration, 10);
+            if (!isNaN(durationInt)) {
+              updatedItem.actualFinish = startDate.add(durationInt, 'day').format('YYYY-MM-DD');
+            }
+          }
+  
+          // Reset if status set to "yetToStart"
+          if (fieldName === "activityStatus" && value === "yetToStart") {
+            updatedItem.actualStart = null;
+            updatedItem.actualFinish = null;
+          }
+  
+          return updatedItem;
         }
         return item;
       };
-
-      const updatedData = prevData.map((item: any) => {
+  
+      return prevData.map((item: any) => {
         if (item.key === recordKey) {
           return updateItem(item);
         } else if (item.children) {
@@ -583,10 +606,9 @@ export const StatusUpdate = () => {
         }
         return item;
       });
-
-      return updatedData;
     });
   };
+  
 
   const handleUpdateStatus = () => {
     setIsEditing(true);
