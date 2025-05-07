@@ -6,12 +6,13 @@ import { FolderOpenOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip } from "antd";
-import { ClockCircleOutlined, DownloadOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Checkbox, Space } from "antd";
+import { CheckCircleOutlined, ClockCircleOutlined, DownloadOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 import TextArea from "antd/es/input/TextArea";
+
 interface Activity {
     code: string;
     activityName: string;
@@ -33,7 +34,7 @@ interface Module {
 const { Option } = Select;
 
 import { Dropdown } from 'antd';
-import { FilterOutlined, DownOutlined } from '@ant-design/icons';
+import { FilterOutlined } from '@ant-design/icons';
 
 const tabs = [
     "All",
@@ -424,13 +425,49 @@ const ProjectTimeline = (project: any) => {
     };
 
     const baseColumns: ColumnsType = [
-        { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
-        { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
-        { title: "Duration", dataIndex: "duration", key: "duration", width: 150, align: "center" },
-        { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 150, align: "center" },
-        { title: "Slack", dataIndex: "slack", key: "slack", width: 150, align: "center" },
-        { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 150, align: "center" },
-        { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 180, align: "center" },
+        {
+            title: "Key Activity",
+            dataIndex: "keyActivity",
+            key: "keyActivity",
+            width: 250,
+            align: "left",
+            render: (_, record) => {
+              const {
+                activityStatus,
+                plannedStart,
+                plannedFinish,
+                actualStart,
+                actualFinish,
+              } = record;
+          
+              const plannedStartDate = plannedStart ? dayjs(plannedStart) : null;
+              const plannedFinishDate = plannedFinish ? dayjs(plannedFinish) : null;
+              const actualStartDate = actualStart ? dayjs(actualStart) : null;
+              const actualFinishDate = actualFinish ? dayjs(actualFinish) : null;
+          
+              let icon = <ClockCircleOutlined style={{ color: 'gray' }} />;
+              let label = record.keyActivity;
+          
+              if (activityStatus === 'completed') {
+                if (actualFinishDate && plannedFinishDate && actualFinishDate.isAfter(plannedFinishDate)) {
+                  icon = <ExclamationCircleOutlined style={{ color: 'red' }} />;
+                } else {
+                  icon = <CheckCircleOutlined style={{ color: 'green' }} />;
+                }
+              } else if (activityStatus === 'inProgress') {
+                icon = <SyncOutlined spin style={{ color: 'blue' }} />;
+              } else if (activityStatus === 'yetToStart') {
+                icon = <ClockCircleOutlined style={{ color: 'gray' }} />;
+              }
+          
+              return (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {icon} {label}
+                </span>
+              );
+            }
+          }
+          
     ];
 
     const editingColumns: ColumnsType = [
@@ -638,6 +675,42 @@ const ProjectTimeline = (project: any) => {
 
     const filteredDataSource = filterActivitiesWithinModules(dataSource, activeTab);
 
+    const dropdownContent = (
+        <div className="custom-dropdown">
+            <Input.Search placeholder="Search activity..." className="dropdown-search" />
+
+            {/* Status Filter */}
+            <div className="dropdown-section">
+                <p className="dropdown-title">Status</p>
+                <Select
+                    className="full-width-select"
+                    placeholder="Select status"
+                    allowClear
+                >
+                    <Option value="completed">Completed</Option>
+                    <Option value="inProgress">In Progress</Option>
+                    <Option value="yetToStart">Yet to Start</Option>
+                </Select>
+            </div>
+
+            {/* Planned Date Filter */}
+            <div className="dropdown-section">
+                <p className="dropdown-title">Planned Start Date</p>
+                <DatePicker className="full-width-range" />
+            </div>
+
+            {/* Assigned Users */}
+            <div className="dropdown-section">
+                <p className="dropdown-title">Assigned Users</p>
+                <Checkbox.Group className="checkbox-group">
+                    <Checkbox value="user1">John Doe</Checkbox>
+                    <Checkbox value="user2">Jane Smith</Checkbox>
+                    <Checkbox value="user3">Alice Johnson</Checkbox>
+                </Checkbox.Group>
+            </div>
+        </div>
+    );
+
     return (
         <>
             <div className="timeline-main">
@@ -747,16 +820,17 @@ const ProjectTimeline = (project: any) => {
                                 >
                                     <Button type="primary" icon={<InfoCircleOutlined />} className="styled-button" />
                                 </Tooltip>
-                                <div className="main-filter-container">
-                                    <Button.Group>
-                                        <Button icon={<FilterOutlined />} />
-                                        <Dropdown menu={{ items }} trigger={['click']}>
-                                            <Button>
-                                                {tabs[activeTab]} <DownOutlined />
-                                            </Button>
-                                        </Dropdown>
-                                    </Button.Group>
-                                </div>
+
+                                <Space direction="vertical">
+                                    <Space wrap>
+                                        <Button.Group>
+                                            <Button icon={<FilterOutlined />} />
+                                            <Dropdown overlay={dropdownContent} placement="bottomLeft" trigger={['click']}>
+                                                <Button>Filters</Button>
+                                            </Dropdown>
+                                        </Button.Group>
+                                    </Space>
+                                </Space>
                             </div>
                         </div>
                         <hr />

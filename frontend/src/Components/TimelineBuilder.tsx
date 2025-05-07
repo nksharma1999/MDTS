@@ -1915,7 +1915,7 @@ const TimeBuilder = () => {
                                   style={{
                                     padding: "10px",
                                     margin: "0px 0px 8px 0px",
-                                    backgroundColor: "#f0f0f0",
+                                    backgroundColor: "#00d8d6",
                                     borderRadius: "4px",
                                     ...provided.draggableProps.style,
                                   }}
