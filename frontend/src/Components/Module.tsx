@@ -1139,7 +1139,7 @@ const Module = () => {
                         form={form}
                         layout="vertical"
                         onValuesChange={handleValuesChange}
-                        style={{ padding: "0px 10px" }}
+                        style={{ padding: "0px 10px" ,display:'flex', flexDirection:'column',gap:'10px'}}
                     >
                         <Form.Item
                             label=""

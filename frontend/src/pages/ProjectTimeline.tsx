@@ -6,8 +6,8 @@ import { FolderOpenOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Checkbox, Space } from "antd";
-import { CheckCircleOutlined, ClockCircleOutlined, DownloadOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Checkbox, Space, Badge } from "antd";
+import { CheckCircleOutlined, ClockCircleOutlined, DownloadOutlined, DownOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -62,6 +62,9 @@ const ProjectTimeline = (project: any) => {
     const [allVersions, setAllVersions] = useState<any>();
     const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
     const [reviseRemarks, setReviseRemarks] = useState("");
+    const [statusFilter, setStatusFilter] = useState(null);
+    const [plannedDate, setPlannedDate] = useState(null);
+    const [assignedUsers, setAssignedUsers] = useState([]);
 
 
     const [activeTab, setActiveTab] = useState(0);
@@ -425,6 +428,7 @@ const ProjectTimeline = (project: any) => {
     };
 
     const baseColumns: ColumnsType = [
+        { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
         {
             title: "Key Activity",
             dataIndex: "keyActivity",
@@ -432,42 +436,42 @@ const ProjectTimeline = (project: any) => {
             width: 250,
             align: "left",
             render: (_, record) => {
-              const {
-                activityStatus,
-                plannedStart,
-                plannedFinish,
-                actualStart,
-                actualFinish,
-              } = record;
-          
-              const plannedStartDate = plannedStart ? dayjs(plannedStart) : null;
-              const plannedFinishDate = plannedFinish ? dayjs(plannedFinish) : null;
-              const actualStartDate = actualStart ? dayjs(actualStart) : null;
-              const actualFinishDate = actualFinish ? dayjs(actualFinish) : null;
-          
-              let icon = <ClockCircleOutlined style={{ color: 'gray' }} />;
-              let label = record.keyActivity;
-          
-              if (activityStatus === 'completed') {
-                if (actualFinishDate && plannedFinishDate && actualFinishDate.isAfter(plannedFinishDate)) {
-                  icon = <ExclamationCircleOutlined style={{ color: 'red' }} />;
-                } else {
-                  icon = <CheckCircleOutlined style={{ color: 'green' }} />;
+                const { activityStatus, plannedFinish, actualFinish } = record;
+
+                const plannedFinishDate = plannedFinish ? dayjs(plannedFinish) : null;
+                const actualFinishDate = actualFinish ? dayjs(actualFinish) : null;
+
+                let iconSrc = '';
+                let label = record.keyActivity;
+
+                if (activityStatus === 'completed') {
+                    if (actualFinishDate && plannedFinishDate && actualFinishDate.isAfter(plannedFinishDate)) {
+                        iconSrc = '/images/icons/overdue.png';
+                    } else {
+                        iconSrc = '/images/icons/completed.png'
+                    }
+                } else if (activityStatus === 'inProgress') {
+                    iconSrc = '/images/icons/inprogress.png';
+                } else if (activityStatus === 'yetToStart') {
+                    iconSrc = '/images/icons/yettostart.png';
                 }
-              } else if (activityStatus === 'inProgress') {
-                icon = <SyncOutlined spin style={{ color: 'blue' }} />;
-              } else if (activityStatus === 'yetToStart') {
-                icon = <ClockCircleOutlined style={{ color: 'gray' }} />;
-              }
-          
-              return (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {icon} {label}
-                </span>
-              );
+
+                return (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {record.duration ? (
+                            <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+                        ) : null}
+                        {label}
+                    </span>
+                );
+
             }
-          }
-          
+        },
+        { title: "Duration", dataIndex: "duration", key: "duration", width: 150, align: "center" },
+        { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 150, align: "center" },
+        { title: "Slack", dataIndex: "slack", key: "slack", width: 150, align: "center" },
+        { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 150, align: "center" },
+        { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 180, align: "center" },
     ];
 
     const editingColumns: ColumnsType = [
@@ -491,8 +495,11 @@ const ProjectTimeline = (project: any) => {
                 }
 
                 if (activityStatus === "inProgress") {
-                    if (actualStart && duration != null) {
-                        return `${duration} days`;
+                     if (actualStart && actualFinish) {
+                        const start = dayjs(actualStart);
+                        const finish = dayjs(actualFinish);
+                        const diffDays = finish.diff(start, 'day');
+                        return isNaN(diffDays) ? "" : `${diffDays} days`;
                     }
                     return "";
                 }
@@ -678,7 +685,14 @@ const ProjectTimeline = (project: any) => {
     const dropdownContent = (
         <div className="custom-dropdown">
             <Input.Search placeholder="Search activity..." className="dropdown-search" />
-
+            <p>Quick Filters</p>
+            <div className="main-filter-containers">
+                <Dropdown menu={{ items }} trigger={['click']}>
+                    <Button style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                        {tabs[activeTab]} <DownOutlined />
+                    </Button>
+                </Dropdown>
+            </div>
             {/* Status Filter */}
             <div className="dropdown-section">
                 <p className="dropdown-title">Status</p>
@@ -686,6 +700,8 @@ const ProjectTimeline = (project: any) => {
                     className="full-width-select"
                     placeholder="Select status"
                     allowClear
+                    value={statusFilter}
+                    onChange={setStatusFilter}
                 >
                     <Option value="completed">Completed</Option>
                     <Option value="inProgress">In Progress</Option>
@@ -696,13 +712,21 @@ const ProjectTimeline = (project: any) => {
             {/* Planned Date Filter */}
             <div className="dropdown-section">
                 <p className="dropdown-title">Planned Start Date</p>
-                <DatePicker className="full-width-range" />
+                <DatePicker
+                    className="full-width-range"
+                    value={plannedDate}
+                    onChange={setPlannedDate}
+                />
             </div>
 
             {/* Assigned Users */}
             <div className="dropdown-section">
                 <p className="dropdown-title">Assigned Users</p>
-                <Checkbox.Group className="checkbox-group">
+                <Checkbox.Group
+                    className="checkbox-group"
+                    value={assignedUsers}
+                    onChange={setAssignedUsers}
+                >
                     <Checkbox value="user1">John Doe</Checkbox>
                     <Checkbox value="user2">Jane Smith</Checkbox>
                     <Checkbox value="user3">Alice Johnson</Checkbox>
@@ -710,6 +734,31 @@ const ProjectTimeline = (project: any) => {
             </div>
         </div>
     );
+
+    const getAppliedFilterCount = () => {
+        let count = 0;
+        if (statusFilter) count++;
+        if (plannedDate) count++;
+        if (assignedUsers.length > 0) count++;
+        if (activeTab !== 0) count++;
+        return count;
+    };
+
+    function getDateDifferenceInDays(date1Str: any, date2Str: any) {
+        const parseDate = (str: string) => {
+            const [day, month, year] = str.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        };
+
+        const date1: any = parseDate(date1Str);
+        const date2: any = parseDate(date2Str);
+
+        const diffTime = Math.abs(date1 - date2);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return diffDays;
+    }
+
 
     return (
         <>
@@ -826,7 +875,7 @@ const ProjectTimeline = (project: any) => {
                                         <Button.Group>
                                             <Button icon={<FilterOutlined />} />
                                             <Dropdown overlay={dropdownContent} placement="bottomLeft" trigger={['click']}>
-                                                <Button>Filters</Button>
+                                                <Button>Filters ({getAppliedFilterCount()})</Button>
                                             </Dropdown>
                                         </Button.Group>
                                     </Space>

@@ -460,248 +460,108 @@ export const StatusUpdate = () => {
     );
   };
 
-  // const baseColumns: ColumnsType = [
-  //   { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
-  //   { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
-  //   {
-  //     title: "Duration",
-  //     dataIndex: "duration",
-  //     key: "duration",
-  //     width: 80,
-  //     align: "center",
-  //     render: (_, record) => `${record.duration} days`
-  //   },
-  //   { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
-  //   { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
-  //   { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
-  //   { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
-  // ];
-
-  // const editingColumns: ColumnsType = [
-  //   {
-  //     title: "Actual/Expected Duration",
-  //     key: "durations",
-  //     width: 200,
-  //     align: "center",
-  //     render: (_, record) => {
-  //       const { actualStart, actualFinish, expectedDuration, duration } = record;
-
-  //       const start = actualStart && dayjs(actualStart, 'DD-MM-YYYY').isValid()
-  //         ? dayjs(actualStart, 'DD-MM-YYYY')
-  //         : null;
-  //       const finish = actualFinish && dayjs(actualFinish, 'DD-MM-YYYY').isValid()
-  //         ? dayjs(actualFinish, 'DD-MM-YYYY')
-  //         : null;
-
-  //       const calculatedDuration = start && finish ? finish.diff(start, 'day') : null;
-  //       const displayDuration = calculatedDuration ?? expectedDuration ?? duration;
-
-  //       if (isEditing && !record.isModule && record.activityStatus === "inProgress") {
-  //         return (
-  //           <Input
-  //             type="number"
-  //             value={displayDuration}
-  //             onChange={(e) => handleFieldChange(e.target.value, record.key, "expectedDuration")}
-  //             style={{ width: 80 }}
-  //           />
-  //         );
-  //       }
-
-  //       return displayDuration != null ? `${displayDuration} days` : "";
-  //     }
-
-  //   },
-  //   {
-  //     title: "Status",
-  //     dataIndex: "activityStatus",
-  //     key: "activityStatus",
-  //     width: 150,
-  //     align: "center",
-  //     render: (_, record) => {
-  //       const preReqDone = isPreReqCompleted(record.preRequisite, dataSource);
-  //       return isEditing && !record.isModule
-  //         ? renderStatusSelect(record.activityStatus, record.key, record.fin_status, !preReqDone)
-  //         : record.activityStatus;
-  //     },
-  //   },
-  //   {
-  //     title: "Actual / Expected Start",
-  //     dataIndex: "actualStart",
-  //     key: "actualStart",
-  //     width: 180,
-  //     align: "center",
-  //     render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
-  //       isEditing && !isModule ? (
-  //         <DatePicker
-  //           value={
-  //             actualStart && dayjs(actualStart, 'DD-MM-YYYY').isValid()
-  //               ? dayjs(actualStart, 'DD-MM-YYYY')
-  //               : null
-  //           }
-  //           onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualStart")}
-  //           disabled={activityStatus == "yetToStart" || fin_status == 'completed'}
-  //         />
-  //       ) : (
-  //         actualStart || ""
-  //       ),
-  //   },
-  //   {
-  //     title: "Actual / Expected Finish",
-  //     dataIndex: "actualFinish",
-  //     key: "actualFinish",
-  //     width: 180,
-  //     align: "center",
-  //     render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
-  //       isEditing && !isModule ? (
-  //         <DatePicker
-  //           value={
-  //             actualFinish && dayjs(actualFinish, 'DD-MM-YYYY').isValid()
-  //               ? dayjs(actualFinish, 'DD-MM-YYYY')
-  //               : null
-  //           }
-  //           onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualFinish")}
-  //           disabled={
-  //             activityStatus == "yetToStart" ||
-  //             activityStatus == "inProgress" ||
-  //             fin_status == 'completed'
-  //           }
-  //         />
-  //       ) : (
-  //         actualFinish || ""
-  //       ),
-  //   },
-  // ];
-
-  // const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
-
-  // const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
-  //   setDataSource((prevData: any) => {
-  //     const parseDate = (date: string | null | undefined) =>
-  //       date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
-
-  //     const updateItem = (item: any): any => {
-  //       if (item.key !== recordKey) return item;
-
-  //       let updatedItem = { ...item };
-
-  //       switch (fieldName) {
-  //         case "activityStatus": {
-  //           updatedItem.activityStatus = value;
-
-  //           const hasValidStart = updatedItem.actualStart && dayjs(updatedItem.actualStart, 'DD-MM-YYYY').isValid();
-  //           const hasValidFinish = updatedItem.actualFinish && dayjs(updatedItem.actualFinish, 'DD-MM-YYYY').isValid();
-
-  //           if (!hasValidStart && updatedItem.plannedStart) {
-  //             const start = parseDate(updatedItem.plannedStart);
-  //             updatedItem.actualStart = start ? start.format('DD-MM-YYYY') : null;
-  //           }
-
-  //           if (!hasValidFinish && updatedItem.plannedFinish) {
-  //             const finish = parseDate(updatedItem.plannedFinish);
-  //             updatedItem.actualFinish = finish ? finish.format('DD-MM-YYYY') : null;
-  //           }
-
-  //           if (value === "completed" && updatedItem.actualStart && updatedItem.actualFinish) {
-  //             const start = parseDate(updatedItem.actualStart);
-  //             const finish = parseDate(updatedItem.actualFinish);
-  //             const duration = start && finish ? finish.diff(start, 'day') : null;
-  //             updatedItem.expectedDuration = duration != null && duration >= 0 ? duration : null;
-  //           }
-
-  //           if (value === "yetToStart") {
-  //             updatedItem.actualStart = null;
-  //             updatedItem.actualFinish = null;
-  //             updatedItem.expectedDuration = null;
-  //           }
-
-  //           break;
-  //         }
-
-  //         case "expectedDuration": {
-  //           const parsed = parseInt(value, 10);
-  //           updatedItem.expectedDuration = isNaN(parsed) ? null : parsed;
-
-  //           if (!updatedItem.actualStart && updatedItem.plannedStart) {
-  //             const start = parseDate(updatedItem.plannedStart);
-  //             updatedItem.actualStart = start ? start.format('DD-MM-YYYY') : null;
-  //           }
-
-  //           if (updatedItem.actualStart && parsed >= 0) {
-  //             const start = parseDate(updatedItem.actualStart);
-  //             updatedItem.actualFinish = start ? start.add(parsed, 'day').format('DD-MM-YYYY') : null;
-  //           }
-
-  //           break;
-  //         }
-
-  //         case "actualStart": {
-  //           updatedItem.actualStart = value;
-
-  //           if (updatedItem.actualFinish && value) {
-  //             const start = parseDate(value);
-  //             const finish = parseDate(updatedItem.actualFinish);
-  //             const dur = start && finish ? finish.diff(start, 'day') : null;
-  //             updatedItem.expectedDuration = dur != null && dur >= 0 ? dur : null;
-  //           }
-
-  //           break;
-  //         }
-
-  //         case "actualFinish": {
-  //           updatedItem.actualFinish = value;
-
-  //           if (updatedItem.actualStart && value) {
-  //             const start = parseDate(updatedItem.actualStart);
-  //             const finish = parseDate(value);
-  //             const dur = start && finish ? finish.diff(start, 'day') : null;
-  //             updatedItem.expectedDuration = dur != null && dur >= 0 ? dur : null;
-  //           }
-
-  //           break;
-  //         }
-
-  //         default:
-  //           updatedItem[fieldName] = value;
-  //       }
-
-  //       return updatedItem;
-  //     };
-
-  //     const updateData = (data: any[]): any[] => {
-  //       return data.map((item) => {
-  //         if (item.key === recordKey) {
-  //           return updateItem(item);
-  //         } else if (item.children) {
-  //           return {
-  //             ...item,
-  //             children: updateData(item.children),
-  //           };
-  //         }
-  //         return item;
-  //       });
-  //     };
-
-  //     return updateData(prevData);
-  //   });
-  // };
+  const getWorkingDaysDiff = (start: dayjs.Dayjs, end: dayjs.Dayjs): number => {
+    let count = 0;
+    let current = start.clone();
+    while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
+      const day = current.day();
+      if (day !== 0 && day !== 6) {
+        count++;
+      }
+      current = current.add(1, 'day');
+    }
+    return count - 1;
+  };
 
   const baseColumns: ColumnsType = [
     { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
-    { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250, align: "left" },
+    {
+      title: "Key Activity",
+      dataIndex: "keyActivity",
+      key: "keyActivity",
+      width: 250,
+      align: "left",
+      render: (_, record) => {
+        const {
+          activityStatus,
+          plannedStart,
+          actualStart,
+          plannedFinish,
+          actualFinish,
+          duration
+        } = record;
+
+        const plannedStartDate = plannedStart ? dayjs(plannedStart) : null;
+        const actualStartDate = actualStart ? dayjs(actualStart) : null;
+        const plannedFinishDate = plannedFinish ? dayjs(plannedFinish) : null;
+        const actualFinishDate = actualFinish ? dayjs(actualFinish) : null;
+
+        let iconSrc = '';
+        let label = record.keyActivity;
+
+        const isStartSame = plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, 'day');
+        const isFinishSame = plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, 'day');
+        const isWithinPlannedDuration =
+          plannedStartDate &&
+          plannedFinishDate &&
+          actualStartDate &&
+          getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
+
+        if (activityStatus === 'completed') {
+          if (isStartSame && isFinishSame) {
+            iconSrc = '/images/icons/completed.png';
+          } else {
+            iconSrc = '/images/icons/overdue.png';
+          }
+        } else if (activityStatus === 'inProgress') {
+          if (isStartSame && isFinishSame && isWithinPlannedDuration) {
+            iconSrc = '/images/icons/inprogress.png';
+          } else {
+            iconSrc = '/images/icons/overdue.png';
+          }
+        } else if (activityStatus === 'yetToStart') {
+          iconSrc = '/images/icons/yettostart.png';
+        }
+
+        return (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {duration ? (
+              <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+            ) : null}
+            {label}
+          </span>
+        );
+      }
+    },
     {
       title: "Duration",
       dataIndex: "duration",
       key: "duration",
       width: 80,
       align: "center",
-      render: (_, record) => `${record.duration} days`
+      render: (_, record) => `${record.duration ? record.duration + ' days' : ''}`
     },
     { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
     { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
     { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
   ];
-  
+
+  function getBusinessDays(start: dayjs.Dayjs, end: dayjs.Dayjs): number {
+    let count = 0;
+    let current = start.clone();
+
+    while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
+      const day = current.day();
+      if (day !== 0 && day !== 6) {
+        count++;
+      }
+      current = current.add(1, 'day');
+    }
+
+    return count;
+  }
+
   const editingColumns: ColumnsType = [
     {
       title: "Actual/Expected Duration",
@@ -710,17 +570,17 @@ export const StatusUpdate = () => {
       align: "center",
       render: (_, record) => {
         const { actualStart, actualFinish, duration } = record;
-    
+
         const start = actualStart && dayjs(actualStart, 'DD-MM-YYYY').isValid()
           ? dayjs(actualStart, 'DD-MM-YYYY')
           : null;
         const finish = actualFinish && dayjs(actualFinish, 'DD-MM-YYYY').isValid()
           ? dayjs(actualFinish, 'DD-MM-YYYY')
           : null;
-    
-        const calculatedDuration = start && finish ? finish.diff(start, 'day') : null;
+
+        const calculatedDuration = start && finish ? getWorkingDaysDiff(start, finish) : null;
         const displayDuration = calculatedDuration ?? duration;
-    
+
         if (isEditing && !record.isModule && record.activityStatus === "inProgress") {
           return (
             <Input
@@ -733,7 +593,7 @@ export const StatusUpdate = () => {
         }
         return displayDuration != null ? `${displayDuration} days` : "";
       }
-    },    
+    },
     {
       title: "Status",
       dataIndex: "activityStatus",
@@ -800,102 +660,99 @@ export const StatusUpdate = () => {
         ),
     },
   ];
-  
+
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
-  
+
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
     setDataSource((prevData: any) => {
+      const today = dayjs().startOf('day');
+
       const parseDate = (date: string | null | undefined) =>
         date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
-  
+
       const updateItem = (item: any): any => {
         if (item.key !== recordKey) return item;
-  
+
         let updatedItem = { ...item };
-  
+
+        const start = parseDate(updatedItem.actualStart);
+        const finish = parseDate(updatedItem.actualFinish);
+        const duration = updatedItem.expectedDuration;
+
         switch (fieldName) {
           case "activityStatus": {
             updatedItem.activityStatus = value;
-  
-            const hasValidStart = updatedItem.actualStart && dayjs(updatedItem.actualStart, 'DD-MM-YYYY').isValid();
-            const hasValidFinish = updatedItem.actualFinish && dayjs(updatedItem.actualFinish, 'DD-MM-YYYY').isValid();
-  
-            if (!hasValidStart && updatedItem.plannedStart) {
-              const start = parseDate(updatedItem.plannedStart);
-              updatedItem.actualStart = start ? start.format('DD-MM-YYYY') : null;
-            }
-  
-            if (!hasValidFinish && updatedItem.plannedFinish) {
-              const finish = parseDate(updatedItem.plannedFinish);
-              updatedItem.actualFinish = finish ? finish.format('DD-MM-YYYY') : null;
-            }
-  
-            if (value === "completed" && updatedItem.actualStart && updatedItem.actualFinish) {
-              const start = parseDate(updatedItem.actualStart);
-              const finish = parseDate(updatedItem.actualFinish);
-              const duration = start && finish ? finish.diff(start, 'day') : null;
-              updatedItem.expectedDuration = duration != null && duration >= 0 ? duration : null;
-            }
-  
+
             if (value === "yetToStart") {
               updatedItem.actualStart = null;
               updatedItem.actualFinish = null;
               updatedItem.expectedDuration = null;
             }
-  
+
+            if ((value === "inProgress" || value === "completed")) {
+              if (!start && updatedItem.plannedStart) {
+                const plannedStart = parseDate(updatedItem.plannedStart);
+                updatedItem.actualStart = plannedStart ? plannedStart.format('DD-MM-YYYY') : null;
+              }
+
+              if (!finish && updatedItem.plannedFinish) {
+                const plannedFinish = parseDate(updatedItem.plannedFinish);
+                updatedItem.actualFinish = plannedFinish ? plannedFinish.format('DD-MM-YYYY') : null;
+              }
+
+              const startDate = parseDate(updatedItem.actualStart);
+              const finishDate = parseDate(updatedItem.actualFinish);
+
+              if (startDate && finishDate) {
+                const dur = finishDate.diff(startDate, 'day');
+                updatedItem.expectedDuration = dur >= 0 ? dur : null;
+
+                if (value === "inProgress" && finishDate.isBefore(today)) {
+                  updatedItem.actualFinish = today.format('DD-MM-YYYY');
+                  updatedItem.expectedDuration = today.diff(startDate, 'day');
+                }
+              }
+            }
             break;
           }
-  
+
           case "expectedDuration": {
             const parsed = parseInt(value, 10);
             updatedItem.expectedDuration = isNaN(parsed) ? null : parsed;
-  
-            if (!updatedItem.actualStart && updatedItem.plannedStart) {
-              const start = parseDate(updatedItem.plannedStart);
-              updatedItem.actualStart = start ? start.format('DD-MM-YYYY') : null;
+
+            if (start && parsed >= 0) {
+              updatedItem.actualFinish = start.add(parsed, 'day').format('DD-MM-YYYY');
             }
-  
-            if (updatedItem.actualStart && parsed >= 0) {
-              const start = parseDate(updatedItem.actualStart);
-              updatedItem.actualFinish = start ? start.add(parsed, 'day').format('DD-MM-YYYY') : null;
-            }
-  
+
             break;
           }
-  
+
           case "actualStart": {
             updatedItem.actualStart = value;
-  
-            if (updatedItem.actualFinish && value) {
-              const start = parseDate(value);
-              const finish = parseDate(updatedItem.actualFinish);
-              const dur = start && finish ? finish.diff(start, 'day') : null;
-              updatedItem.expectedDuration = dur != null && dur >= 0 ? dur : null;
+            const newStart = parseDate(value);
+            if (newStart && duration >= 0) {
+              updatedItem.actualFinish = newStart.add(duration, 'day').format('DD-MM-YYYY');
             }
-  
             break;
           }
-  
+
           case "actualFinish": {
             updatedItem.actualFinish = value;
-  
-            if (updatedItem.actualStart && value) {
-              const start = parseDate(updatedItem.actualStart);
-              const finish = parseDate(value);
-              const dur = start && finish ? finish.diff(start, 'day') : null;
-              updatedItem.expectedDuration = dur != null && dur >= 0 ? dur : null;
+            const newFinish = parseDate(value);
+            if (start && newFinish) {
+              const dur = newFinish.diff(start, 'day');
+              updatedItem.expectedDuration = dur >= 0 ? dur : null;
             }
-  
             break;
           }
-  
+
           default:
             updatedItem[fieldName] = value;
         }
-  
+
         return updatedItem;
       };
-  
+
       const updateData = (data: any[]): any[] => {
         return data.map((item) => {
           if (item.key === recordKey) {
@@ -909,11 +766,11 @@ export const StatusUpdate = () => {
           return item;
         });
       };
-  
+
       return updateData(prevData);
     });
   };
-  
+
   const handleUpdateStatus = () => {
     setIsEditing(true);
   };
@@ -1014,7 +871,6 @@ export const StatusUpdate = () => {
   const handleReviseConfirm = () => {
     setIsReviseModalOpen(false);
   };
-
 
   return (
     <>
