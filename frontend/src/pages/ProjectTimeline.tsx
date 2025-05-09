@@ -6,8 +6,8 @@ import { FolderOpenOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Checkbox, Space, Badge } from "antd";
-import { CheckCircleOutlined, ClockCircleOutlined, DownloadOutlined, DownOutlined, ExclamationCircleOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Checkbox, Space } from "antd";
+import { ClockCircleOutlined, DownloadOutlined, DownOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -408,8 +408,8 @@ const ProjectTimeline = (project: any) => {
     const renderStatusSelect = (
         status: string,
         recordKey: string,
-        _fin_status: string,
-        _disabled: boolean = false
+        fin_status: string,
+        disabled: boolean = false
     ) => {
         return (
             <Select
@@ -420,11 +420,24 @@ const ProjectTimeline = (project: any) => {
                     { label: "In Progress", value: "inProgress" },
                     { label: "Completed", value: "completed" },
                 ]}
-                disabled
+                disabled={disabled || fin_status === "completed"}
                 className={`status-select ${status}`}
                 style={{ width: "100%", fontWeight: "bold" }}
             />
         );
+    };
+
+    const getWorkingDaysDiff = (start: dayjs.Dayjs, end: dayjs.Dayjs): number => {
+        let count = 0;
+        let current = start.clone();
+        while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
+            const day = current.day();
+            if (day !== 0 && day !== 6) {
+                count++;
+            }
+            current = current.add(1, 'day');
+        }
+        return count - 1;
     };
 
     const baseColumns: ColumnsType = [
@@ -436,76 +449,111 @@ const ProjectTimeline = (project: any) => {
             width: 250,
             align: "left",
             render: (_, record) => {
-                const { activityStatus, plannedFinish, actualFinish } = record;
+                const {
+                    activityStatus,
+                    plannedStart,
+                    actualStart,
+                    plannedFinish,
+                    actualFinish,
+                    duration,
+                    keyActivity
+                } = record;
 
-                const plannedFinishDate = plannedFinish ? dayjs(plannedFinish) : null;
-                const actualFinishDate = actualFinish ? dayjs(actualFinish) : null;
+                const plannedStartDate = plannedStart ? dayjs(plannedStart, 'DD-MM-YYYY') : null;
+                const actualStartDate = actualStart ? dayjs(actualStart, 'DD-MM-YYYY') : null;
+                const plannedFinishDate = plannedFinish ? dayjs(plannedFinish, 'DD-MM-YYYY') : null;
+                const actualFinishDate = actualFinish ? dayjs(actualFinish, 'DD-MM-YYYY') : null;
 
                 let iconSrc = '';
-                let label = record.keyActivity;
+                const label = keyActivity;
+
+                const isStartSame = plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, 'day');
+                const isFinishSame = plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, 'day');
+                const isWithinPlannedDuration =
+                    plannedStartDate &&
+                    plannedFinishDate &&
+                    actualStartDate &&
+                    getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
 
                 if (activityStatus === 'completed') {
-                    if (actualFinishDate && plannedFinishDate && actualFinishDate.isAfter(plannedFinishDate)) {
-                        iconSrc = '/images/icons/overdue.png';
-                    } else {
-                        iconSrc = '/images/icons/completed.png'
-                    }
+                    const isCompletedOnTime = isStartSame && isFinishSame;
+                    iconSrc = isCompletedOnTime ? '/images/icons/completed.png' : '/images/icons/overdue.png';
                 } else if (activityStatus === 'inProgress') {
-                    iconSrc = '/images/icons/inprogress.png';
+                    iconSrc = isWithinPlannedDuration ? '/images/icons/inprogress.png' : '/images/icons/overdue.png';
                 } else if (activityStatus === 'yetToStart') {
                     iconSrc = '/images/icons/yettostart.png';
                 }
 
                 return (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {record.duration ? (
+                        {duration && iconSrc && (
                             <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
-                        ) : null}
+                        )}
                         {label}
                     </span>
                 );
-
             }
+        },        
+        {
+            title: "Duration",
+            dataIndex: "duration",
+            key: "duration",
+            width: 80,
+            align: "center",
+            render: (_, record) => `${record.duration ? record.duration + ' days' : ''}`
         },
-        { title: "Duration", dataIndex: "duration", key: "duration", width: 150, align: "center" },
-        { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 150, align: "center" },
-        { title: "Slack", dataIndex: "slack", key: "slack", width: 150, align: "center" },
-        { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 150, align: "center" },
-        { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 180, align: "center" },
+        { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
+        { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
+        { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
+        { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
     ];
+
+    function getBusinessDays(start: dayjs.Dayjs, end: dayjs.Dayjs): number {
+        let count = 0;
+        let current = start.clone();
+
+        while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
+            const day = current.day();
+            if (day !== 0 && day !== 6) {
+                count++;
+            }
+            current = current.add(1, 'day');
+        }
+
+        return count;
+    }
 
     const editingColumns: ColumnsType = [
         {
             title: "Actual/Expected Duration",
-            dataIndex: "duration",
-            key: "duration",
-            width: 250,
+            key: "durations",
+            width: 200,
             align: "center",
             render: (_, record) => {
-                const { activityStatus, actualStart, actualFinish, duration } = record;
+                const { actualStart, actualFinish, duration } = record;
 
-                if (activityStatus === "completed") {
-                    if (actualStart && actualFinish) {
-                        const start = dayjs(actualStart);
-                        const finish = dayjs(actualFinish);
-                        const diffDays = finish.diff(start, 'day');
-                        return isNaN(diffDays) ? "" : `${diffDays} days`;
-                    }
-                    return "";
+                const start = actualStart && dayjs(actualStart, 'DD-MM-YYYY').isValid()
+                    ? dayjs(actualStart, 'DD-MM-YYYY')
+                    : null;
+                const finish = actualFinish && dayjs(actualFinish, 'DD-MM-YYYY').isValid()
+                    ? dayjs(actualFinish, 'DD-MM-YYYY')
+                    : null;
+
+                const calculatedDuration = start && finish ? getWorkingDaysDiff(start, finish) : null;
+                const displayDuration = calculatedDuration ?? duration;
+
+                if (isEditing && !record.isModule && record.activityStatus === "inProgress") {
+                    return (
+                        <Input
+                            type="number"
+                            value={displayDuration}
+                            onChange={(e) => handleFieldChange(e.target.value, record.key, "expectedDuration")}
+                            style={{ width: 80 }}
+                        />
+                    );
                 }
-
-                if (activityStatus === "inProgress") {
-                     if (actualStart && actualFinish) {
-                        const start = dayjs(actualStart);
-                        const finish = dayjs(actualFinish);
-                        const diffDays = finish.diff(start, 'day');
-                        return isNaN(diffDays) ? "" : `${diffDays} days`;
-                    }
-                    return "";
-                }
-
-                return duration != null ? `${duration} days` : "";
-            },
+                return displayDuration != null ? `${displayDuration} days` : "";
+            }
         },
         {
             title: "Status",
@@ -524,15 +572,21 @@ const ProjectTimeline = (project: any) => {
             title: "Actual / Expected Start",
             dataIndex: "actualStart",
             key: "actualStart",
-            width: 320,
+            width: 180,
             align: "center",
             render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
                 isEditing && !isModule ? (
                     <DatePicker
-                        value={actualStart ? dayjs(actualStart) : null}
-                        onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualStart")}
-                        disabled
-                        className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
+                        format="DD-MM-YYYY"
+                        value={
+                            actualStart && dayjs(actualStart, 'DD-MM-YYYY').isValid()
+                                ? dayjs(actualStart, 'DD-MM-YYYY')
+                                : null
+                        }
+                        onChange={(date) =>
+                            handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualStart")
+                        }
+                        disabled={activityStatus === "yetToStart" || fin_status === 'completed'}
                     />
                 ) : (
                     actualStart || ""
@@ -542,15 +596,25 @@ const ProjectTimeline = (project: any) => {
             title: "Actual / Expected Finish",
             dataIndex: "actualFinish",
             key: "actualFinish",
-            width: 320,
+            width: 180,
             align: "center",
             render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
                 isEditing && !isModule ? (
                     <DatePicker
-                        value={actualFinish ? dayjs(actualFinish) : null}
-                        onChange={(_date, dateString) => handleFieldChange(dateString, key, "actualFinish")}
-                        disabled
-                        className={activityStatus != "yetToStart" && fin_status == 'yetToStart' ? "" : ""}
+                        format="DD-MM-YYYY"
+                        value={
+                            actualFinish && dayjs(actualFinish, 'DD-MM-YYYY').isValid()
+                                ? dayjs(actualFinish, 'DD-MM-YYYY')
+                                : null
+                        }
+                        onChange={(date) =>
+                            handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualFinish")
+                        }
+                        disabled={
+                            activityStatus === "yetToStart" ||
+                            activityStatus === "inProgress" ||
+                            fin_status === 'completed'
+                        }
                     />
                 ) : (
                     actualFinish || ""
@@ -562,36 +626,109 @@ const ProjectTimeline = (project: any) => {
 
     const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
         setDataSource((prevData: any) => {
-            const updateItem = (item: any) => {
-                if (item.key === recordKey) {
-                    if (fieldName === "activityStatus" && value === "yetToStart") {
-                        return {
-                            ...item,
-                            activityStatus: value,
-                            actualStart: null,
-                            actualFinish: null,
-                        };
+            const today = dayjs().startOf('day');
+
+            const parseDate = (date: string | null | undefined) =>
+                date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
+
+            const updateItem = (item: any): any => {
+                if (item.key !== recordKey) return item;
+
+                let updatedItem = { ...item };
+
+                const start = parseDate(updatedItem.actualStart);
+                const finish = parseDate(updatedItem.actualFinish);
+                const duration = updatedItem.expectedDuration;
+
+                switch (fieldName) {
+                    case "activityStatus": {
+                        updatedItem.activityStatus = value;
+
+                        if (value === "yetToStart") {
+                            updatedItem.actualStart = null;
+                            updatedItem.actualFinish = null;
+                            updatedItem.expectedDuration = null;
+                        }
+
+                        if ((value === "inProgress" || value === "completed")) {
+                            if (!start && updatedItem.plannedStart) {
+                                const plannedStart = parseDate(updatedItem.plannedStart);
+                                updatedItem.actualStart = plannedStart ? plannedStart.format('DD-MM-YYYY') : null;
+                            }
+
+                            if (!finish && updatedItem.plannedFinish) {
+                                const plannedFinish = parseDate(updatedItem.plannedFinish);
+                                updatedItem.actualFinish = plannedFinish ? plannedFinish.format('DD-MM-YYYY') : null;
+                            }
+
+                            const startDate = parseDate(updatedItem.actualStart);
+                            const finishDate = parseDate(updatedItem.actualFinish);
+
+                            if (startDate && finishDate) {
+                                const dur = finishDate.diff(startDate, 'day');
+                                updatedItem.expectedDuration = dur >= 0 ? dur : null;
+
+                                if (value === "inProgress" && finishDate.isBefore(today)) {
+                                    updatedItem.actualFinish = today.format('DD-MM-YYYY');
+                                    updatedItem.expectedDuration = today.diff(startDate, 'day');
+                                }
+                            }
+                        }
+                        break;
                     }
-                    return { ...item, [fieldName]: value };
+
+                    case "expectedDuration": {
+                        const parsed = parseInt(value, 10);
+                        updatedItem.expectedDuration = isNaN(parsed) ? null : parsed;
+
+                        if (start && parsed >= 0) {
+                            updatedItem.actualFinish = start.add(parsed, 'day').format('DD-MM-YYYY');
+                        }
+
+                        break;
+                    }
+
+                    case "actualStart": {
+                        updatedItem.actualStart = value;
+                        const newStart = parseDate(value);
+                        if (newStart && duration >= 0) {
+                            updatedItem.actualFinish = newStart.add(duration, 'day').format('DD-MM-YYYY');
+                        }
+                        break;
+                    }
+
+                    case "actualFinish": {
+                        updatedItem.actualFinish = value;
+                        const newFinish = parseDate(value);
+                        if (start && newFinish) {
+                            const dur = newFinish.diff(start, 'day');
+                            updatedItem.expectedDuration = dur >= 0 ? dur : null;
+                        }
+                        break;
+                    }
+
+                    default:
+                        updatedItem[fieldName] = value;
                 }
-                return item;
+
+                return updatedItem;
             };
 
-            const updatedData = prevData.map((item: any) => {
-                if (item.key === recordKey) {
-                    return updateItem(item);
-                } else if (item.children) {
-                    return {
-                        ...item,
-                        children: item.children.map((child: any) =>
-                            child.key === recordKey ? updateItem(child) : child
-                        ),
-                    };
-                }
-                return item;
-            });
+            const updateData = (data: any[]): any[] => {
+                return data.map((item) => {
+                    if (item.key === recordKey) {
+                        return updateItem(item);
+                    } else if (item.children) {
+                        return {
+                            ...item,
+                            children: updateData(item.children),
+                        };
+                    }
+                    return item;
+                });
+            };
 
-            return updatedData;
+            return updateData(prevData);
         });
     };
 
@@ -743,21 +880,6 @@ const ProjectTimeline = (project: any) => {
         if (activeTab !== 0) count++;
         return count;
     };
-
-    function getDateDifferenceInDays(date1Str: any, date2Str: any) {
-        const parseDate = (str: string) => {
-            const [day, month, year] = str.split('-').map(Number);
-            return new Date(year, month - 1, day);
-        };
-
-        const date1: any = parseDate(date1Str);
-        const date2: any = parseDate(date2Str);
-
-        const diffTime = Math.abs(date1 - date2);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        return diffDays;
-    }
 
 
     return (

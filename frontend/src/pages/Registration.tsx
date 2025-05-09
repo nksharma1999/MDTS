@@ -11,7 +11,6 @@ const Register = () => {
             alert("Passwords do not match");
             return;
         }
-        console.log("Register with", { email, password });
     };
 
     return (

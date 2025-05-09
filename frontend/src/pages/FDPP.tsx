@@ -32,7 +32,7 @@ const EDPP = (project: any) => {
     }
   }, [project?.code]);
 
-  const formatValue = (value:any) => {
+  const formatValue = (value: any) => {
     if (value && typeof value === 'object' && value.$isDayjsObject) {
       return dayjs(value.$d).format('YYYY-MM-DD');
     }
@@ -45,7 +45,7 @@ const EDPP = (project: any) => {
       .replace(/\b\w/g, (char: any) => char.toUpperCase());
 
   return (
-    <div>
+    <div className="edpp-main-cont">
       {/* Project Details */}
       <Card title="Project Details" style={{ marginBottom: 20 }}>
         <Form layout="horizontal" labelCol={{ span: 8, style: { textAlign: 'left' } }} wrapperCol={{ span: 16 }}>
@@ -104,7 +104,7 @@ const EDPP = (project: any) => {
       </Card>
 
       {/* Initial Status - Activities */}
-      <Card style={{ marginBottom: 20 }}>
+      <Card title="Initial Status - Activities" style={{ marginBottom: 20 }}>
         {projectDetails?.initialStatus?.library && (
           <Title level={5}>{formatValue(projectDetails.initialStatus.library)}</Title>
         )}
@@ -116,6 +116,7 @@ const EDPP = (project: any) => {
           ))}
         </Timeline>
       </Card>
+
     </div>
   );
 };

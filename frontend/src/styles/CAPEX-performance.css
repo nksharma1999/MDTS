@@ -8,6 +8,23 @@
     justify-content: space-between;
 }
 
+.ant-card-head {
+    background-color: #01a3a4 !important;
+    color: #fff !important;
+    font-size: 18px !important;
+    margin-bottom: 10px !important;
+}
+
+.ant-card-body {
+    padding-top: 0px !important;
+
+    h5 {
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: grey;
+    }
+}
+
 .capex-title {
     font-weight: bold;
     font-size: 18px !important;

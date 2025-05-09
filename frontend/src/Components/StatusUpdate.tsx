@@ -488,16 +488,17 @@ export const StatusUpdate = () => {
           actualStart,
           plannedFinish,
           actualFinish,
-          duration
+          duration,
+          keyActivity
         } = record;
 
-        const plannedStartDate = plannedStart ? dayjs(plannedStart) : null;
-        const actualStartDate = actualStart ? dayjs(actualStart) : null;
-        const plannedFinishDate = plannedFinish ? dayjs(plannedFinish) : null;
-        const actualFinishDate = actualFinish ? dayjs(actualFinish) : null;
+        const plannedStartDate = plannedStart ? dayjs(plannedStart, 'DD-MM-YYYY') : null;
+        const actualStartDate = actualStart ? dayjs(actualStart, 'DD-MM-YYYY') : null;
+        const plannedFinishDate = plannedFinish ? dayjs(plannedFinish, 'DD-MM-YYYY') : null;
+        const actualFinishDate = actualFinish ? dayjs(actualFinish, 'DD-MM-YYYY') : null;
 
         let iconSrc = '';
-        let label = record.keyActivity;
+        const label = keyActivity;
 
         const isStartSame = plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, 'day');
         const isFinishSame = plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, 'day');
@@ -508,26 +509,19 @@ export const StatusUpdate = () => {
           getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
 
         if (activityStatus === 'completed') {
-          if (isStartSame && isFinishSame) {
-            iconSrc = '/images/icons/completed.png';
-          } else {
-            iconSrc = '/images/icons/overdue.png';
-          }
+          const isCompletedOnTime = isStartSame && isFinishSame;
+          iconSrc = isCompletedOnTime ? '/images/icons/completed.png' : '/images/icons/overdue.png';
         } else if (activityStatus === 'inProgress') {
-          if (isStartSame && isFinishSame && isWithinPlannedDuration) {
-            iconSrc = '/images/icons/inprogress.png';
-          } else {
-            iconSrc = '/images/icons/overdue.png';
-          }
+          iconSrc = isWithinPlannedDuration ? '/images/icons/inprogress.png' : '/images/icons/overdue.png';
         } else if (activityStatus === 'yetToStart') {
           iconSrc = '/images/icons/yettostart.png';
         }
 
         return (
           <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {duration ? (
+            {duration && iconSrc && (
               <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
-            ) : null}
+            )}
             {label}
           </span>
         );
@@ -553,7 +547,7 @@ export const StatusUpdate = () => {
 
     while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
       const day = current.day();
-      if (day !== 0 && day !== 6) {
+      if (day !== 0 && day !== 5) {
         count++;
       }
       current = current.add(1, 'day');

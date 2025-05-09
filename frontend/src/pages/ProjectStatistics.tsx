@@ -25,7 +25,7 @@ const GRAPH_TYPES = {
 
 const ProjectStatistics = (project: any) => {
     const [dataSource, setDataSource] = useState<any>([]);
-    const [selectedModule, setSelectedModule] = useState<string | undefined>();
+    const [selectedModules, setSelectedModules] = useState<string[]>([]);
     const [selectedGraph, setSelectedGraph] = useState<string>(GRAPH_TYPES.START);
     const [graphData, setGraphData] = useState<any[]>([]);
 
@@ -34,9 +34,9 @@ const ProjectStatistics = (project: any) => {
     }, []);
 
     useEffect(() => {
-        if (selectedModule && dataSource.length > 0) {
+        if (selectedModules.length > 0 && dataSource.length > 0) {
             const selectedActivities = dataSource
-                .filter((mod: any) => mod.Code === selectedModule)
+                .filter((mod: any) => selectedModules.includes(mod.Code))
                 .flatMap((mod: any) => mod.children);
 
             const formatted = selectedActivities.map((activity: any) => {
@@ -59,7 +59,7 @@ const ProjectStatistics = (project: any) => {
         } else {
             setGraphData([]);
         }
-    }, [selectedModule, dataSource, selectedGraph]);
+    }, [selectedModules, dataSource, selectedGraph]);
 
     const getProjectTimeline = async (project: any) => {
         if (Array.isArray(project?.projectTimeline)) {
@@ -125,7 +125,7 @@ const ProjectStatistics = (project: any) => {
                 };
             });
             setDataSource(finDataSource);
-            setSelectedModule(finDataSource[0]?.Code);
+            setSelectedModules(finDataSource.slice(0, 1).map((m: any) => m.Code));
         } else {
             setDataSource([]);
         }
@@ -151,10 +151,11 @@ const ProjectStatistics = (project: any) => {
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                     <div className="label"><p>Select Module</p></div>
                     <Select
-                        placeholder="Select Module"
+                        mode="multiple"
+                        placeholder="Select Modules"
                         style={{ width: 300 }}
-                        value={selectedModule}
-                        onChange={setSelectedModule}
+                        value={selectedModules}
+                        onChange={setSelectedModules}
                         allowClear
                     >
                         {dataSource.map((mod: any) => (

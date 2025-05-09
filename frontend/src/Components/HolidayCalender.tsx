@@ -42,9 +42,6 @@ export const HolidayCalender = () => {
     const fetchHolidays = async () => {
       try {
         const holidays = await db.getAllHolidays();
-        console.log(holidays);
-        
-
         if (holidays) {
           const updatedRows = holidays.map((row: any) => ({
             ...row,
