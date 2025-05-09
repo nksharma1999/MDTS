@@ -96,6 +96,7 @@ const Navbar: React.FC = () => {
         setUser(null);
         setIsLogoutModalVisible(false);
         navigate("/home");
+        window.location.reload(); 
     };
 
     const handleDropdownSelect = (menuLabel: string, subItem: any) => {
