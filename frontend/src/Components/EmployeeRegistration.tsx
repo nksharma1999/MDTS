@@ -26,7 +26,7 @@ const { Option } = Select;
 
 export const EmployeeRegistration = () => {
   const location = useLocation();
-  const { user, isEdit }: LocationState = location.state || { user: null, isEdit: false };
+  const { isEdit }: LocationState = location.state || { user: null, isEdit: false };
   const [formData, setFormData] = useState<any>({
     id: null as number | null,
     name: null as string | null,

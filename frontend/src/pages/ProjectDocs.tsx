@@ -1,8 +1,7 @@
 import { Table, Input, Select, Card, Typography } from "antd";
-import { CardContent } from "@mui/material";
 import "../styles/ProjectDocs.css";
 const { Option } = Select;
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const ProjectDocs = () => {
     const dataSummary = [
         { count: 15, label: "Notification" },
@@ -56,7 +55,7 @@ const ProjectDocs = () => {
     return (
         <div className="">
             <div className="project-document-cont table-and-not">
-                <div style={{width:'70%'}}>
+                <div style={{ width: '70%' }}>
                     <div className="summary-cards-flex">
                         {dataSummary.map((item, index) => (
                             <div className="summary-card-wrapper" key={index}>
