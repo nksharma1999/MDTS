@@ -19,12 +19,8 @@
 
     .graph-title {
         background-color: #258790;
-        p {
-            padding: 10px;
-            font-weight: bold;
-            margin: 0px;
-            color: #fff;
-            margin-bottom: 10px;
-        }
+        color: #fff;
+        padding: 10px;
+        font-weight: bold;
     }
 }

@@ -6,7 +6,7 @@
     overflow-x: hidden;
 }
 
-.status-update-table{
+.status-update-table {
     overflow-x: hidden !important;
 }
 
@@ -196,4 +196,9 @@
     background: #258790;
     color: #fff;
     font-weight: bold;
+}
+
+.selected-row {
+    background-color: #084967 !important;
+    border-left: 3px solid #1890ff !important;
 }

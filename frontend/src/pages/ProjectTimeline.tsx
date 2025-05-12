@@ -12,7 +12,8 @@ import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 import TextArea from "antd/es/input/TextArea";
-
+import { Spin } from 'antd';
+import debounce from 'lodash/debounce';
 interface Activity {
     code: string;
     activityName: string;
@@ -493,7 +494,7 @@ const ProjectTimeline = (project: any) => {
                     </span>
                 );
             }
-        },        
+        },
         {
             title: "Duration",
             dataIndex: "duration",
@@ -818,7 +819,27 @@ const ProjectTimeline = (project: any) => {
     };
 
     const filteredDataSource = filterActivitiesWithinModules(dataSource, activeTab);
+    const { Option } = Select;
 
+    const [userOptions, setUserOptions] = useState([
+        { label: 'John Doe', value: 'user1' },
+        { label: 'Jane Smith', value: 'user2' },
+        { label: 'Alice Johnson', value: 'user3' },
+        { label: 'Bob Williams', value: 'user4' },
+        { label: 'Eve Adams', value: 'user5' },
+    ]);
+    const [fetchingUsers, setFetchingUsers] = useState(false);
+    const fetchUserList = debounce((search: string) => {
+        setFetchingUsers(true);
+        setTimeout(() => {
+            const newUsers = [
+                { label: `User ${search} A`, value: `${search}-a` },
+                { label: `User ${search} B`, value: `${search}-b` },
+            ];
+            setUserOptions(prev => [...prev, ...newUsers]);
+            setFetchingUsers(false);
+        }, 1000);
+    }, 800);
     const dropdownContent = (
         <div className="custom-dropdown">
             <Input.Search placeholder="Search activity..." className="dropdown-search" />
@@ -856,19 +877,22 @@ const ProjectTimeline = (project: any) => {
                 />
             </div>
 
-            {/* Assigned Users */}
             <div className="dropdown-section">
                 <p className="dropdown-title">Assigned Users</p>
-                <Checkbox.Group
-                    className="checkbox-group"
+                <Select
+                    mode="multiple"
+                    showSearch
+                    placeholder="Search and select users"
                     value={assignedUsers}
+                    onSearch={fetchUserList}
                     onChange={setAssignedUsers}
-                >
-                    <Checkbox value="user1">John Doe</Checkbox>
-                    <Checkbox value="user2">Jane Smith</Checkbox>
-                    <Checkbox value="user3">Alice Johnson</Checkbox>
-                </Checkbox.Group>
+                    filterOption={false}
+                    style={{ width: '100%' }}
+                    notFoundContent={fetchingUsers ? <Spin size="small" /> : null}
+                    options={userOptions}
+                />
             </div>
+
         </div>
     );
 

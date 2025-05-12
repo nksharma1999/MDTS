@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Input, Button, Modal, Select, Dropdown, Menu, message } from 'antd';
+import { Input, Button, Modal, Select, Dropdown, Menu, message, Checkbox } from 'antd';
 import { Link } from "react-router-dom";
 import { SearchOutlined } from "@mui/icons-material";
 import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
@@ -78,6 +78,8 @@ const Projects = () => {
     const [addedMembers, setAddedMembers] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<any>(null);
+    const [isProjectFocused, setIsProjectFocused] = useState(false);
+
 
     const tabs = [
         { key: 'projectStatistics', label: 'Project Statistics' },
@@ -89,9 +91,25 @@ const Projects = () => {
         { key: 'mineInfra', label: 'Mine Infra Updated' }
     ];
 
-    const [activeTab, setActiveTab] = useState('fdpp');
+    const [activeTab, setActiveTab] = useState('projectStatistics');
 
 
+    // const getAllProjects = async () => {
+    //     try {
+    //         const storedData = await db.getProjects();
+    //         if (!Array.isArray(storedData) || storedData.length === 0) {
+    //             console.warn("No projects found.");
+    //             setAllProjects([]);
+    //             setProjectDetails(null);
+    //             return;
+    //         }
+    //         setAllProjects(storedData);
+    //         setProjectDetails(storedData[0]);
+    //         setSelectedProjectName(storedData[0].projectParameters.projectName);
+    //     } catch (error) {
+    //         console.error("An unexpected error occurred while fetching projects:", error);
+    //     }
+    // }
     const getAllProjects = async () => {
         try {
             const storedData = await db.getProjects();
@@ -101,13 +119,16 @@ const Projects = () => {
                 setProjectDetails(null);
                 return;
             }
+
             setAllProjects(storedData);
             setProjectDetails(storedData[0]);
             setSelectedProjectName(storedData[0].projectParameters.projectName);
+            setIsProjectFocused(true); // 👈 This line ensures module is visible on first load
+
         } catch (error) {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
-    }
+    };
 
     useEffect(() => {
         getAllProjects();
@@ -124,6 +145,17 @@ const Projects = () => {
         </div>;
     }
 
+    // const handleProjectClick = (projectName: string) => {
+    //     const selectedProject = allProjects.find(
+    //         (project) => project.projectParameters.projectName === projectName
+    //     );
+    //     if (selectedProject) {
+    //         setProjectDetails(selectedProject);
+    //         setSelectedProjectName(selectedProject.projectParameters.projectName);
+    //         setActiveTab('fdpp');
+    //     }
+    // };
+
     const handleProjectClick = (projectName: string) => {
         const selectedProject = allProjects.find(
             (project) => project.projectParameters.projectName === projectName
@@ -131,9 +163,11 @@ const Projects = () => {
         if (selectedProject) {
             setProjectDetails(selectedProject);
             setSelectedProjectName(selectedProject.projectParameters.projectName);
-            setActiveTab('fdpp');
+            setActiveTab('projectStatistics');
+            setIsProjectFocused(true); // Focus only on this project
         }
     };
+
 
     const handleSearch = (_event: any) => {
         console.log("searching...");
@@ -206,327 +240,6 @@ const Projects = () => {
         </Menu>
     );
 
-    [
-        {
-            "key": "module-0",
-            "SrNo": "TM",
-            "Code": "TM",
-            "keyActivity": "Test Module",
-            "isModule": true,
-            "children": [
-                {
-                    "key": "activity-0-0",
-                    "SrNo": "TM",
-                    "Code": "TM/10",
-                    "keyActivity": "New Activity 21:42:14",
-                    "duration": 1,
-                    "preRequisite": "",
-                    "slack": "0",
-                    "plannedStart": "01-04-2025",
-                    "plannedFinish": "02-04-2025",
-                    "actualStart": "2025-04-01",
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "inProgress",
-                    "fin_status": "inProgress"
-                },
-                {
-                    "key": "activity-0-1",
-                    "SrNo": "TM",
-                    "Code": "TM/20",
-                    "keyActivity": "New Activity 21:42:14",
-                    "duration": 1,
-                    "preRequisite": "TM/10",
-                    "slack": "0",
-                    "plannedStart": "03-04-2025",
-                    "plannedFinish": "04-04-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-0-2",
-                    "SrNo": "TM",
-                    "Code": "TM/30",
-                    "keyActivity": "New Activity 21:42:14",
-                    "duration": 1,
-                    "preRequisite": "TM/20",
-                    "slack": "0",
-                    "plannedStart": "07-04-2025",
-                    "plannedFinish": "08-04-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-0-3",
-                    "SrNo": "TM",
-                    "Code": "TM/40",
-                    "keyActivity": "New Activity 21:42:14",
-                    "duration": 1,
-                    "preRequisite": "TM/30",
-                    "slack": "0",
-                    "plannedStart": "09-04-2025",
-                    "plannedFinish": "10-04-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-0-4",
-                    "SrNo": "TM",
-                    "Code": "TM/50",
-                    "keyActivity": "New Activity 21:42:14",
-                    "duration": 1,
-                    "preRequisite": "TM/40",
-                    "slack": "0",
-                    "plannedStart": "11-04-2025",
-                    "plannedFinish": "14-04-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-0-5",
-                    "SrNo": "TM",
-                    "Code": "TM/60",
-                    "keyActivity": "New Activity 21:42:14",
-                    "duration": 1,
-                    "preRequisite": "TM/50",
-                    "slack": "0",
-                    "plannedStart": "15-04-2025",
-                    "plannedFinish": "16-04-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-0-6",
-                    "SrNo": "TM",
-                    "Code": "TM/70",
-                    "keyActivity": "New Activity 21:42:15",
-                    "duration": 1,
-                    "preRequisite": "TM/60",
-                    "slack": "0",
-                    "plannedStart": "17-04-2025",
-                    "plannedFinish": "18-04-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-0-7",
-                    "SrNo": "TM",
-                    "Code": "TM/80",
-                    "keyActivity": "New Activity 21:42:15",
-                    "duration": 1,
-                    "preRequisite": "TM/70",
-                    "slack": "0",
-                    "plannedStart": "21-04-2025",
-                    "plannedFinish": "22-04-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                }
-            ]
-        },
-        {
-            "key": "module-1",
-            "SrNo": "T2",
-            "Code": "T2",
-            "keyActivity": "Test 2",
-            "isModule": true,
-            "children": [
-                {
-                    "key": "activity-1-0",
-                    "SrNo": "T2",
-                    "Code": "T2/10",
-                    "keyActivity": "New Activity 21:42:37",
-                    "duration": 1,
-                    "preRequisite": "",
-                    "slack": "0",
-                    "plannedStart": "01-05-2025",
-                    "plannedFinish": "02-05-2025",
-                    "actualStart": "2025-04-01",
-                    "actualFinish": "2025-04-30",
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "completed",
-                    "fin_status": "completed"
-                },
-                {
-                    "key": "activity-1-1",
-                    "SrNo": "T2",
-                    "Code": "T2/20",
-                    "keyActivity": "New Activity 21:42:37",
-                    "duration": 1,
-                    "preRequisite": "T2/10",
-                    "slack": "0",
-                    "plannedStart": "05-05-2025",
-                    "plannedFinish": "06-05-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-1-2",
-                    "SrNo": "T2",
-                    "Code": "T2/30",
-                    "keyActivity": "New Activity 21:42:37",
-                    "duration": 1,
-                    "preRequisite": "T2/20",
-                    "slack": "0",
-                    "plannedStart": "07-05-2025",
-                    "plannedFinish": "08-05-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-1-3",
-                    "SrNo": "T2",
-                    "Code": "T2/40",
-                    "keyActivity": "New Activity 21:42:38",
-                    "duration": 1,
-                    "preRequisite": "T2/30",
-                    "slack": "0",
-                    "plannedStart": "09-05-2025",
-                    "plannedFinish": "12-05-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-1-4",
-                    "SrNo": "T2",
-                    "Code": "T2/50",
-                    "keyActivity": "New Activity 21:42:38",
-                    "duration": 1,
-                    "preRequisite": "T2/40",
-                    "slack": "0",
-                    "plannedStart": "13-05-2025",
-                    "plannedFinish": "14-05-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-1-5",
-                    "SrNo": "T2",
-                    "Code": "T2/60",
-                    "keyActivity": "New Activity 21:42:38",
-                    "duration": 1,
-                    "preRequisite": "T2/50",
-                    "slack": "0",
-                    "plannedStart": "15-05-2025",
-                    "plannedFinish": "16-05-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                },
-                {
-                    "key": "activity-1-6",
-                    "SrNo": "T2",
-                    "Code": "T2/70",
-                    "keyActivity": "New Activity 21:42:38",
-                    "duration": 1,
-                    "preRequisite": "T2/60",
-                    "slack": "0",
-                    "plannedStart": "19-05-2025",
-                    "plannedFinish": "20-05-2025",
-                    "actualStart": null,
-                    "actualFinish": null,
-                    "expectedStart": "",
-                    "expectedFinish": "",
-                    "actualDuration": "",
-                    "remarks": "",
-                    "isModule": false,
-                    "activityStatus": "yetToStart",
-                    "fin_status": "yetToStart"
-                }
-            ]
-        }
-    ]
-
     const renderTabContent = () => {
         switch (activeTab) {
             case 'projectStatistics':
@@ -555,7 +268,15 @@ const Projects = () => {
             <div className="project-container">
                 <div className="all-project-details">
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <div className="heading">Projects</div>
+                        <span
+                            className="heading"
+                            style={{ cursor: isProjectFocused ? "pointer" : "default", textDecoration: isProjectFocused ? "underline" : "none", color: isProjectFocused ? "#1890ff" : "inherit" }}
+                            onClick={() => {
+                                if (isProjectFocused) setIsProjectFocused(false);
+                            }}
+                        >
+                            Projects
+                        </span>
                         <Button size="small" style={{ backgroundColor: '#44bd32', color: '#fff' }} icon={<RobotOutlined />}>
                             <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
                         </Button>
@@ -569,37 +290,61 @@ const Projects = () => {
                             style={{ height: "26px", fontSize: "12px" }}
                         />
                     </div>
-                    {allProjects.map((project) => (
-                        <div
-                            key={project.projectParameters.projectName}
-                            className={`project-item ${selectedProjectName === project.projectParameters.projectName ? "selected-project" : ""}`}
-                            onClick={() => handleProjectClick(project.projectParameters.projectName)}
-                        >
-                            <div className="project-info-block">
-                                <div className="project-title">{project.projectParameters.projectName}</div>
-                                <div className="project-meta">
-                                    <span className="desc">{project.projectParameters.description || "No description available."}</span>
+                    {allProjects.map((project, _index) => {
+                        const isSelected = selectedProjectName === project.projectParameters.projectName;
+                        if (isProjectFocused && !isSelected) return null;
 
-                                    <div className="date-range">
-                                        <span className="date-label">📅</span>
-                                        <span className="date-value">
-                                            {project.startDate || "2024-03-01"} → {project.endDate || "2024-09-30"}
-                                        </span>
-                                    </div>
+                        return (
+                            <div
+                                key={project.projectParameters.projectName}
+                                className={`project-item animated-item ${isSelected ? "focused-project" : ""}`}
+                                onClick={() => handleProjectClick(project.projectParameters.projectName)}
+                            >
+                                <div className="project-info-block">
+                                    <div className="project-title">{project.projectParameters.projectName}</div>
+                                    <div className="project-meta">
+                                        <span className="desc">{project.projectParameters.description || "No description available."}</span>
 
-                                    <div className="meta-row">
-                                        <span className="meta-item">👥 {project.members?.length || 0} members</span>
-                                        <span className={`status-badge ${project.status === "Active" ? "active" : "inactive"}`}>
-                                            {project.status || "Unknown"}
-                                        </span>
+                                        <div className="date-range">
+                                            <span className="date-label">📅</span>
+                                            <span className="date-value">
+                                                {project.startDate || "2024-03-01"} → {project.endDate || "2024-09-30"}
+                                            </span>
+                                        </div>
+
+                                        <div className="meta-row">
+                                            <span className="meta-item">👥 {project.members?.length || 0} members</span>
+                                            <span className={`status-badge ${project.status === "Active" ? "active" : "inactive"}`}>
+                                                {project.status || "Unknown"}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
+                                <Dropdown overlay={menu(project)} trigger={["hover"]}>
+                                    <MoreOutlined className="three-dot-menu" />
+                                </Dropdown>
                             </div>
-                            <Dropdown overlay={menu(project)} trigger={["hover"]}>
-                                <MoreOutlined className="three-dot-menu" />
-                            </Dropdown>
+                        );
+                    })}
+
+                    {isProjectFocused && projectDetails?.initialStatus?.items && (
+                        <div className="modules-list">
+                            <p style={{ fontWeight: 600 }}>Modules</p>
+                            {projectDetails.initialStatus.items.map((mod: any) => (
+                                <div key={mod.parentModuleCode} className="module-checkbox">
+                                    <Checkbox
+                                        onChange={(e) => {
+                                            console.log(`Module ${mod.moduleName} is ${e.target.checked ? 'checked' : 'unchecked'}`);
+                                        }}
+                                    >
+                                        {mod.moduleName}
+                                    </Checkbox>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    )}
+
+
                 </div>
                 <section className="project-info">
                     <div className="base-details">

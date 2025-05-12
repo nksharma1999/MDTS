@@ -1127,7 +1127,7 @@ const Module = () => {
                 </Modal >
 
                 <Modal
-                    title="Define Activity Costs"
+                    title="Define Penalty for Delay (₹ / Day)"
                     open={openCostCalcModal}
                     onCancel={handleClose}
                     onOk={handleConfirm}
@@ -1169,21 +1169,6 @@ const Module = () => {
                                         rules={[{ required: true, message: 'Please enter OP Cost' }]}
                                     >
                                         <Input type="number" placeholder="Enter OP Cost" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </Form.Item>
-
-                        <Form.Item label="" style={{ marginBottom: 0 }}>
-                            <Row align="middle" gutter={8}>
-                                <Col flex="150px">Activity Delay Cost:</Col>
-                                <Col flex="auto">
-                                    <Form.Item
-                                        name="delayCost"
-                                        noStyle
-                                        rules={[{ required: true, message: 'Please enter Project Delay Cost' }]}
-                                    >
-                                        <Input type="number" placeholder="Enter Project Delay Cost" />
                                     </Form.Item>
                                 </Col>
                             </Row>

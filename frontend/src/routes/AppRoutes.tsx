@@ -20,7 +20,6 @@ import ManageUser from "../Components/ManageUser";
 import { ModuleDetails } from "../Components/ModuleDetail";
 import ModuleLibrary from "../Components/ModuleLibrary";
 import NotificationLibrary from "../Components/NotificationLibrary";
-import { ProjectDetails } from "../Components/ProjectDetails";
 import ProjectParametersPage from "../Components/ProjectParameterPage";
 import { RegisterNewProject } from "../Components/RegisterNewProject";
 import StatusUpdate from "../Components/StatusUpdate";
@@ -69,7 +68,6 @@ const AppRoutes = () => {
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
                     <Route path="/create/non-working-days" element={<HolidayCalender />} />
                     <Route path="/module/:moduleName" element={<ModuleDetails />} />
-                    <Route path="/projectdetails/:projectName" element={<ProjectDetails />} />
                     <Route path="/project-parameters" element={<ProjectParametersPage />} />
                     <Route path="/create/raci-alert-notification" element={<ManageUser />} />
                     <Route path="/view-user" element={<ViewUser />} />

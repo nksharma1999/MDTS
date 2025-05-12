@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "../styles/status-update.css";
 import { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -6,8 +6,8 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker } from "antd";
-import { ClockCircleOutlined, DownloadOutlined, EditOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, message, Table, DatePicker, List, Typography } from "antd";
+import { ClockCircleOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -50,7 +50,10 @@ export const StatusUpdate = () => {
   const [allVersions, setAllVersions] = useState<any>();
   const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
   const [reviseRemarks, setReviseRemarks] = useState("");
-
+  const [selectedActivityKey, setSelectedActivityKey] = useState<string | null>(null);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [noteInput, setNoteInput] = useState('');
+  const [editNoteId, setEditNoteId] = useState<string | null>(null);
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -483,13 +486,7 @@ export const StatusUpdate = () => {
       align: "left",
       render: (_, record) => {
         const {
-          activityStatus,
-          plannedStart,
-          actualStart,
-          plannedFinish,
-          actualFinish,
-          duration,
-          keyActivity
+          activityStatus, keyActivity, duration, actualStart, actualFinish, plannedStart, plannedFinish, remarks
         } = record;
 
         const plannedStartDate = plannedStart ? dayjs(plannedStart, 'DD-MM-YYYY') : null;
@@ -498,14 +495,10 @@ export const StatusUpdate = () => {
         const actualFinishDate = actualFinish ? dayjs(actualFinish, 'DD-MM-YYYY') : null;
 
         let iconSrc = '';
-        const label = keyActivity;
-
         const isStartSame = plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, 'day');
         const isFinishSame = plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, 'day');
         const isWithinPlannedDuration =
-          plannedStartDate &&
-          plannedFinishDate &&
-          actualStartDate &&
+          plannedStartDate && plannedFinishDate && actualStartDate &&
           getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
 
         if (activityStatus === 'completed') {
@@ -513,19 +506,36 @@ export const StatusUpdate = () => {
           iconSrc = isCompletedOnTime ? '/images/icons/completed.png' : '/images/icons/overdue.png';
         } else if (activityStatus === 'inProgress') {
           iconSrc = isWithinPlannedDuration ? '/images/icons/inprogress.png' : '/images/icons/overdue.png';
-        } else if (activityStatus === 'yetToStart') {
+        } else {
           iconSrc = '/images/icons/yettostart.png';
         }
 
         return (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {duration && iconSrc && (
-              <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+          <span
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+            onClick={() => {
+              setSelectedActivityKey(record.key)
+            }
+            }
+          >
+            {record.notes?.length > 0 && (
+              <span
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedActivityKey(record.key);
+                  setNoteModalVisible(true);
+                  setNoteInput('');
+                  setEditNoteId(null);
+                }}
+              >
+                <FileTextOutlined style={{ fontSize: 22, color: '#1890ff' }} />
+              </span>
             )}
-            {label}
+            {duration && <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />}
+            {keyActivity}
           </span>
         );
-      }
+      },
     },
     {
       title: "Duration",
@@ -533,7 +543,7 @@ export const StatusUpdate = () => {
       key: "duration",
       width: 80,
       align: "center",
-      render: (_, record) => `${record.duration ? record.duration + ' days' : ''}`
+      render: (_, record) => `${record.duration ? record.duration : ''}`
     },
     { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
     { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
@@ -563,7 +573,7 @@ export const StatusUpdate = () => {
       width: 200,
       align: "center",
       render: (_, record) => {
-        const { actualStart, actualFinish, duration } = record;
+        const { actualStart, actualFinish, expectedDuration, duration, activityStatus, isModule } = record;
 
         const start = actualStart && dayjs(actualStart, 'DD-MM-YYYY').isValid()
           ? dayjs(actualStart, 'DD-MM-YYYY')
@@ -573,19 +583,21 @@ export const StatusUpdate = () => {
           : null;
 
         const calculatedDuration = start && finish ? getWorkingDaysDiff(start, finish) : null;
-        const displayDuration = calculatedDuration ?? duration;
 
-        if (isEditing && !record.isModule && record.activityStatus === "inProgress") {
-          return (
-            <Input
-              type="number"
-              value={displayDuration}
-              onChange={(e) => handleFieldChange(e.target.value, record.key, "expectedDuration")}
-              style={{ width: 80 }}
-            />
-          );
-        }
-        return displayDuration != null ? `${displayDuration} days` : "";
+        const displayDuration = expectedDuration ?? calculatedDuration ?? duration;
+
+        const isEditable = isEditing && !isModule && (activityStatus === "inProgress" || activityStatus === "yetToStart");
+
+        return isEditable ? (
+          <Input
+            type="number"
+            value={displayDuration}
+            onChange={(e) => handleFieldChange(e.target.value, record.key, "expectedDuration")}
+            style={{ width: 80 }}
+          />
+        ) : (
+          displayDuration != null ? `${displayDuration}` : ""
+        );
       }
     },
     {
@@ -607,7 +619,7 @@ export const StatusUpdate = () => {
       key: "actualStart",
       width: 180,
       align: "center",
-      render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
+      render: (_, { actualStart, activityStatus, key, isModule }) =>
         isEditing && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
@@ -619,7 +631,7 @@ export const StatusUpdate = () => {
             onChange={(date) =>
               handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualStart")
             }
-            disabled={activityStatus === "yetToStart" || fin_status === 'completed'}
+            disabled={activityStatus === "yetToStart"}
           />
         ) : (
           actualStart || ""
@@ -631,7 +643,7 @@ export const StatusUpdate = () => {
       key: "actualFinish",
       width: 180,
       align: "center",
-      render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
+      render: (_, { actualFinish, activityStatus, key, isModule }) =>
         isEditing && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
@@ -645,8 +657,7 @@ export const StatusUpdate = () => {
             }
             disabled={
               activityStatus === "yetToStart" ||
-              activityStatus === "inProgress" ||
-              fin_status === 'completed'
+              activityStatus === "inProgress"
             }
           />
         ) : (
@@ -657,75 +668,156 @@ export const StatusUpdate = () => {
 
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
 
+
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
     setDataSource((prevData: any) => {
-      const today = dayjs().startOf('day');
-
+      const today = dayjs();
       const parseDate = (date: string | null | undefined) =>
         date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
+
+      const addBusinessDays = (start: dayjs.Dayjs, numDays: number): dayjs.Dayjs => {
+        let count = 0;
+        let date = start.clone();
+        while (count < numDays) {
+          date = date.add(1, 'day');
+          const day = date.day();
+          if (day !== 0 && day !== 6) count++;
+        }
+        return date;
+      };
+
+      const businessDaysBetween = (start: dayjs.Dayjs, end: dayjs.Dayjs): number => {
+        let count = 0;
+        let date = start.clone();
+        while (date.isBefore(end, 'day') || date.isSame(end, 'day')) {
+          const day = date.day();
+          if (day !== 0 && day !== 6) count++;
+          date = date.add(1, 'day');
+        }
+        return count;
+      };
+
+      const findActivityByCode = (data: any[], code: string): any | null => {
+        for (const item of data) {
+          if (item.Code === code) return item;
+          if (item.children) {
+            const found = findActivityByCode(item.children, code);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
 
       const updateItem = (item: any): any => {
         if (item.key !== recordKey) return item;
 
         let updatedItem = { ...item };
 
-        const start = parseDate(updatedItem.actualStart);
-        const finish = parseDate(updatedItem.actualFinish);
-        const duration = updatedItem.expectedDuration;
+        const plannedStart = parseDate(updatedItem.plannedStart);
+        const plannedFinish = parseDate(updatedItem.plannedFinish);
+        const plannedDuration = updatedItem.duration ? parseInt(updatedItem.duration, 10) : 0;
 
         switch (fieldName) {
           case "activityStatus": {
             updatedItem.activityStatus = value;
 
             if (value === "yetToStart") {
-              updatedItem.actualStart = null;
-              updatedItem.actualFinish = null;
-              updatedItem.expectedDuration = null;
+              updatedItem.expectedDuration = plannedDuration;
+
+              if (plannedStart && plannedFinish) {
+                updatedItem.actualStart = plannedStart.format('DD-MM-YYYY');
+                updatedItem.actualFinish = plannedFinish.format('DD-MM-YYYY');
+              } else {
+                updatedItem.actualStart = null;
+                updatedItem.actualFinish = null;
+              }
             }
 
-            if ((value === "inProgress" || value === "completed")) {
-              if (!start && updatedItem.plannedStart) {
-                const plannedStart = parseDate(updatedItem.plannedStart);
-                updatedItem.actualStart = plannedStart ? plannedStart.format('DD-MM-YYYY') : null;
+            if (value === "inProgress") {
+              const plannedStartValid = plannedStart && plannedStart.isValid();
+              let startCandidate = plannedStartValid && plannedStart.isAfter(today) ? plannedStart : today;
+
+              if (!updatedItem.preRequisite) {
+                updatedItem.actualStart = startCandidate.format('DD-MM-YYYY');
+              } else {
+                const preReqCodes = updatedItem.preRequisite.split(',').map((code: any) => code.trim());
+                const preReqActivities = preReqCodes
+                  .map((code: any) => findActivityByCode(prevData, code))
+                  .filter((item: any) => item && item.actualFinish);
+
+                const latestPreReqFinish = preReqActivities
+                  .map((item: any) => parseDate(item.actualFinish))
+                  .sort((a: any, b: any) => b!.isAfter(a!) ? 1 : -1)[0];
+
+                if (latestPreReqFinish) {
+                  const preReqBasedStart = latestPreReqFinish.add(1, 'day');
+                  if (preReqBasedStart.isAfter(startCandidate)) {
+                    startCandidate = preReqBasedStart;
+                  }
+                }
+
+                updatedItem.actualStart = startCandidate.format('DD-MM-YYYY');
               }
 
-              if (!finish && updatedItem.plannedFinish) {
-                const plannedFinish = parseDate(updatedItem.plannedFinish);
-                updatedItem.actualFinish = plannedFinish ? plannedFinish.format('DD-MM-YYYY') : null;
+              const actualStartDate = parseDate(updatedItem.actualStart);
+              if (actualStartDate) {
+                const workingDaysSinceStart = businessDaysBetween(actualStartDate, today);
+                const newExpectedDuration = Math.max(plannedDuration, workingDaysSinceStart);
+
+                updatedItem.expectedDuration = newExpectedDuration;
+                updatedItem.actualFinish = addBusinessDays(actualStartDate, newExpectedDuration).format('DD-MM-YYYY');
+              }
+            }
+
+            if (value === "completed") {
+              if (!updatedItem.preRequisite) {
+                updatedItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
+              } else {
+                const preReqCodes = updatedItem.preRequisite.split(',').map((code: any) => code.trim());
+                const preReqActivities = preReqCodes
+                  .map((code: any) => findActivityByCode(prevData, code))
+                  .filter((item: any) => item && item.actualFinish);
+
+                const latestPreReqFinish = preReqActivities
+                  .map((item: any) => parseDate(item.actualFinish))
+                  .sort((a: any, b: any) => b!.isAfter(a!) ? 1 : -1)[0];
+
+                if (latestPreReqFinish) {
+                  const candidateStart = latestPreReqFinish.add(1, 'day');
+                  updatedItem.actualStart = candidateStart.isAfter(plannedFinish!)
+                    ? null
+                    : candidateStart.format('DD-MM-YYYY');
+                }
               }
 
               const startDate = parseDate(updatedItem.actualStart);
-              const finishDate = parseDate(updatedItem.actualFinish);
-
-              if (startDate && finishDate) {
-                const dur = finishDate.diff(startDate, 'day');
-                updatedItem.expectedDuration = dur >= 0 ? dur : null;
-
-                if (value === "inProgress" && finishDate.isBefore(today)) {
-                  updatedItem.actualFinish = today.format('DD-MM-YYYY');
-                  updatedItem.expectedDuration = today.diff(startDate, 'day');
-                }
+              if (startDate && plannedDuration >= 0) {
+                updatedItem.expectedDuration = plannedDuration;
+                updatedItem.actualFinish = addBusinessDays(startDate, plannedDuration).format('DD-MM-YYYY');
               }
             }
+
             break;
           }
 
           case "expectedDuration": {
             const parsed = parseInt(value, 10);
-            updatedItem.expectedDuration = isNaN(parsed) ? null : parsed;
+            if (!isNaN(parsed)) {
+              updatedItem.expectedDuration = parsed;
 
-            if (start && parsed >= 0) {
-              updatedItem.actualFinish = start.add(parsed, 'day').format('DD-MM-YYYY');
+              const actualStart = parseDate(updatedItem.actualStart);
+              if (actualStart) {
+                updatedItem.actualFinish = addBusinessDays(actualStart, parsed).format('DD-MM-YYYY');
+              }
             }
-
             break;
           }
 
           case "actualStart": {
             updatedItem.actualStart = value;
             const newStart = parseDate(value);
-            if (newStart && duration >= 0) {
-              updatedItem.actualFinish = newStart.add(duration, 'day').format('DD-MM-YYYY');
+            if (newStart && updatedItem.expectedDuration != null) {
+              updatedItem.actualFinish = addBusinessDays(newStart, updatedItem.expectedDuration).format('DD-MM-YYYY');
             }
             break;
           }
@@ -733,12 +825,14 @@ export const StatusUpdate = () => {
           case "actualFinish": {
             updatedItem.actualFinish = value;
             const newFinish = parseDate(value);
+            const start = parseDate(updatedItem.actualStart);
             if (start && newFinish) {
-              const dur = newFinish.diff(start, 'day');
+              const dur = businessDaysBetween(start, newFinish);
               updatedItem.expectedDuration = dur >= 0 ? dur : null;
             }
             break;
           }
+
 
           default:
             updatedItem[fieldName] = value;
@@ -866,6 +960,62 @@ export const StatusUpdate = () => {
     setIsReviseModalOpen(false);
   };
 
+  const selectedNotes = useMemo(() => {
+    const findNotes = (items: any[]): any[] => {
+      for (const item of items) {
+        if (item.key === selectedActivityKey) return item.notes || [];
+        if (item.children) {
+          const found = findNotes(item.children);
+          if (found) return found;
+        }
+      }
+      return [];
+    };
+    return findNotes(dataSource);
+  }, [selectedActivityKey, dataSource]);
+
+  const handleSaveNote = () => {
+    const newNote = {
+      id: editNoteId || Date.now().toString(),
+      text: noteInput.trim(),
+      updatedAt: new Date(),
+    };
+
+    setDataSource((prev: any) => {
+      const update = (items: any[]): any[] =>
+        items.map(item => {
+          if (item.key === selectedActivityKey) {
+            const notes = item.notes || [];
+            const updatedNotes = editNoteId
+              ? notes.map((n: any) => (n.id === editNoteId ? { ...n, text: noteInput.trim() } : n))
+              : [...notes, newNote];
+            return { ...item, notes: updatedNotes };
+          }
+          if (item.children) return { ...item, children: update(item.children) };
+          return item;
+        });
+      return update(prev);
+    });
+
+    setNoteInput('');
+    setEditNoteId(null);
+  };
+
+  const handleDeleteNote = (noteId: string) => {
+    setDataSource((prev: any) => {
+      const update = (items: any[]): any[] =>
+        items.map(item => {
+          if (item.key === selectedActivityKey) {
+            const notes = item.notes?.filter((n: any) => n.id !== noteId) || [];
+            return { ...item, notes };
+          }
+          if (item.children) return { ...item, children: update(item.children) };
+          return item;
+        });
+      return update(prev);
+    });
+  };
+
   return (
     <>
       <div className="status-heading">
@@ -988,6 +1138,20 @@ export const StatusUpdate = () => {
               </div>
               <div className="actions">
                 <Button
+                  icon={<FormOutlined />}
+                  disabled={!selectedActivityKey}
+                  onClick={() => setNoteModalVisible(true)}
+                  style={{
+                    backgroundColor: selectedActivityKey ? '#f6ffed' : '#f5f5f5',
+                    borderColor: selectedActivityKey ? '#b7eb8f' : '#d9d9d9',
+                    color: selectedActivityKey ? '#52c41a' : '#bfbfbf',
+                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  Add Note
+                </Button>
+
+                <Button
                   type="primary"
                   disabled={!selectedProjectId}
                   icon={<DownloadOutlined />}
@@ -1077,7 +1241,10 @@ export const StatusUpdate = () => {
                       );
                     },
                   }}
-                  rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
+                  rowClassName={(record) => {
+                    if (record.isModule) return "module-header";
+                    return record.key === selectedActivityKey ? "selected-row activity-row" : "activity-row";
+                  }}
                   bordered
                   scroll={{
                     x: "max-content",
@@ -1186,6 +1353,70 @@ export const StatusUpdate = () => {
           />
         </div>
       </Modal>
+
+      <Modal
+        title="Activity Notes"
+        open={noteModalVisible}
+        onCancel={() => {
+          setNoteModalVisible(false);
+          setNoteInput('');
+          setEditNoteId(null);
+        }}
+        width={'60%'}
+        footer={null}
+        className="modal-container"
+      >
+        <div style={{ padding: "10px 24px" }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography.Title level={5}>
+              {editNoteId ? "Edit Note" : "Add New Note"}
+            </Typography.Title>
+
+            <Button
+              type="primary"
+              block
+              onClick={handleSaveNote}
+              disabled={!noteInput.trim()}
+              style={{ width: '15%', marginBottom: 8 }}
+            >
+              {editNoteId ? "Update Note" : "Add Note"}
+            </Button>
+
+          </div>
+
+          <Input.TextArea
+            value={noteInput}
+            onChange={(e) => setNoteInput(e.target.value)}
+            placeholder="Write your note here..."
+            rows={4}
+          />
+
+          <List
+            header={<strong style={{ fontSize: 16 }}>Previous Notes</strong>}
+            dataSource={selectedNotes}
+            locale={{ emptyText: "No notes available" }}
+            itemLayout="horizontal"
+            style={{ marginBottom: 20 }}
+            renderItem={(item: any) => (
+              <List.Item
+                style={{ padding: "8px 0" }}
+                actions={[
+                  <a key="edit" onClick={() => {
+                    setNoteInput(item.text);
+                    setEditNoteId(item.id);
+                  }}>Edit</a>,
+                  <a key="delete" onClick={() => handleDeleteNote(item.id)}>Delete</a>
+                ]}
+              >
+                <Typography.Paragraph style={{ margin: 0 }}>{item.text}</Typography.Paragraph>
+              </List.Item>
+            )}
+          />
+
+        </div>
+      </Modal>
+
+
     </>
   );
 };

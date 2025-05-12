@@ -10,8 +10,7 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    Legend
+    ResponsiveContainer
 } from "recharts";
 import '../styles/project-statistic.css';
 
@@ -33,6 +32,21 @@ const ProjectStatistics = (project: any) => {
         defaultSetup();
     }, []);
 
+    const defaultSetup = async () => {
+        try {
+            const storedData: any = (await db.getProjects()).filter((p) => p.id == project.code);
+            const selectedProject = storedData[0];
+            if (selectedProject?.projectTimeline) {
+                const timelineData = await getProjectTimeline(selectedProject);
+                handleLibraryChange(timelineData);
+                console.log(timelineData);
+            }
+            
+        } catch (error) {
+            console.error("An unexpected error occurred while fetching projects:", error);
+        }
+    };
+
     useEffect(() => {
         if (selectedModules.length > 0 && dataSource.length > 0) {
             const selectedActivities = dataSource
@@ -40,18 +54,20 @@ const ProjectStatistics = (project: any) => {
                 .flatMap((mod: any) => mod.children);
 
             const formatted = selectedActivities.map((activity: any) => {
-                const plannedStart = dayjs(activity.plannedStart, "DD-MM-YYYY");
-                const actualStart = dayjs(activity.actualStart);
-                const plannedFinish = dayjs(activity.plannedFinish, "DD-MM-YYYY");
-                const actualFinish = dayjs(activity.actualFinish);
+                const plannedStart = dayjs(activity.plannedStart, "DD-MM-YYYY", true);
+                const actualStart = dayjs(activity.actualStart, "DD-MM-YYYY", true);
+                const plannedFinish = dayjs(activity.plannedFinish, "DD-MM-YYYY", true);
+                const actualFinish = dayjs(activity.actualFinish, "DD-MM-YYYY", true);
 
                 return {
                     activity: activity.keyActivity,
-                    plannedStart: plannedStart.valueOf(),
+                    plannedStart: plannedStart.isValid() ? plannedStart.valueOf() : null,
                     actualStart: actualStart.isValid() ? actualStart.valueOf() : null,
-                    plannedFinish: plannedFinish.valueOf(),
+                    plannedFinish: plannedFinish.isValid() ? plannedFinish.valueOf() : null,
                     actualFinish: actualFinish.isValid() ? actualFinish.valueOf() : null,
-                    delay: actualStart.isValid() ? Math.max(0, actualStart.diff(plannedStart, 'day')) : null
+                    delay: (plannedStart.isValid() && actualStart.isValid())
+                        ? Math.max(0, actualStart.diff(plannedStart, 'day'))
+                        : null,
                 };
             });
 
@@ -62,39 +78,15 @@ const ProjectStatistics = (project: any) => {
     }, [selectedModules, dataSource, selectedGraph]);
 
     const getProjectTimeline = async (project: any) => {
-        if (Array.isArray(project?.projectTimeline)) {
-            try {
-                const latestVersionId = localStorage.getItem("latestProjectVersion");
-                const foundTimeline = project?.projectTimeline.filter((item: any) => item.version == latestVersionId);
-                const timelineId = !latestVersionId ? project.projectTimeline[0].timelineId : foundTimeline[0].timelineId;
-                const timeline = await db.getProjectTimelineById(timelineId);
-                const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
-                return finTimeline;
-            } catch (err) {
-                console.error("Error fetching timeline:", err);
-                return [];
-            }
-        }
-
-        if (Array.isArray(project?.initialStatus?.items)) {
-            return project.initialStatus.items.filter(
-                (item: any) => item?.status?.toLowerCase() !== "completed"
-            );
-        }
-
-        return [];
-    };
-
-    const defaultSetup = async () => {
         try {
-            const storedData: any = (await db.getProjects()).filter((p) => p.id == project.code);
-            const selectedProject = storedData[0];
-            if (selectedProject?.projectTimeline) {
-                const timelineData = await getProjectTimeline(selectedProject);
-                handleLibraryChange(timelineData);
-            }
-        } catch (error) {
-            console.error("An unexpected error occurred while fetching projects:", error);
+            const latestVersionId = localStorage.getItem("latestProjectVersion");
+            const foundTimeline = project.projectTimeline.filter((item: any) => item.version == latestVersionId);
+            const timelineId = !latestVersionId ? project.projectTimeline[0].timelineId : foundTimeline[0].timelineId;
+            const timeline = await db.getProjectTimelineById(timelineId);
+            return timeline.map(({ id, ...rest }: any) => rest);
+        } catch (err) {
+            console.error("Error fetching timeline:", err);
+            return [];
         }
     };
 
@@ -176,59 +168,58 @@ const ProjectStatistics = (project: any) => {
             </div>
 
             {getScatterData().length > 0 ? (
-                <ResponsiveContainer width="100%" height={445}>
-                    <ScatterChart margin={{ top: 20, right: 30, left: 40, bottom: 30 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                            type="number"
-                            dataKey="x"
-                            scale="time"
-                            domain={['auto', 'auto']}
-                            tickFormatter={(tick) => dayjs(tick).format("DD MMM")}
-                            label={{ value: selectedGraph.includes("Finish") ? "Planned Finish" : "Planned Start", position: "insideBottom", offset: -40 }}
-                        />
-                        <YAxis
-                            type="number"
-                            dataKey="y"
-                            domain={selectedGraph === GRAPH_TYPES.DELAY ? [0, 'auto'] : ['auto', 'auto']}
-                            tickFormatter={selectedGraph === GRAPH_TYPES.DELAY ? (tick) => `${tick}d` : (tick) => dayjs(tick).format("DD MMM")}
-                            label={{ value: selectedGraph === GRAPH_TYPES.DELAY ? "Delay (Days)" : "Actual", angle: -90, position: "insideLeft" }}
-                        />
-                        <Tooltip
-                            content={({ active, payload, label }) => {
-                                if (!active || !payload || payload.length === 0) return null;
+                <>
+                    <p className="graph-title">{selectedGraph}</p>
+                    <ResponsiveContainer width="100%" height={445}>
+                        <ScatterChart margin={{ top: 20, right: 30, left: 40, bottom: 30 }}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                                type="number"
+                                dataKey="x"
+                                scale="time"
+                                domain={['auto', 'auto']}
+                                tickFormatter={(tick) => dayjs(tick).format("DD MMM YY")}
+                                label={{ value: selectedGraph.includes("Finish") ? "Planned Finish Date" : "Planned Start Date", position: "insideBottom", offset: -10 }}
+                            />
+                            <YAxis
+                                type="number"
+                                dataKey="y"
+                                domain={selectedGraph === GRAPH_TYPES.DELAY ? [0, 'auto'] : ['auto', 'auto']}
+                                tickFormatter={selectedGraph === GRAPH_TYPES.DELAY ? (tick) => `${tick}d` : (tick) => dayjs(tick).format("DD MMM YY")}
+                                label={{ value: selectedGraph === GRAPH_TYPES.DELAY ? "Delay (Days)" : "Actual Date", angle: -90, position: "insideLeft", offset: -20 }}
+                            />
+                            <Tooltip
+                                content={({ active, payload, label }) => {
+                                    if (!active || !payload || payload.length === 0) return null;
 
-                                const plannedDate = dayjs(label).format("DD-MM-YYYY");
-                                let value = payload[0].value;
-                                if (selectedGraph === GRAPH_TYPES.DELAY) {
-                                    value = Math.round(value as any);
-                                }
+                                    const plannedDate = dayjs(label).format("DD-MM-YYYY");
+                                    const value = payload[0].value;
 
-                                if (selectedGraph === GRAPH_TYPES.DELAY) {
+                                    if (selectedGraph === GRAPH_TYPES.DELAY) {
+                                        return (
+                                            <div style={{ background: 'white', padding: '8px', border: '1px solid #ccc' }}>
+                                                <p style={{ margin: 0 }}>Planned: {plannedDate}</p>
+                                                <p style={{ margin: 0, color: '#FF8042' }}>Delay (days): {value} days</p>
+                                            </div>
+                                        );
+                                    }
+
+                                    const actualDate = dayjs(Number(value)).format("DD-MM-YYYY");
+                                    const axisLabel = selectedGraph === GRAPH_TYPES.START ? 'Actual Start' : 'Actual Finish';
+                                    const xLabel = selectedGraph === GRAPH_TYPES.START ? 'Planned Start' : 'Planned Finish';
+
                                     return (
                                         <div style={{ background: 'white', padding: '8px', border: '1px solid #ccc' }}>
-                                            <p style={{ margin: 0 }}>Planned: {plannedDate}</p>
-                                            <p style={{ margin: 0, color: '#FF8042' }}>Delay (days) : {value} days</p>
+                                            <p style={{ margin: 0 }}>{xLabel}: {plannedDate}</p>
+                                            <p style={{ margin: 0 }}>{axisLabel}: {actualDate}</p>
                                         </div>
                                     );
-                                }
-
-                                const actualDate = dayjs(value as any).format("DD-MM-YYYY");
-                                const axisLabel = selectedGraph === GRAPH_TYPES.START ? 'Actual Start' : 'Actual Finish';
-                                const xLabel = selectedGraph === GRAPH_TYPES.START ? 'Planned Start' : 'Planned Finish';
-
-                                return (
-                                    <div style={{ background: 'white', padding: '8px', border: '1px solid #ccc' }}>
-                                        <p style={{ margin: 0 }}>{xLabel}: {plannedDate}</p>
-                                        <p style={{ margin: 0 }}>{axisLabel}: {actualDate}</p>
-                                    </div>
-                                );
-                            }}
-                        />
-                        <Legend />
-                        <Scatter data={getScatterData()} name={selectedGraph} fill="#8884d8" />
-                    </ScatterChart>
-                </ResponsiveContainer>
+                                }}
+                            />
+                            <Scatter data={getScatterData()} name={selectedGraph} fill="#8884d8" />
+                        </ScatterChart>
+                    </ResponsiveContainer>
+                </>
             ) : (
                 <Empty description="No data available. Select a module or change filter." />
             )}
