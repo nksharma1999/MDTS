@@ -5,7 +5,7 @@ import { ArrowRightOutlined } from "@ant-design/icons";
 import ManageUser from "../Components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
-import { getCurrentUser,getCurrentUserId } from '../Utils/moduleStorage';
+import { getCurrentUser, getCurrentUserId } from '../Utils/moduleStorage';
 const { Option } = Select;
 
 const Profile = () => {
@@ -22,6 +22,7 @@ const Profile = () => {
         whatsapp: null as string | null,
         registeredOn: null as string | null,
         profilePhoto: null as string | null,
+        companyLogo: null as string | null,
         password: null as string | null,
         isTempPassword: null as boolean | null,
         role: null as string | null,
@@ -60,7 +61,7 @@ const Profile = () => {
     }, [formData.id]);
 
     const fillUsersData = async () => {
-        const currentUserId=getCurrentUserId();
+        const currentUserId = getCurrentUserId();
         const userData = await db.getUserById(currentUserId);
         if (userData) {
             setFormData({
@@ -75,13 +76,15 @@ const Profile = () => {
                 whatsapp: userData.whatsapp || "",
                 registeredOn: userData.registeredOn || "",
                 profilePhoto: userData.profilePhoto || "",
+                companyLogo: userData.companyLogo || "",
                 address: userData.address,
                 city: userData.city,
                 state: userData.state,
                 country: userData.country,
                 zipCode: userData.zipCode || "",
                 role: userData.role || "",
-                isTempPassword: userData.isTempPassword
+                isTempPassword: userData.isTempPassword,
+                Password: userData.password || ''
             });
             form.resetFields();
         }
@@ -115,21 +118,21 @@ const Profile = () => {
         try {
             const users = await db.getUsers();
             const currentUser = getCurrentUser();
-    
+
             if (!currentUser?.email) {
                 message.error("No user found. Please log in again.");
                 return;
             }
-    
+
             if (currentUser?.isTempPassword) {
                 setIsModalOpen(true);
             }
-            
+
             if (currentUser.id) {
-                const updatedUser = { ...users[currentUser.id], ...formData,isTempPassword:false };
+                const updatedUser = { ...users[currentUser.id], ...formData, isTempPassword: false };
                 await db.updateUsers(updatedUser.id, updatedUser);
                 localStorage.setItem("user", JSON.stringify(updatedUser));
-    
+
                 if (!formData.isTempPassword) {
                     message.success("Profile information updated successfully!");
                 }
@@ -157,35 +160,35 @@ const Profile = () => {
                 message.error("No file selected.");
                 return;
             }
-    
+
             const reader = new FileReader();
             reader.onload = async (e) => {
                 if (!e.target?.result) {
                     message.error("Error reading file.");
                     return;
                 }
-    
+
                 const base64Image = e.target.result as string;
                 setImage(base64Image);
-    
+
                 const currentUserId = getCurrentUserId();
                 const activeUser = await db.getUserById(currentUserId);
                 if (!activeUser) {
                     message.error("User not found.");
                     return;
                 }
-    
+
                 const updatedUser = { ...activeUser, profilePhoto: base64Image };
                 await db.updateUsers(currentUserId, updatedUser);
-    
+
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
                 localStorage.setItem("user", JSON.stringify({ ...currentUser, profilePhoto: base64Image }));
-    
+
                 message.success("Profile photo updated successfully!");
                 setIsModalOpen(false);
                 fillUsersData();
             };
-    
+
             reader.readAsDataURL(file);
         } catch (error) {
             console.error("Error updating profile photo:", error);
@@ -202,30 +205,27 @@ const Profile = () => {
         form.resetFields();
     };
 
-    const handleSubmit = (values: any) => {
-        const users = JSON.parse(localStorage.getItem("users") || "[]");
-        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-
-        const userIndex = users.findIndex((user: any) => user.email === currentUser.email);
-        if (userIndex !== -1) {
-            users[userIndex] = {
-                ...users[userIndex],
-                password: values.newPassword,
+    const handlePasswordUpdate = async (values: any) => {
+        const currentUser = getCurrentUser();
+        if (values.oldPassword == currentUser.password) {
+            const users = {
+                ...currentUser, password: values.newPassword,
                 isTempPassword: false,
-            };
-            localStorage.setItem("users", JSON.stringify(users));
+            }
+            await db.updateUsers(currentUser.id, users);
+
+            localStorage.setItem("user", JSON.stringify({ ...currentUser, password: values.newPassword, isTempPassword: false }));
+
+            message.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
+            setIsModalOpen(false);
+            setTimeout(() => {
+                fillUsersData();
+            }, 1000)
+        }
+        else {
+            message.error("Current password is incorrect");
         }
 
-        localStorage.setItem(
-            "user",
-            JSON.stringify({ ...currentUser, password: values.newPassword, isTempPassword: false })
-        );
-
-        message.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
-        setIsModalOpen(false);
-        setTimeout(() => {
-            fillUsersData();
-        }, 1000)
     };
 
     const renderContent = () => {
@@ -234,7 +234,7 @@ const Profile = () => {
                 return (
                     <div style={{ marginTop: "10px" }} className="card">
                         <div className="card-body">
-                            <div className="profile-cover bg-secondary">
+                            <div className="profile-cover" style={{ backgroundColor: '#258790' }}>
                                 <div className="profile-item">
                                     <div className="profile-image-container">
                                         <img src={image || "https://via.placeholder.com/100"} alt={getInitials()} className="profile-image" />
@@ -280,6 +280,7 @@ const Profile = () => {
                                                     value={formData.company}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter Company"
+                                                    disabled={formData.role != 'Admin'}
                                                 />
                                             </Form.Item>
                                         </Col>
@@ -524,10 +525,10 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {['Profile Information', 'Team Members', "Accessibility"].map((tab) => {
-                      if (tab === 'Team Members' && formData?.role?.toUpperCase() !== 'ADMIN') {
-                        return null;
-                    }                    
+                    {['Profile Information', 'Team Members'].map((tab) => {
+                        if (tab === 'Team Members' && formData?.role?.toUpperCase() !== 'ADMIN') {
+                            return null;
+                        }
 
                         return (
                             <div
@@ -563,7 +564,7 @@ const Profile = () => {
                         requiredMark={false}
                         form={form}
                         layout="horizontal"
-                        onFinish={handleSubmit}
+                        onFinish={handlePasswordUpdate}
                         style={{ padding: "10px 10px 0px 10px" }}
                         colon={false}
                     >

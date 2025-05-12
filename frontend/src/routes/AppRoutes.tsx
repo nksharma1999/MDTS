@@ -1,15 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Register from "../pages/Registration";
-import Dashboard from "../pages/dashboard";
-import SignIn from "../pages/SignIn";
+import Home from "../pages/Home";
+import NotFound from "../pages/NotFound";
+import MainLayout from "../Layout/MainLayout";
+import ProtectedRoute from "./ProtectedRoutes";
 import About from "../pages/About";
 import Projects from "../pages/Projects";
 import KnowledgeCenter from "../pages/KnowledgeCenter";
 import Document from "../pages/Document";
 import DataMaster from "../pages/DataMaster";
-import NotFound from "../pages/NotFound";
-import MainLayout from "../Layout/MainLayout";
-import ProtectedRoute from "./ProtectedRoutes";
 import Profile from "../pages/Profile";
 import Module from "../Components/Module";
 import CreateDocument from "../Components/CreateDocument";
@@ -22,7 +20,6 @@ import ManageUser from "../Components/ManageUser";
 import { ModuleDetails } from "../Components/ModuleDetail";
 import ModuleLibrary from "../Components/ModuleLibrary";
 import NotificationLibrary from "../Components/NotificationLibrary";
-import { ProjectDetails } from "../Components/ProjectDetails";
 import ProjectParametersPage from "../Components/ProjectParameterPage";
 import { RegisterNewProject } from "../Components/RegisterNewProject";
 import StatusUpdate from "../Components/StatusUpdate";
@@ -30,17 +27,38 @@ import TimelineBuilder from "../Components/TimelineBuilder";
 import ViewDocumentPage from "../Components/ViewDocumentPage";
 import ViewUser from "../Components/ViewUser";
 import CreateNotification from "../Components/CreateNotification";
-
+import LandingPage from "../pages/LandingPage";
 
 const AppRoutes = () => {
+    const isAuthenticated = !!localStorage.getItem('user');
+
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Navigate to="/home" replace />} />
-                <Route path="/sign-in" element={<SignIn />} />
-                <Route path="/register" element={<Register />} />
-                <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-                    <Route path="/home" element={<Dashboard />} />
+                <Route
+                    path="/home"
+                    element={
+                        isAuthenticated
+                            ? <Navigate to="/landing-page" replace />
+                            : <Home />
+                    }
+                />
+                <Route
+                    path="/"
+                    element={
+                        isAuthenticated
+                            ? <Navigate to="/landing-page" replace />
+                            : <Navigate to="/home" replace />
+                    }
+                />
+                <Route
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route path="/landing-page" element={<LandingPage />} />
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />
@@ -50,7 +68,6 @@ const AppRoutes = () => {
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
                     <Route path="/create/non-working-days" element={<HolidayCalender />} />
                     <Route path="/module/:moduleName" element={<ModuleDetails />} />
-                    <Route path="/projectdetails/:projectName" element={<ProjectDetails />} />
                     <Route path="/project-parameters" element={<ProjectParametersPage />} />
                     <Route path="/create/raci-alert-notification" element={<ManageUser />} />
                     <Route path="/view-user" element={<ViewUser />} />

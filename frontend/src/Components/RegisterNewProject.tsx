@@ -3,9 +3,7 @@ import { useEffect, useState } from "react";
 import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification, Table, Tooltip, Typography, List } from "antd";
 import "../styles/register-new-project.css";
 import { CloseCircleOutlined, DownloadOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import ImageContainer from "../components/ImageContainer";
 const { Option } = Select;
-import MapComponent from "../components/MapComponent";
 import { useLocation } from "react-router-dom";
 import { saveDocument, updateDocument, getCurrentUser } from "../Utils/moduleStorage";
 import { db } from "../Utils/dataStorege.ts";
@@ -19,6 +17,8 @@ interface DocumentData {
 import { Accept, useDropzone } from "react-dropzone";
 import { message } from "antd";
 import "../styles/documents.css"
+import MapComponent from "./MapComponent.tsx";
+import ImageContainer from "./ImageContainer.tsx";
 const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -50,12 +50,12 @@ export const RegisterNewProject: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState(
     allLibrariesName.find((lib: any) => lib.name === initialLibrary)?.items || []
   );
-  const requiredFields: { [key: number]: string[] } = {
-    1: ["companyName", "projectName", "mineral", "typeOfMine", "reserve", "netGeologicalReserve", "extractableReserve", "grade", "stripRatio", "peakCapacity", "mineLife", "totalCoalBlockArea"],
-    2: ["state", "district", "nearestTown", "nearestAirport", "nearestRailwayStation"],
-    3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
-    4: Object.values(allLibrariesName).map((moduleName: any) => moduleName)
-  };
+  // const requiredFields: { [key: number]: string[] } = {
+  //   1: ["companyName", "projectName", "mineral", "typeOfMine", "reserve", "netGeologicalReserve", "extractableReserve", "grade", "stripRatio", "peakCapacity", "mineLife", "totalCoalBlockArea"],
+  //   2: ["state", "district", "nearestTown", "nearestAirport", "nearestRailwayStation"],
+  //   3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
+  //   4: Object.values(allLibrariesName).map((moduleName: any) => moduleName)
+  // };
 
   useEffect(() => {
     setFormData({});
@@ -149,7 +149,7 @@ export const RegisterNewProject: React.FC = () => {
     fetchAllLibrary();
   };
 
-  const validateFields = (step: number): boolean => {
+  const validateFields = (_step: number): boolean => {
     // let newErrors: { [key: string]: string } = {};
     // requiredFields[step].forEach((field) => {
     //   const fieldValue = formData[field];
@@ -218,11 +218,11 @@ export const RegisterNewProject: React.FC = () => {
     setErrors({});
   };
 
-  const handleLibraryChange = (value: string) => {
-    setSelectedLibrary(value);
-    const selectedLib: any = allLibrariesName.find((lib: any) => lib.name === value);
-    setSelectedItems(selectedLib ? selectedLib.items : []);
-  };
+  // const handleLibraryChange = (value: string) => {
+  //   setSelectedLibrary(value);
+  //   const selectedLib: any = allLibrariesName.find((lib: any) => lib.name === value);
+  //   setSelectedItems(selectedLib ? selectedLib.items : []);
+  // };
 
   const handleStatusChange = (index: number, value: string) => {
     setSelectedItems((prevItems: any) =>
@@ -571,7 +571,11 @@ export const RegisterNewProject: React.FC = () => {
                   >
                     <Select
                       value={selectedLibrary}
-                      onChange={(value) => setSelectedLibrary(value)}
+                      onChange={(value) => {
+                        setSelectedLibrary(value);
+                        const filterdLibrary=allLibrariesName.filter((item:any)=>item.name==value);
+                        setSelectedItems(filterdLibrary[0].items)
+                      }}
                       allowClear={true}
                     >
                       {allLibrariesName.map((lib: any) => (

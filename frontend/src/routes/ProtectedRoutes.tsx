@@ -9,10 +9,11 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     children,
-    redirectPath = '/sign-in',
+    redirectPath = '/home',
     checkAuthAsync,
 }) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
     useEffect(() => {
         const syncAuthCheck = () => {
             const authToken = localStorage.getItem('user');
@@ -23,6 +24,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             syncAuthCheck();
         }
     }, [checkAuthAsync]);
+
     useEffect(() => {
         if (checkAuthAsync) {
             const asyncAuthCheck = async () => {
@@ -36,12 +38,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             asyncAuthCheck();
         }
     }, [checkAuthAsync]);
+
     if (isAuthenticated === null) {
         return <div>Loading...</div>;
     }
+
     if (!isAuthenticated) {
         return <Navigate to={redirectPath} replace />;
     }
+
     return children;
 };
 

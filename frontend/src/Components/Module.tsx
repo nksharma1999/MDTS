@@ -4,13 +4,14 @@ import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@ant-design/icons';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message, Form } from 'antd';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUserId } from '../Utils/moduleStorage';
+import { RollbackOutlined } from '@ant-design/icons';
 
 const Module = () => {
     const { state } = useLocation();
@@ -36,6 +37,7 @@ const Module = () => {
     const [moduleCodeName, setModuleCodeName] = useState<string>("");
     const [filteredModuleData, setFilteredModuleData] = useState<any>(null);
     const [isFocused, setIsFocused] = useState(false);
+    const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
         moduleName: moduleName,
@@ -51,9 +53,24 @@ const Module = () => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [discardEditByCreating, setDiscardEditByCreating] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
+    const [originalActivities, setOriginalActivities] = useState<any[]>(moduleData.activities);
+    const [isOriginalActivitiesStateStored, setIsOriginalActivitiesStateStored] = useState(false);
+    const [undoStack, setUndoStack] = useState<any[]>([]);
+
+    const pushToUndoStack = (currentState: any) => {
+        setUndoStack((prevStack) => {
+            const newStack = [...prevStack, currentState];
+            if (newStack.length > 10) {
+                return newStack.slice(1); // Keep only the last 10 states
+            }
+            return newStack;
+        });
+        setIsOriginalActivitiesStateStored(false);
+    };
 
     useEffect(() => {
-        if (state) {
+        console.log("State from useLocation:", state);
+        if (state && state.activities) {
             setModuleData({
                 id: state.id,
                 parentModuleCode: state.parentModuleCode,
@@ -63,6 +80,13 @@ const Module = () => {
                 duration: state.duration,
                 activities: state.activities
             });
+            setUndoStack([]);
+            // Initialize originalActivities only if it's empty
+            if (originalActivities.length === 0) {
+                setOriginalActivities(JSON.parse(JSON.stringify(state.activities)));
+            }
+        } else {
+            console.error("State or state.activities is not available.");
         }
     }, [state]);
 
@@ -86,7 +110,7 @@ const Module = () => {
 
     const handleSaveModuleAndActivity = async () => {
         try {
-            const userId=getCurrentUserId();
+            const userId = getCurrentUserId();
             if (!moduleData || Object.keys(moduleData).length === 0 || !moduleData.parentModuleCode) {
                 notification.error({
                     message: "Module data is empty or missing required fields.",
@@ -94,7 +118,7 @@ const Module = () => {
                 });
                 return;
             }
-            
+
             if (isEditing) {
                 if (!moduleData.id || typeof moduleData.id !== "number") {
                     notification.error({
@@ -148,6 +172,7 @@ const Module = () => {
     };
 
     const addActivity = () => {
+        pushToUndoStack(moduleData);
         if (!selectedRow) return;
 
         const isModuleSelected = selectedRow.level === "L1";
@@ -207,90 +232,79 @@ const Module = () => {
         }, 0);
     };
 
-    const deleteActivity = () => {
-        // if (!selectedRow || selectedRow.code === moduleData.parentModuleCode) return;
-
-        // setModuleData((prev: any) => {
-        //     let activities = [...prev.activities];
-        //     let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
-        //     children.forEach(child => {
-        //         let newParentCode = selectedRow.prerequisite;
-        //         let childParts = child.code.split("/");
-        //         childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
-        //         child.code = newParentCode + "/" + childParts.slice(-1);
-        //         child.prerequisite = newParentCode;
-        //     });
-
-        //     let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
-
-        //     let sameLevelActivities = updatedActivities.filter(activity => {
-        //         let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
-        //         return activity.code.startsWith(parentCode) && activity.level === selectedRow.level;
-        //     });
-
-        //     sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
-
-        //     sameLevelActivities.forEach((activity, index) => {
-        //         let newCode = `${selectedRow.code.split("/").slice(0, -1).join("/")}/${(index + 1) * 10}`;
-        //         activity.code = newCode;
-        //     });
-
-        //     return {
-        //         ...prev,
-        //         activities: updatedActivities
-        //     };
-        // });
-
-        // setSelectedRow(null);
-        // handlePrerequisite();
-        // setIsDeleteModalVisible(false);
-
+    const deleteActivity = async () => {
         if (!selectedRow) return;
-        setModuleData((prev: any) => {
-            if (selectedRow.parentModuleCode) {
-                return {
+        else {
+            pushToUndoStack(moduleData);
+            if (selectedRow.parentModuleCode && selectedRow.id) {
+                setModuleData({
                     parentModuleCode: "",
                     moduleName: "",
                     level: "",
                     mineType: "",
                     duration: "",
                     activities: []
-                };
+                })
+                try {
+                    await db.deleteModule(selectedRow.id);
+                    setTimeout(() => navigate(".", { replace: true }), 0);
+                    message.success("Module removed successfully!");
+                } catch (error: any) {
+                    message.error(error);
+                }
             }
-            let activities = [...prev.activities];
-            let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
+            else if (selectedRow.parentModuleCode && selectedRow.id) {
+                setModuleData({
+                    parentModuleCode: "",
+                    moduleName: "",
+                    level: "",
+                    mineType: "",
+                    duration: "",
+                    activities: []
+                })
+            }
+            else {
+                setModuleData((prev: any) => {
+                    let activities = [...prev.activities];
+                    let children = activities.filter(activity => activity.code.startsWith(selectedRow.code + "/"));
 
-            children.forEach(child => {
-                let newParentCode = selectedRow.prerequisite || "";
-                let childParts = child.code.split("/");
-                childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
-                child.code = newParentCode ? `${newParentCode}/${childParts.slice(-1)}` : childParts.slice(-1).join("/");
-                child.prerequisite = newParentCode;
-            });
-            let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
-            let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
-            let sameLevelActivities = updatedActivities.filter(activity =>
-                activity.code.startsWith(parentCode) && activity.level === selectedRow.level
-            );
+                    children.forEach(child => {
+                        let newParentCode = selectedRow.prerequisite || "";
+                        let childParts = child.code.split("/");
+                        childParts[selectedRow.code.split("/").length - 1] = newParentCode.split("/").pop();
+                        child.code = newParentCode ? `${newParentCode}/${childParts.slice(-1)}` : childParts.slice(-1).join("/");
+                        child.prerequisite = newParentCode;
+                    });
+                    let updatedActivities = activities.filter(activity => activity.code !== selectedRow.code);
+                    let parentCode = selectedRow.code.split("/").slice(0, -1).join("/");
+                    let sameLevelActivities = updatedActivities.filter(activity =>
+                        activity.code.startsWith(parentCode) && activity.level === selectedRow.level
+                    );
 
-            sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
-            sameLevelActivities.forEach((activity, index) => {
-                let newCode = `${parentCode}/${(index + 1) * 10}`;
-                activity.code = newCode;
-            });
+                    sameLevelActivities.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
+                    sameLevelActivities.forEach((activity, index) => {
+                        let newCode = `${parentCode}/${(index + 1) * 10}`;
+                        activity.code = newCode;
+                    });
 
-            return {
-                ...prev,
-                activities: updatedActivities
-            };
-        });
+                    return {
+                        ...prev,
+                        activities: updatedActivities
+                    };
+                });
 
+                setSelectedRow(null);
+                handlePrerequisite();
+                setIsDeleteModalVisible(false);
+            }
+        }
         setSelectedRow(null);
         handlePrerequisite();
         setIsDeleteModalVisible(false);
     };
 
     const increaseLevel = () => {
+        pushToUndoStack(moduleData);
         if (!selectedRow || selectedRow.level === "L1") return;
 
         setModuleData((prev: any) => {
@@ -374,6 +388,7 @@ const Module = () => {
     };
 
     const decreaseLevel = () => {
+        pushToUndoStack(moduleData);
         if (!selectedRow || selectedRow.level === "L1" || selectedRow.level === "L2") return;
 
         setModuleData((prev: any) => {
@@ -606,16 +621,22 @@ const Module = () => {
     }
 
     const handleSortModule = (order: 'asc' | 'desc' | 'original') => {
-        const activitiesCopy = [...moduleData.activities];
 
         let sortedActivities;
+
         if (order === "asc") {
-            sortedActivities = [...activitiesCopy].sort((a, b) => a.level.localeCompare(b.level));
+            sortedActivities = [...moduleData.activities].sort((a, b) => a.level.localeCompare(b.level));
         } else if (order === "desc") {
-            sortedActivities = [...activitiesCopy].sort((a, b) => b.level.localeCompare(a.level));
+            sortedActivities = [...moduleData.activities].sort((a, b) => b.level.localeCompare(a.level));
         } else {
-            sortedActivities = state?.activities || [];
+            if (originalActivities.length === 0) {
+                return;
+            }
+            // Restore the original activities
+            sortedActivities = JSON.parse(JSON.stringify(originalActivities));
         }
+
+
         setModuleData((prev: any) => ({
             ...prev,
             activities: sortedActivities
@@ -623,8 +644,17 @@ const Module = () => {
     };
 
     useEffect(() => {
+        if (isOriginalActivitiesStateStored === false) {
+            setOriginalActivities(JSON.parse(JSON.stringify(moduleData.activities)));
+            setIsOriginalActivitiesStateStored(true);
+        }
         handleSortModule(sortOrder);
     }, [sortOrder]);
+
+    useEffect(() => {
+        console.log("Original Activities Updated:", originalActivities);
+    }, [originalActivities]);
+
 
     const toggleSortOrder = () => {
         const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
@@ -636,6 +666,44 @@ const Module = () => {
         if (sortOrder === 'desc') return <SortDescendingOutlined />;
         return <ReloadOutlined />;
     };
+    const handleUndo = () => {
+        if (undoStack.length === 0) return;
+
+        const lastState = undoStack[undoStack.length - 1];
+        setUndoStack((prevStack) => prevStack.slice(0, -1)); // Remove the last state from the stack
+        setModuleData(lastState); // Restore the last state
+    };
+
+    const [form] = Form.useForm();
+    const [formValid, setFormValid] = useState(false);
+
+    const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+    const handleClose = () => {
+        setOpenCostCalcModal(false);
+        form.resetFields();
+        setFormValid(false);
+    };
+
+    const handleValuesChange = () => {
+        const { projectCost, opCost, delayCost } = form.getFieldsValue();
+        if (projectCost && opCost && delayCost) {
+            setFormValid(true);
+        } else {
+            setFormValid(false);
+        }
+    };
+
+    const handleConfirm = () => {
+        form.validateFields()
+            .then(values => {
+                console.log('Confirmed values:', values);
+                handleClose();
+            })
+            .catch(info => {
+                console.log('Validation Failed:', info);
+            });
+    };
+
 
     return (
         <div>
@@ -665,6 +733,16 @@ const Module = () => {
                             <Col>
                                 <Row gutter={16}>
                                     <Col>
+                                        <Tooltip title="Define Activity Cost">
+                                            <Button
+                                                icon={<DollarOutlined style={{ color: '#52c41a' }} />}
+                                                className="icon-button"
+                                                onClick={handleOpenCostCalcModal}
+                                                disabled={!selectedRow}
+                                            />
+                                        </Tooltip>
+                                    </Col>
+                                    <Col>
                                         <Tooltip title="Decrease Level">
                                             <Button
                                                 icon={<ArrowDownOutlined />}
@@ -692,6 +770,16 @@ const Module = () => {
                                                 className="icon-button red"
                                                 onClick={() => setIsDeleteModalVisible(true)}
                                                 disabled={!selectedRow}
+                                            />
+                                        </Tooltip>
+                                    </Col>
+                                    <Col>
+                                        <Tooltip title="Undo">
+                                            <Button
+                                                icon={<RollbackOutlined />}
+                                                className="icon-button blue"
+                                                onClick={handleUndo}
+                                                disabled={undoStack.length === 0}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -846,7 +934,7 @@ const Module = () => {
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
                                     {moduleData.activities
-                                        .sort((a: any, b: any) => a.code.localeCompare(b.code))
+                                        // .sort((a: any, b: any) => a.code.localeCompare(b.code))
                                         .map((activity: any, index: any, sortedActivities: any) => (
                                             <TableRow
                                                 hover
@@ -1037,6 +1125,58 @@ const Module = () => {
                         </p>
                     </div>
                 </Modal >
+
+                <Modal
+                    title="Define Penalty for Delay (₹ / Day)"
+                    open={openCostCalcModal}
+                    onCancel={handleClose}
+                    onOk={handleConfirm}
+                    okButtonProps={{ disabled: !formValid }}
+                    destroyOnClose
+                    className="modal-container"
+                >
+                    <Form
+                        form={form}
+                        layout="vertical"
+                        onValuesChange={handleValuesChange}
+                        style={{ padding: "0px 10px" ,display:'flex', flexDirection:'column',gap:'10px'}}
+                    >
+                        <Form.Item
+                            label=""
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Project Cost:</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="projectCost"
+                                        noStyle
+                                        rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                                    >
+                                        <Input type="number" placeholder="Enter Project Cost" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Form.Item>
+
+                        <Form.Item label="" style={{ marginBottom: 24 }}>
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Opportunity Cost:</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="opCost"
+                                        noStyle
+                                        rules={[{ required: true, message: 'Please enter OP Cost' }]}
+                                    >
+                                        <Input type="number" placeholder="Enter OP Cost" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Form.Item>
+                    </Form>
+
+                </Modal>
+
             </div>
         </div>
     );

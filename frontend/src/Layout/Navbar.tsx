@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Typography, Divider, Modal } from "antd";
-import { DownOutlined, LogoutOutlined, UserOutlined, UserSwitchOutlined } from "@ant-design/icons";
+import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge } from "antd";
+import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SettingOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 const { Title } = Typography;
 interface NavItem {
@@ -15,12 +15,16 @@ interface NavItem {
 }
 
 const initialNavLinks: any = [
-    { label: "Home", action: "/home" },
     { label: "About", action: "/about" },
-    { label: "Projects", action: "/projects-details" },
-    { label: "Document", action: "/document" },
+    { label: "Dashboard", action: "/projects-details" },
+    { label: "Documents", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
-    { label: "Data Master", action: "/data-master" },
+    { label: "Data Master",
+        subItems: [
+            { label: "Module Library", action: "/create/module-library" },
+            { label: "Notification", action: "/create/notification", isNull: true }
+        ]
+    },
     {
         label: "Create",
         subItems: [
@@ -28,13 +32,8 @@ const initialNavLinks: any = [
             { label: "Modules", action: "/modules" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
             { label: "Project Timeline", action: "/create/project-timeline" },
-            { label: "Module Library", action: "/create/module-library" },
             { label: "Non-working Days", action: "/create/non-working-days" },
-            // { label: "RACI, Alert & Notification", action: "/create/raci-alert-notification" },
-            // { label: "Document", action: "/create/document" },
-            { label: "Notification", action: "/create/notification", isNull: true },
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
-            { label: "Dashboard", action: "/create/dashboard", isNull: true },
             { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
         ]
@@ -46,7 +45,7 @@ const Navbar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [navLinks, setNavLinks] = useState<NavItem[]>(initialNavLinks);
-    const [user, setUser] = useState<{ name: string } | null>(null);
+    const [user, setUser] = useState<any>(null);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     const handlePopupOpen = (name: string) => setOpenPopup(name);
     const isActive = (action: string) => location.pathname.startsWith(action);
@@ -54,6 +53,7 @@ const Navbar: React.FC = () => {
     const showLogoutModal = () => {
         setIsLogoutModalVisible(true);
     };
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const storedNavLinks = localStorage.getItem('navLinks');
@@ -90,10 +90,13 @@ const Navbar: React.FC = () => {
     }, [location.pathname, navLinks]);
 
     const handleLogout = () => {
+        setLoading(true);
         localStorage.removeItem("user");
+        setLoading(false);
         setUser(null);
         setIsLogoutModalVisible(false);
-        navigate("/sign-in");
+        navigate("/home");
+        window.location.reload(); 
     };
 
     const handleDropdownSelect = (menuLabel: string, subItem: any) => {
@@ -128,10 +131,25 @@ const Navbar: React.FC = () => {
         }
     };
 
+    const handleSeeAllProfiles = () => {
+        navigate("/profile");
+    };
+
     const profileMenu = (
-        <Menu onClick={handleMenuClick} selectedKeys={[location.pathname]}>
-            <Menu.Item key="/profile" icon={<UserSwitchOutlined />}>
-                Profile
+        <Menu className="custom-profile-menu" onClick={handleMenuClick}>
+            <div className="user-basic-info">
+                <div className="profile-header">
+                    <img src={user?.profilePhoto} alt="avatar" className="avatar-large" />
+                    <div className="user-name">{user?.name}</div>
+                </div>
+                <hr />
+                <Button onClick={handleSeeAllProfiles} type="text" className="see-profiles-btn">See all profiles</Button>
+            </div>
+            <Menu.Item key="/settings" icon={<SettingOutlined />}>
+                Settings & privacy
+            </Menu.Item>
+            <Menu.Item key="/support" icon={<QuestionCircleOutlined />}>
+                Help & support
             </Menu.Item>
             <Menu.Item key="logout" icon={<LogoutOutlined />}>
                 Logout
@@ -141,81 +159,88 @@ const Navbar: React.FC = () => {
 
     return (
         <>
-            <div className="navbar" style={{ background: "linear-gradient(90deg, #257180, #257180,rgb(241, 76, 76))", display: "flex", alignItems: "center", padding: "3px 10px" }}>
-                <div className="logo-sections">
-                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
-                        <img
-                            src="/images/logos/main-logo.png"
-                            alt="Logo"
-                            className="logo-image"
-                        />
-                    </Link>
-                </div>
-                <div className="project-title">
-                    <Link onClick={() => setSelectedDropdownKeys({})} to="/home">
-                        <p>Mine Development Tracking System</p>
-                    </Link>
-                </div>
-                <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
-                {navLinks.map((link, index) => (
-                    <div key={index} style={{ margin: "0 5px" }}>
-                        {link.subItems ? (
-                            <div className="nav-dropdown-cust"
-                                style={{
-                                    position: "relative",
-                                    cursor: "pointer",
-                                    transition: "all 0.3s ease",
-                                    backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
-                                    borderRadius: "4px",
-                                }}
-                            >
-                                <Dropdown
-                                    overlay={
-                                        <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                            {link.subItems.map((subItem, _subIndex) => (
-                                                <Menu.Item
-                                                    key={subItem.label}
-                                                    onClick={() => handleDropdownSelect(link.label, subItem)}
-                                                >
-                                                    {subItem.label}
-                                                </Menu.Item>
-                                            ))}
-                                        </Menu>
-                                    }
-                                >
-                                    <Button type="text" style={{ color: "white", fontSize: "13px" }}>
-                                        {link.label} <DownOutlined />
-                                    </Button>
-                                </Dropdown>
-                            </div>
-                        ) : (
-                            <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
-                                <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
-                            </Button>
-
-                        )}
-                        {index < navLinks.length - 1 && !link.subItems && (
-                            <Divider type="vertical" style={{ backgroundColor: "white", height: 20, margin: "0 2px" }} />
-                        )}
+            <div className="main-navbar">
+                <div className="logo-and-text">
+                    <div className="logo-sections">
+                        <Link to="/home">
+                            <img
+                                src="/images/logos/main-logo.png"
+                                alt="Logo"
+                                className="logo-image"
+                            />
+                        </Link>
                     </div>
-                ))}
-                <div className="">
+                    <div>
+                        <p>Mine Development</p>
+                        <p>Tracking System</p>
+                    </div>
+                </div>
+                <div className="nav-tab-items">
+                    <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
+                    {navLinks.map((link, index) => (
+                        <div key={index} style={{ margin: "0 5px" }}>
+                            {link.subItems ? (
+                                <div className="nav-dropdown-cust"
+                                    style={{
+                                        position: "relative",
+                                        cursor: "pointer",
+                                        transition: "all 0.3s ease",
+                                        backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
+                                        borderRadius: "4px",
+                                    }}
+                                >
+                                    <Dropdown
+                                        overlay={
+                                            <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                                {link.subItems.map((subItem, _subIndex) => (
+                                                    <Menu.Item
+                                                        key={subItem.label}
+                                                        onClick={() => handleDropdownSelect(link.label, subItem)}
+                                                    >
+                                                        {subItem.label}
+                                                    </Menu.Item>
+                                                ))}
+                                            </Menu>
+                                        }
+                                    >
+                                        <Button type="text">
+                                            {link.label} <DownOutlined />
+                                        </Button>
+                                    </Dropdown>
+                                </div>
+                            ) : (
+                                <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
+                                    <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
+                                </Button>
+
+                            )}
+                            {index < navLinks.length - 1 && !link.subItems && (
+                                <Divider type="vertical" style={{ backgroundColor: "#ddd", height: 20, margin: "0 2px" }} />
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <div className="user-data">
+                    <span className="notification-icon-wrapper">
+                        <Badge count={5} size="small" offset={[-2, 4]}>
+                            <BellOutlined className="bell-icon" />
+                        </Badge>
+                    </span>
                     {user ? (
                         <Dropdown overlay={profileMenu}>
                             <Button
-                                style={{ marginLeft: "20px", display: 'flex', alignItems: 'center', gap: '8px' }}
-                                className="bg-tertiary text-white"
                                 type="text"
+                                className="custom-dropdown-btn"
                             >
-                                <UserOutlined />
-                                <span style={{ fontWeight: 'bold' }}>{user.name}</span>
-                                <DownOutlined />
+                                <div className="profile-wrapper">
+                                    <img src={user?.profilePhoto} alt="avatar" className="avatar-img" />
+                                    <DownOutlined className="badge-icon" />
+                                </div>
                             </Button>
                         </Dropdown>
-
                     ) : (
                         <Button className="signin-btn" style={{ marginLeft: "20px" }}>
-                            <Link to="/sign-in" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>
+                            <Link to="/home" style={{ color: "inherit", textDecoration: "none" }}>Login</Link>
                         </Button>
                     )}
                 </div>
@@ -225,7 +250,7 @@ const Navbar: React.FC = () => {
                 visible={isLogoutModalVisible}
                 onOk={handleLogout}
                 onCancel={() => setIsLogoutModalVisible(false)}
-                okText="Logout"
+                okText={loading ? 'Logging out...' : 'Logout'}
                 cancelText="Cancel"
                 okButtonProps={{ danger: true }}
             >

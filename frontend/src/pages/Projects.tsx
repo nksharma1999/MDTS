@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Form, Input, Row, Col, Button, Modal, Select, Dropdown, Menu } from 'antd';
+import { Input, Button, Modal, Select, Dropdown, Menu, message, Checkbox } from 'antd';
 import { Link } from "react-router-dom";
-import ImageContainer from "../components/ImageContainer";
 import { SearchOutlined } from "@mui/icons-material";
 import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
-import { Collapse, Table, Typography } from "antd";
-const { Panel } = Collapse;
-const { Title } = Typography;
+import { db } from "../Utils/dataStorege.ts";
+import { PushpinOutlined, StarOutlined, ShareAltOutlined, DeleteOutlined } from "@ant-design/icons";
+import CAPEXPerformance from "./CAPEXPerformance.tsx";
+import FDPP from "./FDPP.tsx";
+import MineInfra from "./MineInfra.tsx";
+import TimelinePerformance from "./TimelinePerformance.tsx";
+import CSR from "./CSR.tsx";
+import ProjectTimeline from "./ProjectTimeline.tsx";
+import ProjectDocs from "./ProjectDocs";
+import ProjectStatistics from "./ProjectStatistics.tsx";
 interface LocationDetails {
     state: string;
     district: string;
@@ -65,21 +71,48 @@ interface ProjectData {
 const membersList = ["Alice", "Bob", "Charlie", "David", "Emma"];
 const Projects = () => {
     const [allProjects, setAllProjects] = useState<any[]>([]);
-    const [projectDetails, setProjectDetails] = useState<ProjectData | null>(null);
+    const [projectDetails, setProjectDetails] = useState<ProjectData | any>(null);
     const [selectedProjectName, setSelectedProjectName] = useState<string>("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<string | null>(null);
     const [addedMembers, setAddedMembers] = useState<string[]>([]);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<any>(null);
+    const [isProjectFocused, setIsProjectFocused] = useState(false);
 
-    useEffect(() => {
+
+    const tabs = [
+        { key: 'projectStatistics', label: 'Project Statistics' },
+        { key: 'fdpp', label: 'FDPP' },
+        { key: 'project-timeline', label: 'Project Timeline' },
+        { key: 'capex', label: 'CAPEX-Performance' },
+        { key: 'documents', label: 'Documents' },
+        { key: 'csr', label: 'Corporate Social Responsibility' },
+        { key: 'mineInfra', label: 'Mine Infra Updated' }
+    ];
+
+    const [activeTab, setActiveTab] = useState('projectStatistics');
+
+
+    // const getAllProjects = async () => {
+    //     try {
+    //         const storedData = await db.getProjects();
+    //         if (!Array.isArray(storedData) || storedData.length === 0) {
+    //             console.warn("No projects found.");
+    //             setAllProjects([]);
+    //             setProjectDetails(null);
+    //             return;
+    //         }
+    //         setAllProjects(storedData);
+    //         setProjectDetails(storedData[0]);
+    //         setSelectedProjectName(storedData[0].projectParameters.projectName);
+    //     } catch (error) {
+    //         console.error("An unexpected error occurred while fetching projects:", error);
+    //     }
+    // }
+    const getAllProjects = async () => {
         try {
-            const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-            const userId = loggedInUser.id;
-            const userProjectsKey = `projects_${userId}`;
-            const storedData = JSON.parse(localStorage.getItem(userProjectsKey) || "[]");
-
+            const storedData = await db.getProjects();
             if (!Array.isArray(storedData) || storedData.length === 0) {
                 console.warn("No projects found.");
                 setAllProjects([]);
@@ -90,9 +123,15 @@ const Projects = () => {
             setAllProjects(storedData);
             setProjectDetails(storedData[0]);
             setSelectedProjectName(storedData[0].projectParameters.projectName);
+            setIsProjectFocused(true); // 👈 This line ensures module is visible on first load
+
         } catch (error) {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
+    };
+
+    useEffect(() => {
+        getAllProjects();
     }, []);
 
     if (!projectDetails) {
@@ -106,7 +145,16 @@ const Projects = () => {
         </div>;
     }
 
-    const { projectParameters, locations, contractualDetails, initialStatus }: any = projectDetails;
+    // const handleProjectClick = (projectName: string) => {
+    //     const selectedProject = allProjects.find(
+    //         (project) => project.projectParameters.projectName === projectName
+    //     );
+    //     if (selectedProject) {
+    //         setProjectDetails(selectedProject);
+    //         setSelectedProjectName(selectedProject.projectParameters.projectName);
+    //         setActiveTab('fdpp');
+    //     }
+    // };
 
     const handleProjectClick = (projectName: string) => {
         const selectedProject = allProjects.find(
@@ -114,16 +162,16 @@ const Projects = () => {
         );
         if (selectedProject) {
             setProjectDetails(selectedProject);
-            setSelectedProjectName(selectedProject.projectParameters.projectName)
+            setSelectedProjectName(selectedProject.projectParameters.projectName);
+            setActiveTab('projectStatistics');
+            setIsProjectFocused(true); // Focus only on this project
         }
     };
+
 
     const handleSearch = (_event: any) => {
         console.log("searching...");
     };
-
-    const showModal = () => setIsModalOpen(true);
-    const handleCancel = () => setIsModalOpen(false);
 
     const handleAddMember = () => {
         if (selectedMember && !addedMembers.includes(selectedMember)) {
@@ -133,22 +181,21 @@ const Projects = () => {
         setSelectedMember(null);
     };
 
-    const handleDeleteProject = () => {
+    const handleDeleteProject = async () => {
         if (!projectToDelete) return;
 
-        const updatedProjects = allProjects.filter(
-            (project) => project.id !== projectToDelete.id
-        );
-
-        const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
-        const userId = loggedInUser.id;
-        const userProjectsKey = `projects_${userId}`;
-
-        localStorage.setItem(userProjectsKey, JSON.stringify(updatedProjects));
-        setAllProjects(updatedProjects);
-        setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
-        setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0].projectParameters.projectName : "");
-        setIsDeleteModalOpen(false);
+        try {
+            await db.deleteProject(projectToDelete.id);
+            const updatedProjects = await db.getProjects();
+            setAllProjects(updatedProjects);
+            setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
+            setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0]?.projectParameters?.projectName || "" : "");
+            message.success("Project removed successfully");
+        } catch (error: any) {
+            message.error("Error deleting project:", error);
+        } finally {
+            setIsDeleteModalOpen(false);
+        }
     };
 
     const closeDeleteModal = () => {
@@ -161,21 +208,76 @@ const Projects = () => {
         setIsDeleteModalOpen(true);
     };
 
+    const pinProject = (project: ProjectData) => {
+        console.log("Pin project:", project);
+    };
+
+    const markAsFavorite = (project: ProjectData) => {
+        console.log("Marked as favorite:", project);
+    };
+
+    const shareProject = (project: ProjectData) => {
+        const shareableLink = `https://yourapp.com/project/${project}`;
+        navigator.clipboard.writeText(shareableLink);
+        message.success("Project link copied to clipboard!");
+    };
+
     const menu = (project: ProjectData) => (
         <Menu>
-            <Menu.Item key="delete" onClick={() => showDeleteModal(project)}>
+            <Menu.Item key="pin" icon={<PushpinOutlined />} onClick={() => pinProject(project)}>
+                Pin to Top
+            </Menu.Item>
+            <Menu.Item key="favorite" icon={<StarOutlined />} onClick={() => markAsFavorite(project)}>
+                Mark as Favorite
+            </Menu.Item>
+            <Menu.Item key="share" icon={<ShareAltOutlined />} onClick={() => shareProject(project)}>
+                Share Project
+            </Menu.Item>
+            <Menu.Divider />
+            <Menu.Item key="delete" icon={<DeleteOutlined />} danger onClick={() => showDeleteModal(project)}>
                 Delete
             </Menu.Item>
         </Menu>
     );
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'projectStatistics':
+                return <ProjectStatistics code={projectDetails.id} />;
+            case 'fdpp':
+                return <FDPP code={projectDetails.id} />;
+            case 'project-timeline':
+                return <ProjectTimeline code={projectDetails.id} />;
+            case 'timeline':
+                return <TimelinePerformance />;
+            case 'capex':
+                return <CAPEXPerformance />;
+            case 'documents':
+                return <ProjectDocs />;
+            case 'csr':
+                return <CSR />;
+            case 'mineInfra':
+                return <MineInfra />;
+            default:
+                return <div>Select a tab to see content</div>;
+        }
+    };
 
     return (
         <>
             <div className="project-container">
                 <div className="all-project-details">
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <div className="heading">Projects</div>
-                        <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
+                        <span
+                            className="heading"
+                            style={{ cursor: isProjectFocused ? "pointer" : "default", textDecoration: isProjectFocused ? "underline" : "none", color: isProjectFocused ? "#1890ff" : "inherit" }}
+                            onClick={() => {
+                                if (isProjectFocused) setIsProjectFocused(false);
+                            }}
+                        >
+                            Projects
+                        </span>
+                        <Button size="small" style={{ backgroundColor: '#44bd32', color: '#fff' }} icon={<RobotOutlined />}>
                             <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
                         </Button>
                     </div>
@@ -188,215 +290,92 @@ const Projects = () => {
                             style={{ height: "26px", fontSize: "12px" }}
                         />
                     </div>
-                    {allProjects.map((project) => (
-                        <div
-                            key={project.projectParameters.projectName}
-                            className={`project-item ${selectedProjectName === project.projectParameters.projectName ? "selected-project" : ""}`}
-                            onClick={() => handleProjectClick(project.projectParameters.projectName)}
-                        >
-                            <span>{project.projectParameters.projectName}</span>
-                            <Dropdown overlay={menu(project)} trigger={["hover"]}>
-                                <MoreOutlined className="three-dot-menu" />
-                            </Dropdown>
+                    {allProjects.map((project, _index) => {
+                        const isSelected = selectedProjectName === project.projectParameters.projectName;
+                        if (isProjectFocused && !isSelected) return null;
+
+                        return (
+                            <div
+                                key={project.projectParameters.projectName}
+                                className={`project-item animated-item ${isSelected ? "focused-project" : ""}`}
+                                onClick={() => handleProjectClick(project.projectParameters.projectName)}
+                            >
+                                <div className="project-info-block">
+                                    <div className="project-title">{project.projectParameters.projectName}</div>
+                                    <div className="project-meta">
+                                        <span className="desc">{project.projectParameters.description || "No description available."}</span>
+
+                                        <div className="date-range">
+                                            <span className="date-label">📅</span>
+                                            <span className="date-value">
+                                                {project.startDate || "2024-03-01"} → {project.endDate || "2024-09-30"}
+                                            </span>
+                                        </div>
+
+                                        <div className="meta-row">
+                                            <span className="meta-item">👥 {project.members?.length || 0} members</span>
+                                            <span className={`status-badge ${project.status === "Active" ? "active" : "inactive"}`}>
+                                                {project.status || "Unknown"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Dropdown overlay={menu(project)} trigger={["hover"]}>
+                                    <MoreOutlined className="three-dot-menu" />
+                                </Dropdown>
+                            </div>
+                        );
+                    })}
+
+                    {isProjectFocused && projectDetails?.initialStatus?.items && (
+                        <div className="modules-list">
+                            <p style={{ fontWeight: 600 }}>Modules</p>
+                            {projectDetails.initialStatus.items.map((mod: any) => (
+                                <div key={mod.parentModuleCode} className="module-checkbox">
+                                    <Checkbox
+                                        onChange={(e) => {
+                                            console.log(`Module ${mod.moduleName} is ${e.target.checked ? 'checked' : 'unchecked'}`);
+                                        }}
+                                    >
+                                        {mod.moduleName}
+                                    </Checkbox>
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    )}
+
+
                 </div>
                 <section className="project-info">
                     <div className="base-details">
-                        <div>
-                            <p>{selectedProjectName}</p>
-                            <div style={{ fontSize: "12px", color: "#c5c5c5" }}>{projectParameters.companyName}</div>
-                        </div>
-                        <div>
-                            <Button className="bg-secondary" onClick={showModal}>
-                                Add Member
-                            </Button>
+                        <div className="">
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    className={`tab-button ${activeTab === tab.key ? "active" : ""}`}
+                                    onClick={() => setActiveTab(tab.key)}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                     <div className="details-paremeters">
                         <div className="info-item">
-                            <p>Project Parameters</p>
-                            <hr style={{ margin: "0px 0px 10px 0px" }} />
-                            <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
-                                <Row gutter={16}>
-                                    <Col span={24}>
-                                        <Form.Item label="Reserve">
-                                            <Input value={projectParameters.reserve} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Net Geological Reserve">
-                                            <Input value={projectParameters.netGeologicalReserve} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Extractable Reserve">
-                                            <Input value={projectParameters.extractableReserve} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Strip Ratio">
-                                            <Input value={projectParameters.stripRatio} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Peak Capacity">
-                                            <Input value={projectParameters.peakCapacity} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Mine Life">
-                                            <Input value={projectParameters.mineLife} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Total Coal Block Area">
-                                            <Input value={projectParameters.totalCoalBlockArea} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Mineral">
-                                            <Input value={projectParameters.mineral} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Type of Mine">
-                                            <Input value={projectParameters.typeOfMine} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Grade">
-                                            <Input value={projectParameters.grade} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </Form>
-                        </div>
-
-                        <div className="info-item">
-                            <p>Location Details</p>
-                            <hr style={{ margin: "0px 0px 10px 0px" }} />
-                            <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
-                                <Row gutter={16}>
-                                    <Col span={24}>
-                                        <Form.Item label="State">
-                                            <Input value={locations.state} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="District">
-                                            <Input value={locations.district} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Nearest Town">
-                                            <Input value={locations.nearestTown} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Nearest Airport">
-                                            <Input value={locations.nearestAirport} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Nearest Railway Station">
-                                            <Input value={locations.nearestRailwayStation} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </Form>
-                        </div>
-
-                        <div className="info-item">
-                            <p>Contractual Details</p>
-                            <hr style={{ margin: "0px 0px 10px 0px", height: "1.5px" }} />
-                            <Form colon={false} labelAlign="left" labelCol={{ span: 8 }} wrapperCol={{ span: 16 }} layout="horizontal">
-                                <Row gutter={16}>
-                                    <Col span={24}>
-                                        <Form.Item label="Mine Owner">
-                                            <Input value={contractualDetails.mineOwner ?? ''} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Date of H1 Bidder">
-                                            <Input value={contractualDetails.dateOfH1Bidder ?? ''} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="CBDPA Date">
-                                            <Input value={contractualDetails.cbdpaDate ?? ''} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="Vesting Order Date">
-                                            <Input value={contractualDetails.vestingOrderDate ?? ''} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                    <Col span={24}>
-                                        <Form.Item label="PBG Amount">
-                                            <Input value={contractualDetails.pbgAmount ?? ''} disabled />
-                                        </Form.Item>
-                                    </Col>
-                                </Row>
-                            </Form>
-                        </div>
-
-                        <div className="info-item">
-                            <p>Initial Status</p>
-                            <hr style={{ margin: "0px 0px 10px 0px", height: "1.5px" }} />
-                            <div style={{ padding: 5, maxWidth: "900px" }}>
-                                <Title level={4} style={{ margin: "0px 0px 10px 10px" }}>
-                                    {initialStatus.library}
-                                </Title>
-                                <Collapse accordion>
-                                    {initialStatus.items.map((module: any) => (
-                                        <Panel
-                                            key={module.parentModuleCode}
-                                            header={<b style={{ fontSize: "14px" }}>{module.moduleName}</b>}
-                                            extra={<span style={{ fontSize: "12px" }}>Mine Type: {module.mineType}</span>}
-                                        >
-                                            <Table
-                                                dataSource={module.activities}
-                                                columns={[
-                                                    {
-                                                        title: "Activity Name",
-                                                        dataIndex: "activityName",
-                                                        key: "activityName",
-                                                        width: "50%",
-                                                    },
-                                                    {
-                                                        title: "Duration (days)",
-                                                        dataIndex: "duration",
-                                                        key: "duration",
-                                                        align: "center",
-                                                    },
-                                                    {
-                                                        title: "Prerequisite",
-                                                        dataIndex: "prerequisite",
-                                                        key: "prerequisite",
-                                                        align: "center",
-                                                    },
-                                                ]}
-                                                rowKey="code"
-                                                pagination={false}
-                                                bordered
-                                            />
-                                        </Panel>
-                                    ))}
-                                </Collapse>
+                            <div className="tab-container">
+                                <div className="tab-content">
+                                    {renderTabContent()}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
-                <div className="image-container">
-                    <ImageContainer imageUrl="/images/auths/m5.jpg" />
-                </div>
             </div>
 
             <Modal
                 title="Select Member"
                 open={isModalOpen}
-                onCancel={handleCancel}
+                onCancel={() => setIsModalOpen(false)}
                 onOk={handleAddMember}
                 okButtonProps={{ className: "bg-secondary text-white" }}
                 cancelButtonProps={{ className: "bg-tertiary text-white" }}

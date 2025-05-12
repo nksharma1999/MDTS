@@ -8,8 +8,10 @@ import "react-calendar/dist/Calendar.css";
 import "../styles/holiday.css"
 import { Button, DatePicker, Input, message, Modal, Select, Tooltip } from "antd";
 import { SaveOutlined, DeleteOutlined, EditOutlined } from "@mui/icons-material";
-import dayjs from "dayjs";
 const moduleOptions = ["Land Acquisition", "Forest Clearance", "Budget Planning"];
+import { db } from "../Utils/dataStorege.ts";
+import dayjs from "dayjs";
+
 
 export const HolidayCalender = () => {
   const [rows, setRows] = useState([
@@ -22,6 +24,7 @@ export const HolidayCalender = () => {
   const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteIndex, setDeleteIndex] = useState<number | null>(null);
   const [showCalendar, setShowCalendar] = useState(true);
+  const [editMode, setEditMode] = useState(false);
   const holidayDates = rows.filter((row: any) => !row.editing && row.from && row.to)
     .flatMap((row: any) => {
       const start: any = new Date(row.from);
@@ -36,22 +39,26 @@ export const HolidayCalender = () => {
     });
 
   useEffect(() => {
-    const storedData = localStorage.getItem("holidayCalendarData");
-    if (storedData) {
+    const fetchHolidays = async () => {
       try {
-        const parsedData = JSON.parse(storedData);
-        const updatedRows = parsedData.map((row: any) => ({
-          ...row,
-          from: row.from ? dayjs(row.from) : null,
-          to: row.to ? dayjs(row.to) : null,
-        }));
+        const holidays = await db.getAllHolidays();
+        if (holidays) {
+          const updatedRows = holidays.map((row: any) => ({
+            ...row,
+            from: row.from && typeof row.from === "object" && "$d" in row.from ? dayjs(row.from.$d) : dayjs(row.from),
+            to: row.to && typeof row.to === "object" && "$d" in row.to ? dayjs(row.to.$d) : dayjs(row.to),
+          }));
 
-        setRows(updatedRows);
+          setRows(updatedRows);
+        }
       } catch (error) {
-        console.error("Error parsing localStorage data:", error);
+        console.error("Error fetching holidays:", error);
       }
-    }
+    };
+
+    fetchHolidays();
   }, []);
+
 
   const handleLowerCalendarNavigation = (activeStartDate: any) => {
     setBaseMonth(addMonths(activeStartDate, -1));
@@ -66,10 +73,6 @@ export const HolidayCalender = () => {
 
     if (field === "module") {
       let selectedModules = value;
-
-      if (value.includes("all")) {
-        selectedModules = moduleOptions;
-      }
 
       updatedRows[index][field] = selectedModules;
 
@@ -98,6 +101,7 @@ export const HolidayCalender = () => {
   };
 
   const toggleEdit = (index: any) => {
+    setEditMode(true);
     const updatedRows = [...rows];
     updatedRows[index].editing = !updatedRows[index].editing;
     setRows(updatedRows);
@@ -149,43 +153,42 @@ export const HolidayCalender = () => {
     setDeleteIndex(null);
   };
 
-  const deleteRow = (index: number) => {
-    setRows((prevRows) => {
-      const updatedRows = prevRows.filter((_, i) => i !== index);
-      localStorage.setItem("holidayCalendarData", JSON.stringify(updatedRows));
-      return updatedRows;
-    });
+  const deleteRow = async (index: number) => {
+    try {
+      const rowToDelete: any = rows[index];
+
+      if (rowToDelete?.id) {
+        await db.deleteHolidays(rowToDelete.id);
+      }
+
+      setRows((prevRows) => prevRows.filter((_, i) => i !== index));
+    } catch (error) {
+      console.error("Error deleting holiday:", error);
+    }
   };
 
-  const saveChanges = (index: number) => {
-    const row: any = rows[index];
+  const saveChanges = async (rowdata: any,index:number) => {
+    try {
+      const row: any = rows[index];
 
-    if (!row.from || !row.to || !row.holiday.trim() || row.module.length === 0) {
-      message.error("Please fill all required fields before saving.");
-      return;
+      if (!row.from || !row.to || !row.holiday.trim() || row.module.length === 0) {
+        message.error("Please fill all required fields before saving.");
+        return;
+      }
+
+      if (!row.id) {
+        row.id = Date.now().toString();
+      }
+
+      const updatedRows = [...rows];
+      updatedRows[index].editing = false;
+      setRows(updatedRows);
+      !editMode ? await db.addHolidays(row) : await db.updateHolidays(rowdata.id, rowdata);
+    } catch (error) {
+      message.error("Failed to save holiday. Please try again.");
     }
-
-    const storedData = localStorage.getItem("holidayCalendarData");
-    let existingData = storedData ? JSON.parse(storedData) : [];
-
-    if (!row.id) {
-      row.id = Date.now().toString();
-    }
-
-    const updatedRows = [...rows];
-    updatedRows[index].editing = false;
-
-    const existingIndex = existingData.findIndex((item: any) => item.id === row.id);
-
-    if (existingIndex !== -1) {
-      existingData[existingIndex] = row;
-    } else {
-      existingData.push(row);
-    }
-
-    setRows(updatedRows);
-    localStorage.setItem("holidayCalendarData", JSON.stringify(existingData));
   };
+
 
   const toggleCalendar = () => {
     setShowCalendar((prev) => !prev);
@@ -299,7 +302,7 @@ export const HolidayCalender = () => {
                         </Select>
                       ) : (
                         <Box>
-                          {row.module.map((module) => (
+                          {row.module?.map((module) => (
                             <Typography key={module} variant="body2">
                               {module}
                             </Typography>
@@ -310,7 +313,7 @@ export const HolidayCalender = () => {
 
                     <TableCell sx={{ textAlign: "center", padding: "5px" }}>
                       <Box sx={{ display: "flex", gap: "5px", flexWrap: "wrap", flexDirection: "column", justifyContent: "center" }}>
-                        {Object.entries(row.impact).map(([module, impact]) => (
+                        {Object.entries(row.impact)?.map(([module, impact]) => (
                           <Box key={module} sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}>
                             {row.editing ? (
                               <TextField
@@ -334,7 +337,7 @@ export const HolidayCalender = () => {
                             <Button type="primary" danger shape="circle" icon={<DeleteOutlined />} onClick={() => showDeleteModal(index)} />
                           </Tooltip>
                           <Tooltip title="Save">
-                            <Button type="primary" shape="circle" icon={<SaveOutlined />} onClick={() => saveChanges(index)} />
+                            <Button type="primary" shape="circle" icon={<SaveOutlined />} onClick={() => saveChanges(row,index)} />
                           </Tooltip>
                         </>
                       ) : (

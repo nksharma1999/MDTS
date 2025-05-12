@@ -1,0 +1,104 @@
+.project-document-cont {
+    padding: 15px;
+    display: flex;
+    gap: 20px;
+    font-family: Arial, sans-serif;
+
+    .header {
+        font-weight: bold;
+        font-size: 20px;
+        padding: 10px;
+        background-color: #ddd;
+        margin-bottom: 20px;
+    }
+
+
+    .summary-cards-flex {
+        margin: 20px 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: nowrap;
+
+    }
+
+    .summary-card-wrapper {
+        flex: 1;
+        max-width: calc(25% - 13px);
+    }
+
+    .summary-card {
+        background-color: #caf1ff;
+        font-weight: 600;
+        text-align: center;
+        height: 80px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 6px;
+    }
+
+    .count {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    .label {
+        font-size: 14px;
+        margin-top: 5px;
+    }
+
+    .whats-new-box {
+        border: 1px solid #ccc;
+        background-color: #fff3e0;
+        border-radius: 4px;
+        padding: 10px;
+        height: calc(100vh - 230px);
+    }
+
+    .whats-new-box .title {
+        text-align: center;
+        font-weight: bold;
+        background-color: #f4a261;
+        padding: 5px;
+        font-style: italic;
+    }
+
+    .whats-new-box .content {
+        padding: 10px;
+        font-style: italic;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .document-table {
+        margin-top: 20px;
+    }
+
+    .table-and-not {
+        display: flex;
+        gap: 20px;
+    }
+
+    .whats-new-box {
+        width: 30%;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+        .title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            font-size: 1rem;
+            color: #555;
+        }
+    }
+
+    .table-data {}
+
+}
