@@ -3,7 +3,7 @@
 }
 
 .main-navbar {
-    background-color: #ffffff;
+    background-color: #04646d;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -41,6 +41,7 @@
     outline: 2px solid #258790;
     padding: 5px 10px;
     border-radius: 22px;
+    background-color: #fff;
 }
 
 .nav-dropdown-cust {
@@ -199,7 +200,7 @@
         padding: 0;
         font-size: 14px;
         font-weight: bold;
-        color: #258790;
+        color: #fff !important;
         line-height: 1.2;
         text-transform: uppercase;
     }
@@ -284,7 +285,7 @@
     font-weight: bold;
 }
 
-.user-data{
+.user-data {
     display: flex;
     align-items: center;
     gap: 10px;
