@@ -310,3 +310,42 @@
     font-size: 25px;
     color: white;
 }
+
+.search-dropdown-wrapper {
+    outline: 2px solid #fff;
+    padding: 5px 5px 2px 8px;
+    border-radius: 10px;
+}
+
+.search-dropdown-content {
+    padding: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    width: 480px;
+    margin-top: 20px;
+    margin-right: -12px;
+    min-height: 200px;
+
+    button {
+        background-color: #04646d;
+    }
+}
+
+.search-input-box {
+    width: 100%;
+    border-radius: 50px;
+}
+
+.search-trigger-icon {
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+}
+
+.no-search-text {
+    margin-top: 20px;
+    color: #999;
+    text-align: center;
+    font-style: italic;
+}

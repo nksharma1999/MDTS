@@ -35,11 +35,12 @@ const ProjectStatistics = (project: any) => {
     const defaultSetup = async () => {
         try {
             const storedData: any = (await db.getProjects()).filter((p) => p.id == project.code);
+            console.log(storedData);
+            
             const selectedProject = storedData[0];
             if (selectedProject?.projectTimeline) {
                 const timelineData = await getProjectTimeline(selectedProject);
                 handleLibraryChange(timelineData);
-                console.log(timelineData);
             }
             
         } catch (error) {

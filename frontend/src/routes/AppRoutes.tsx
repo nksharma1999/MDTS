@@ -11,16 +11,11 @@ import DataMaster from "../pages/DataMaster";
 import Profile from "../pages/Profile";
 import Module from "../Components/Module";
 import CreateDocument from "../Components/CreateDocument";
-import { CreateModule } from "../Components/CreateModule";
-import DocumentPage from "../Components/Document";
-import DocumentLibrary from "../Components/DocumentLibrary";
 import { EmployeeRegistration } from "../Components/EmployeeRegistration";
 import { HolidayCalender } from "../Components/HolidayCalender";
 import ManageUser from "../Components/ManageUser";
-import { ModuleDetails } from "../Components/ModuleDetail";
 import ModuleLibrary from "../Components/ModuleLibrary";
 import NotificationLibrary from "../Components/NotificationLibrary";
-import ProjectParametersPage from "../Components/ProjectParameterPage";
 import { RegisterNewProject } from "../Components/RegisterNewProject";
 import StatusUpdate from "../Components/StatusUpdate";
 import TimelineBuilder from "../Components/TimelineBuilder";
@@ -64,16 +59,11 @@ const AppRoutes = () => {
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/create/project-timeline" element={<StatusUpdate />} />
-                    <Route path="/CreateModule" element={<CreateModule />} />
                     <Route path="/create/module-library" element={<ModuleLibrary />} />
                     <Route path="/create/non-working-days" element={<HolidayCalender />} />
-                    <Route path="/module/:moduleName" element={<ModuleDetails />} />
-                    <Route path="/project-parameters" element={<ProjectParametersPage />} />
                     <Route path="/create/raci-alert-notification" element={<ManageUser />} />
                     <Route path="/view-user" element={<ViewUser />} />
-                    <Route path="/documentpage" element={<DocumentPage />} />
                     <Route path="/create/document" element={<CreateDocument />} />
-                    <Route path="/documentlibrary" element={<DocumentLibrary />} />
                     <Route path="/view-document" element={<ViewDocumentPage />} />
                     <Route path="/notificationlibrary" element={<NotificationLibrary />} />
                     <Route path="/create/timeline-builder" element={<TimelineBuilder />} />

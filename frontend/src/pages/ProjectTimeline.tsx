@@ -6,7 +6,7 @@ import { FolderOpenOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Checkbox, Space } from "antd";
+import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Space } from "antd";
 import { ClockCircleOutlined, DownloadOutlined, DownOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -31,8 +31,6 @@ interface Module {
     moduleName: string;
     activities: Activity[];
 }
-
-const { Option } = Select;
 
 import { Dropdown } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';

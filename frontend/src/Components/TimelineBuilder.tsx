@@ -574,7 +574,7 @@ const TimeBuilder = () => {
       return activities.map((activity: any) => {
         if (activity.code === code) {
           const duration = parseInt(activity.duration, 10) || 0;
-          const { date: endDate, holidays } = addBusinessDays(date, duration);
+          const { date: endDate, holidays } = addBusinessDays(date, duration-1);
 
           activity.start = date;
           activity.end = endDate;
@@ -614,7 +614,7 @@ const TimeBuilder = () => {
           const slack = parseInt(activity.slack, 10) || 0;
           const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, slack + 1);
           const duration = parseInt(activity.duration, 10) || 0;
-          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
+          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration-1);
 
           activity.start = startDate;
           activity.end = endDate;

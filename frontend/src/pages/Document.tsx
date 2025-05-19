@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Table, Button, Space, notification, Modal, Form, Input, Select, List, message } from "antd";
 import { DownloadOutlined, DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import "../styles/documents.css";
-import ImageContainer from "../components/ImageContainer";
 import { getAllDocuments, deleteDocument, getModules, saveDocument, updateDocument } from "../Utils/moduleStorage";
 import { useDropzone, Accept } from "react-dropzone";
 import { useLocation } from "react-router-dom";
 import { Typography } from "antd";
 import "../styles/documents.css"
+import ImageContainer from "../Components/ImageContainer.tsx";
 const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
