@@ -22,8 +22,11 @@ interface Activity {
     level: string;
     duration: number;
     start: string | null;
-    end: string | null;
+    end: string | null
     activityStatus: string | null;
+    actualStart?: string | null;
+    actualFinish?: string | null;
+    actualDuration?: number;
 }
 
 interface Module {
@@ -34,6 +37,7 @@ interface Module {
 
 import { Dropdown } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';
+import { notify } from "../Utils/ToastNotify.tsx";
 
 const tabs = [
     "All",
@@ -214,12 +218,17 @@ const ProjectTimeline = (project: any) => {
         const globalHeader = [
             "Sr No.",
             "Key Activity",
-            "Duration (Days)",
+            "Expected Duration (Days)",
+            "Actual Duration (Days)",
             "Pre-Requisite",
             "Slack",
             "Planned Start",
             "Planned Finish",
+            "Actual Start",
+            "Actual Finish",
+            "Status",
         ];
+
         const headerRow = worksheet.addRow(globalHeader);
 
         headerRow.eachCell((cell: any) => {
@@ -249,10 +258,14 @@ const ProjectTimeline = (project: any) => {
                     `${moduleIndex + 1}.${activityIndex + 1}`,
                     activity.activityName,
                     activity.duration || 0,
-                    activity.prerequisite,
+                    activity.actualDuration || 0,
+                    activity.prerequisite || "-",
                     activity.slack || 0,
                     activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
                     activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+                    activity.actualStart ? dayjs(activity.actualStart).format("DD-MM-YYYY") : "-",
+                    activity.actualFinish ? dayjs(activity.actualFinish).format("DD-MM-YYYY") : "-",
+                    activity.activityStatus || "-",
                 ]);
 
                 row.eachCell((cell: any) => {
@@ -275,11 +288,15 @@ const ProjectTimeline = (project: any) => {
         });
 
         worksheet.columns = [
-            { width: 10 },
-            { width: 35 },
-            { width: 18 },
+            { width: 20 },
+            { width: 45 },
+            { width: 20 },
+            { width: 20 },
             { width: 30 },
             { width: 15 },
+            { width: 20 },
+            { width: 20 },
+            { width: 20 },
             { width: 20 },
             { width: 20 },
         ];
@@ -295,7 +312,7 @@ const ProjectTimeline = (project: any) => {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
         saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-        message.success("Download started!");
+        notify.success("Download started!");
     };
 
     const handleShare = () => {

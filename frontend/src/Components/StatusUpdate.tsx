@@ -6,12 +6,15 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, List, Typography } from "antd";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography } from "antd";
 import { ClockCircleOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 import TextArea from "antd/es/input/TextArea";
+import { ToastContainer, toast } from 'react-toastify';
+import { notify } from "../Utils/ToastNotify.tsx";
+
 interface Activity {
   code: string;
   activityName: string;
@@ -20,9 +23,13 @@ interface Activity {
   level: string;
   duration: number;
   start: string | null;
-  end: string | null;
+  end: string | null
   activityStatus: string | null;
+  actualStart?: string | null;
+  actualFinish?: string | null;
+  actualDuration?: number;
 }
+
 
 interface Module {
   parentModuleCode: string;
@@ -242,12 +249,17 @@ export const StatusUpdate = () => {
     const globalHeader = [
       "Sr No.",
       "Key Activity",
-      "Duration (Days)",
+      "Expected Duration (Days)",
+      "Actual Duration (Days)",
       "Pre-Requisite",
       "Slack",
       "Planned Start",
       "Planned Finish",
+      "Actual Start",
+      "Actual Finish",
+      "Status",
     ];
+
     const headerRow = worksheet.addRow(globalHeader);
 
     headerRow.eachCell((cell: any) => {
@@ -277,10 +289,14 @@ export const StatusUpdate = () => {
           `${moduleIndex + 1}.${activityIndex + 1}`,
           activity.activityName,
           activity.duration || 0,
-          activity.prerequisite,
+          activity.actualDuration || 0,
+          activity.prerequisite || "-",
           activity.slack || 0,
           activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
           activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+          activity.actualStart ? dayjs(activity.actualStart).format("DD-MM-YYYY") : "-",
+          activity.actualFinish ? dayjs(activity.actualFinish).format("DD-MM-YYYY") : "-",
+          activity.activityStatus || "-",
         ]);
 
         row.eachCell((cell: any) => {
@@ -303,11 +319,15 @@ export const StatusUpdate = () => {
     });
 
     worksheet.columns = [
-      { width: 10 },
-      { width: 35 },
-      { width: 18 },
+      { width: 20 },
+      { width: 45 },
+      { width: 20 },
+      { width: 20 },
       { width: 30 },
       { width: 15 },
+      { width: 20 },
+      { width: 20 },
+      { width: 20 },
       { width: 20 },
       { width: 20 },
     ];
@@ -323,15 +343,21 @@ export const StatusUpdate = () => {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
     saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-    message.success("Download started!");
+    notify.success("Download started!");
   };
 
   const handleShare = () => {
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      message.error("Please enter a valid email address.");
+      toast.error("Please enter a valid email address.", {
+        position: "bottom-left",
+        theme: "colored",
+      });
       return;
     }
-    message.success(`Shared to ${email}`);
+    toast.success(`Shared to ${email}`, {
+      position: "bottom-left",
+      theme: "colored",
+    });
     setIsModalOpen(false);
     setEmail("");
   };
@@ -349,7 +375,10 @@ export const StatusUpdate = () => {
       projectTimeline: updatedProjectTimeline,
     };
     await db.updateProject(selectedProjectId, updatedSelectedProject);
-    message.success("Timeline approved successfully");
+    toast.success("Timeline approved successfully", {
+      position: "bottom-left",
+      theme: "colored",
+    });
     setIsApproveModalOpen(false);
     defaultSetup();
   };
@@ -587,8 +616,7 @@ export const StatusUpdate = () => {
 
         const displayDuration = expectedDuration ?? calculatedDuration ?? duration;
 
-        const isEditable = isEditing && !isModule && (activityStatus === "inProgress" || activityStatus === "yetToStart");
-
+        const isEditable = isEditing && !isModule && activityStatus === "inProgress";
         return isEditable ? (
           <Input
             type="number"
@@ -668,12 +696,10 @@ export const StatusUpdate = () => {
   ];
 
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
-
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
-    console.log(dataSource);
-
     setDataSource((prevData: any) => {
       const today = dayjs();
+
       const parseDate = (date: string | null | undefined) =>
         date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
 
@@ -710,9 +736,21 @@ export const StatusUpdate = () => {
         return null;
       };
 
-      const getLatestPreReqFinishDate = (preReqCodes: string[]) => {
+      const getAllActivities = (data: any[]): any[] => {
+        const result: any[] = [];
+        const traverse = (items: any[]) => {
+          for (const item of items) {
+            result.push(item);
+            if (item.children) traverse(item.children);
+          }
+        };
+        traverse(data);
+        return result;
+      };
+
+      const getLatestPreReqFinishDate = (data: any[], preReqCodes: string[]) => {
         const preReqActivities = preReqCodes
-          .map((code: any) => findActivityByCode(prevData, code))
+          .map((code: any) => findActivityByCode(data, code))
           .filter((item: any) => item && item.actualFinish);
 
         const dates = preReqActivities
@@ -723,305 +761,151 @@ export const StatusUpdate = () => {
         return dates[0];
       };
 
-      const updateItem = (item: any): any => {
-        if (item.key !== recordKey) return item;
+      const updateDeepDependents = (data: any[], updatedCodes: Set<string>): any[] => {
+        const flatList = getAllActivities(data);
+        const updated = new Set<string>(updatedCodes);
 
-        let updatedItem = { ...item };
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const activity of flatList) {
+            if (activity.actualStart || !activity.preRequisite) continue;
 
-        const plannedStart = parseDate(updatedItem.plannedStart);
-        const plannedFinish = parseDate(updatedItem.plannedFinish);
-        const plannedDuration = updatedItem.duration ? parseInt(updatedItem.duration, 10) : 0;
+            const preReq = activity.preRequisite.split(',').map((c: string) => c.trim());
+            const allPresent = preReq.every((code: any) =>
+              flatList.find((x) => x.Code === code && x.actualFinish)
+            );
 
-        switch (fieldName) {
-          case "activityStatus": {
+            if (allPresent && preReq.some((code: any) => updated.has(code))) {
+              const latest: any = getLatestPreReqFinishDate(data, preReq);
+              const duration = activity.duration ? parseInt(activity.duration, 10) : 0;
+              const start = latest.add(1, 'day');
+              const finish = addBusinessDays(start, duration - 1);
+
+              activity.actualStart = start.format('DD-MM-YYYY');
+              activity.actualFinish = finish.format('DD-MM-YYYY');
+              activity.expectedDuration = duration;
+
+              updated.add(activity.Code);
+              changed = true;
+            }
+          }
+        }
+
+        return data;
+      };
+
+      let updatedCodes = new Set<string>();
+      const updatedData = prevData.map((item: any) => {
+        const recursiveUpdate = (subItem: any): any => {
+          if (subItem.key === recordKey) {
+            const plannedStart = parseDate(subItem.plannedStart);
+            const plannedFinish = parseDate(subItem.plannedFinish);
+            const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
+
             let tempStart = null;
             let tempFinish = null;
 
-            if (value === "inProgress") {
-              if (updatedItem.preRequisite) {
-                const preReqCodes = updatedItem.preRequisite.split(',').map((code: any) => code.trim());
-                const latestPreReqFinish = getLatestPreReqFinishDate(preReqCodes);
+            if (fieldName === 'activityStatus') {
+              if (value === 'inProgress' || value === 'completed') {
+                const preReqCodes = subItem.preRequisite
+                  ? subItem.preRequisite.split(',').map((code: any) => code.trim())
+                  : [];
+
+                const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
                 if (latestPreReqFinish) {
                   tempStart = latestPreReqFinish.add(1, 'day');
+                } else {
+                  tempStart = plannedStart;
                 }
-              } else if (plannedStart) {
-                tempStart = plannedStart;
-              }
-              if (tempStart && plannedDuration >= 0) {
-                tempFinish = addBusinessDays(tempStart, plannedDuration - 1);
-              }
 
-              if (tempStart && tempStart.isAfter(today, 'day')) {
-                message.error("Cannot mark as 'In Progress' when actual start is in the future.");
-                return item;
-              }
-            } else if (value === "completed") {
-              if (!updatedItem.preRequisite) {
-                tempStart = plannedStart;
-              } else {
-                const preReqCodes = updatedItem.preRequisite.split(',').map((code: any) => code.trim());
-                const latestPreReqFinish = getLatestPreReqFinishDate(preReqCodes);
-                if (latestPreReqFinish) {
-                  const candidateStart = latestPreReqFinish.add(1, 'day');
-                  tempStart = candidateStart.isAfter(plannedFinish!) ? null : candidateStart;
+                tempFinish = tempStart && plannedDuration >= 0
+                  ? addBusinessDays(tempStart, plannedDuration - 1)
+                  : null;
+
+                if ((tempStart && tempStart.isAfter(today, 'day')) ||
+                  (value === 'completed' && tempFinish && tempFinish.isAfter(today, 'day'))) {
+                  toast.error(`Cannot mark as '${value}' when actual dates exceed today's date.`, {
+                    position: "bottom-left",
+                    theme: "colored",
+                  });
+                  return subItem;
                 }
+
+                subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
+                subItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
+                subItem.expectedDuration = plannedDuration;
+                subItem.activityStatus = value;
+                updatedCodes.add(subItem.Code);
+              } else if (value === 'yetToStart') {
+                subItem.expectedDuration = plannedDuration;
+                subItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
+                subItem.actualFinish = plannedFinish?.format('DD-MM-YYYY') || null;
+                subItem.activityStatus = value;
               }
-              if (tempStart && plannedDuration >= 0) {
-                tempFinish = addBusinessDays(tempStart, plannedDuration - 1);
+            } else if (fieldName === 'actualStart') {
+              const newStart = parseDate(value);
+              const preReqCodes = subItem.preRequisite
+                ? subItem.preRequisite.split(',').map((c: string) => c.trim())
+                : [];
+              const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
+
+              if (latestPreReqFinish && newStart && newStart.isBefore(latestPreReqFinish, 'day')) {
+                toast.error(`Actual start date cannot be before prerequisite completion.`, {
+                  position: "bottom-left",
+                  theme: "colored",
+                });
+                return subItem;
               }
 
-              if ((tempStart && tempStart.isAfter(today, 'day')) || (tempFinish && tempFinish.isAfter(today, 'day'))) {
-                message.error("Cannot mark as 'Completed' when actual dates exceed today's date.");
-                return item;
+              if (newStart && newStart.isAfter(today, 'day')) {
+                toast.error(`Actual start date cannot be be in the future.`, {
+                  position: "bottom-left",
+                  theme: "colored",
+                });
+                return subItem;
               }
-            }
 
-            updatedItem.activityStatus = value;
-
-            if (value === "yetToStart") {
-              updatedItem.expectedDuration = plannedDuration;
-              updatedItem.actualStart = plannedStart ? plannedStart.format('DD-MM-YYYY') : null;
-              updatedItem.actualFinish = plannedFinish ? plannedFinish.format('DD-MM-YYYY') : null;
-            } else if (value === "inProgress") {
-              updatedItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
-              updatedItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
-              updatedItem.expectedDuration = plannedDuration;
-            } else if (value === "completed") {
-              updatedItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
-              updatedItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
-              updatedItem.expectedDuration = plannedDuration;
-            }
-            break;
-          }
-
-          case "expectedDuration": {
-            const parsed = parseInt(value, 10);
-            if (!isNaN(parsed)) {
-              updatedItem.expectedDuration = parsed;
-              const actualStart = parseDate(updatedItem.actualStart);
-              if (actualStart) {
-                updatedItem.actualFinish = addBusinessDays(actualStart, parsed).format('DD-MM-YYYY');
+              subItem.actualStart = value;
+              if (newStart && subItem.expectedDuration != null) {
+                subItem.actualFinish = addBusinessDays(newStart, subItem.expectedDuration).format('DD-MM-YYYY');
               }
-            }
-            break;
-          }
+            } else if (fieldName === 'actualFinish') {
+              const newFinish = parseDate(value);
+              if (newFinish && newFinish.isAfter(today, 'day')) {
+                toast.error(`Actual finish date cannot be in the future.`, {
+                  position: "bottom-left",
+                  theme: "colored",
+                });
+                return subItem;
+              }
 
-          case "actualStart": {
-            const newStart = parseDate(value);
-            const preReqCodes = updatedItem.preRequisite
-              ? updatedItem.preRequisite.split(',').map((c: string) => c.trim())
-              : [];
-            const latestPreReqFinish = getLatestPreReqFinishDate(preReqCodes);
-
-            if (latestPreReqFinish && newStart && newStart.isBefore(latestPreReqFinish, 'day')) {
-              message.error("Actual start date cannot be before prerequisite completion.");
-              return item;
-            }
-
-            if (newStart && newStart.isAfter(today, 'day')) {
-              message.error("Actual start date cannot be in the future.");
-              return item;
-            }
-
-            updatedItem.actualStart = value;
-            if (newStart && updatedItem.expectedDuration != null) {
-              updatedItem.actualFinish = addBusinessDays(newStart, updatedItem.expectedDuration).format('DD-MM-YYYY');
-            }
-            break;
-          }
-          case "actualFinish": {
-            const newFinish = parseDate(value);
-            if (newFinish && newFinish.isAfter(today, 'day')) {
-              message.error("Actual finish date cannot be in the future.");
-              return item;
+              subItem.actualFinish = value;
+              const start = parseDate(subItem.actualStart);
+              if (start && newFinish) {
+                const dur = businessDaysBetween(start, newFinish);
+                subItem.expectedDuration = dur >= 0 ? dur : null;
+              }
+            } else {
+              subItem[fieldName] = value;
             }
 
-            updatedItem.actualFinish = value;
-            const start = parseDate(updatedItem.actualStart);
-            if (start && newFinish) {
-              const dur = businessDaysBetween(start, newFinish);
-              updatedItem.expectedDuration = dur >= 0 ? dur : null;
-            }
-            break;
-          }
-
-          default:
-            updatedItem[fieldName] = value;
-        }
-
-        return updatedItem;
-      };
-
-      const updateData = (data: any[]): any[] => {
-        return data.map((item) => {
-          if (item.key === recordKey) {
-            return updateItem(item);
-          } else if (item.children) {
+            return subItem;
+          } else if (subItem.children) {
             return {
-              ...item,
-              children: updateData(item.children),
+              ...subItem,
+              children: subItem.children.map((child: any) => recursiveUpdate(child)),
             };
           }
-          return item;
-        });
-      };
+          return subItem;
+        };
 
-      return updateData(prevData);
+        return recursiveUpdate(item);
+      });
+
+      return updateDeepDependents(updatedData, updatedCodes);
     });
   };
-
-  //   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
-  //   setDataSource((prevData: any) => {
-  //     const today = dayjs();
-
-  //     const parseDate = (date: string | null | undefined) =>
-  //       date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
-
-  //     const addBusinessDays = (start: dayjs.Dayjs, numDays: number): dayjs.Dayjs => {
-  //       let count = 0;
-  //       let date = start.clone();
-  //       while (count < numDays) {
-  //         date = date.add(1, 'day');
-  //         const day = date.day();
-  //         if (day !== 0 && day !== 6) count++;
-  //       }
-  //       return date;
-  //     };
-
-  //     const findActivityByCode = (data: any[], code: string): any | null => {
-  //       for (const item of data) {
-  //         if (item.Code === code) return item;
-  //         if (item.children) {
-  //           const found = findActivityByCode(item.children, code);
-  //           if (found) return found;
-  //         }
-  //       }
-  //       return null;
-  //     };
-
-  //     const getAllActivities = (data: any[]): any[] => {
-  //       const result: any[] = [];
-  //       const traverse = (items: any[]) => {
-  //         for (const item of items) {
-  //           result.push(item);
-  //           if (item.children) traverse(item.children);
-  //         }
-  //       };
-  //       traverse(data);
-  //       return result;
-  //     };
-
-  //     const getLatestPreReqFinishDate = (data: any[], preReqCodes: string[]) => {
-  //       const preReqActivities = preReqCodes
-  //         .map((code: any) => findActivityByCode(data, code))
-  //         .filter((item: any) => item && item.actualFinish);
-
-  //       const dates = preReqActivities
-  //         .map((item: any) => parseDate(item.actualFinish))
-  //         .filter((d: any) => d != null)
-  //         .sort((a: any, b: any) => b!.isAfter(a!) ? 1 : -1);
-
-  //       return dates[0];
-  //     };
-
-  //     const updateDeepDependents = (data: any[], updatedCodes: Set<string>): any[] => {
-  //       const flatList = getAllActivities(data);
-  //       const updated = new Set<string>(updatedCodes);
-
-  //       let changed = true;
-  //       while (changed) {
-  //         changed = false;
-  //         for (const activity of flatList) {
-  //           if (activity.actualStart) continue;
-
-  //           const preReq = activity.preRequisite
-  //             ? activity.preRequisite.split(',').map((c: string) => c.trim())
-  //             : [];
-
-  //           const allPresent = preReq.every((code) =>
-  //             flatList.find((x) => x.Code === code && x.actualFinish)
-  //           );
-
-  //           if (allPresent && preReq.some((code) => updated.has(code))) {
-  //             const latest:any = getLatestPreReqFinishDate(data, preReq);
-  //             const duration = activity.duration ? parseInt(activity.duration, 10) : 0;
-  //             const start = latest.add(1, 'day');
-  //             const finish = addBusinessDays(start, duration - 1);
-
-  //             activity.actualStart = start.format('DD-MM-YYYY');
-  //             activity.actualFinish = finish.format('DD-MM-YYYY');
-  //             activity.expectedDuration = duration;
-
-  //             updated.add(activity.Code);
-  //             changed = true;
-  //           }
-  //         }
-  //       }
-
-  //       return data;
-  //     };
-
-  //     // Step 1: Update the triggering activity
-  //     let updatedCodes = new Set<string>();
-  //     const updatedData = prevData.map((item: any) => {
-  //       const recursiveUpdate = (subItem: any): any => {
-  //         if (subItem.key === recordKey) {
-  //           const plannedStart = parseDate(subItem.plannedStart);
-  //           const plannedFinish = parseDate(subItem.plannedFinish);
-  //           const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
-
-  //           let tempStart = null;
-  //           let tempFinish = null;
-
-  //           if (fieldName === 'activityStatus' && value === 'completed') {
-  //             if (!subItem.preRequisite) {
-  //               tempStart = plannedStart;
-  //             } else {
-  //               const preReqCodes = subItem.preRequisite.split(',').map((code: any) => code.trim());
-  //               const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
-  //               if (latestPreReqFinish) {
-  //                 const candidateStart = latestPreReqFinish.add(1, 'day');
-  //                 tempStart = candidateStart.isAfter(plannedFinish!) ? null : candidateStart;
-  //               }
-  //             }
-
-  //             if (tempStart && plannedDuration >= 0) {
-  //               tempFinish = addBusinessDays(tempStart, plannedDuration - 1);
-  //             }
-
-  //             if ((tempStart && tempStart.isAfter(today, 'day')) || (tempFinish && tempFinish.isAfter(today, 'day'))) {
-  //               message.error("Cannot mark as 'Completed' when actual dates exceed today's date.");
-  //               return subItem;
-  //             }
-
-  //             subItem.activityStatus = value;
-  //             subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
-  //             subItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
-  //             subItem.expectedDuration = plannedDuration;
-
-  //             updatedCodes.add(subItem.Code);
-  //           } else {
-  //             subItem[fieldName] = value;
-  //           }
-
-  //           return subItem;
-  //         } else if (subItem.children) {
-  //           return {
-  //             ...subItem,
-  //             children: subItem.children.map((child: any) => recursiveUpdate(child)),
-  //           };
-  //         }
-  //         return subItem;
-  //       };
-
-  //       return recursiveUpdate(item);
-  //     });
-
-  //     // Step 2: Recursively propagate to all levels of dependents
-  //     return updateDeepDependents(updatedData, updatedCodes);
-  //   });
-  // };
-
 
   const handleUpdateStatus = () => {
     setIsEditing(true);
@@ -1070,7 +954,10 @@ export const StatusUpdate = () => {
     });
 
     if (!isValid) {
-      message.error(errorMessage);
+      toast.error(`${errorMessage}`, {
+        position: "bottom-left",
+        theme: "colored",
+      });
       return;
     }
 
@@ -1101,7 +988,10 @@ export const StatusUpdate = () => {
     updatedProject.projectTimeline = updatedSequencedModules;
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
     defaultSetup();
-    message.success("Status updated successfully!");
+    toast.success(`Status updated successfully!`, {
+      position: "bottom-left",
+      theme: "colored",
+    });
   };
 
   const getProjectTimelineById = (id: any) => {
@@ -1441,6 +1331,7 @@ export const StatusUpdate = () => {
           </div>
         )}
       </div>
+
       <Modal
         title="Share Timeline"
         visible={isModalOpen}
@@ -1579,8 +1470,7 @@ export const StatusUpdate = () => {
 
         </div>
       </Modal>
-
-
+      <ToastContainer />
     </>
   );
 };
