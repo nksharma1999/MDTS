@@ -267,17 +267,16 @@ const Projects = () => {
         <>
             <div className="project-container">
                 <div className="all-project-details">
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between",alignItems:'center' }}>
                         <span
-                            className="heading"
-                            style={{ cursor: isProjectFocused ? "pointer" : "default", textDecoration: isProjectFocused ? "underline" : "none", color: isProjectFocused ? "#1890ff" : "inherit" }}
+                            className={`project-heading ${isProjectFocused ? "focused" : ""}`}
                             onClick={() => {
                                 if (isProjectFocused) setIsProjectFocused(false);
                             }}
                         >
                             Projects
                         </span>
-                        <Button size="small" style={{ backgroundColor: '#44bd32', color: '#fff' }} icon={<RobotOutlined />}>
+                        <Button size="small" style={{ backgroundColor: '#44bd32', color: '#fff', padding: '1.5px 12px' }} icon={<RobotOutlined />}>
                             <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
                         </Button>
                     </div>

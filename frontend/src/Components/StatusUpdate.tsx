@@ -559,9 +559,9 @@ export const StatusUpdate = () => {
           <span
             style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
             onClick={() => {
-              setSelectedActivityKey(record.key)
-            }
-            }
+              if (record.duration != undefined)
+                setSelectedActivityKey(prevKey => prevKey === record.key ? null : record.key);
+            }}
           >
             {record.notes?.length > 0 && (
               <span
@@ -576,10 +576,15 @@ export const StatusUpdate = () => {
                 <FileTextOutlined style={{ fontSize: 22, color: '#1890ff' }} />
               </span>
             )}
-            {duration && <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />}
+            {duration ? (
+              <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+            ) : (
+              <span style={{ width: 34, height: 34 }} /> // Keeps layout
+            )}
             {keyActivity}
           </span>
         );
+
       },
     },
     {
@@ -620,6 +625,7 @@ export const StatusUpdate = () => {
         return isEditable ? (
           <Input
             type="number"
+            min={1}
             value={displayDuration}
             onChange={(e) => handleFieldChange(e.target.value, record.key, "expectedDuration")}
             style={{ width: 80 }}

@@ -69,7 +69,6 @@ const Module = () => {
     };
 
     useEffect(() => {
-        console.log("State from useLocation:", state);
         if (state && state.activities) {
             setModuleData({
                 id: state.id,
@@ -652,7 +651,6 @@ const Module = () => {
     }, [sortOrder]);
 
     useEffect(() => {
-        console.log("Original Activities Updated:", originalActivities);
     }, [originalActivities]);
 
 
@@ -1127,7 +1125,7 @@ const Module = () => {
                 </Modal >
 
                 <Modal
-                    title="Define Penalty for Delay (₹ / Day)"
+                    title="Define Cost for Delay (₹ / Day)"
                     open={openCostCalcModal}
                     onCancel={handleClose}
                     onOk={handleConfirm}
@@ -1146,14 +1144,14 @@ const Module = () => {
                             style={{ marginBottom: 16 }}
                         >
                             <Row align="middle" gutter={8}>
-                                <Col flex="150px">Project Cost:</Col>
+                                <Col flex="150px">Project Cost</Col>
                                 <Col flex="auto">
                                     <Form.Item
                                         name="projectCost"
                                         noStyle
                                         rules={[{ required: true, message: 'Please enter Project Cost' }]}
                                     >
-                                        <Input type="number" placeholder="Enter Project Cost" />
+                                        <Input type="number" min={0} placeholder="Enter Project Cost" />
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -1161,14 +1159,14 @@ const Module = () => {
 
                         <Form.Item label="" style={{ marginBottom: 24 }}>
                             <Row align="middle" gutter={8}>
-                                <Col flex="150px">Opportunity Cost:</Col>
+                                <Col flex="150px">Opportunity Cost</Col>
                                 <Col flex="auto">
                                     <Form.Item
                                         name="opCost"
                                         noStyle
                                         rules={[{ required: true, message: 'Please enter OP Cost' }]}
                                     >
-                                        <Input type="number" placeholder="Enter OP Cost" />
+                                        <Input type="number" min={0} placeholder="Enter OP Cost" />
                                     </Form.Item>
                                 </Col>
                             </Row>
