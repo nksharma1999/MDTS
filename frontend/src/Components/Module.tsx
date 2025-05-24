@@ -694,11 +694,11 @@ const Module = () => {
     const handleConfirm = () => {
         form.validateFields()
             .then(values => {
-                console.log('Confirmed values:', values);
+                console.error('Confirmed values:', values);
                 handleClose();
             })
             .catch(info => {
-                console.log('Validation Failed:', info);
+                console.error('Validation Failed:', info);
             });
     };
 

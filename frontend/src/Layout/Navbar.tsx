@@ -236,7 +236,6 @@ const Navbar: React.FC = () => {
                                         onSearch={(value) => {
                                             if (value) {
                                                 setRecentSearches(prev => [value, ...prev.slice(0, 4)]);
-                                                console.log('Search:', value);
                                             }
                                         }}
                                         enterButton

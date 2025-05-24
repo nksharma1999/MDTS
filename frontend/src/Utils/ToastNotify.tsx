@@ -5,7 +5,7 @@ const defaultOptions: ToastOptions = {
     position: "bottom-left",
     theme: "colored",
     autoClose: 3000,
-    hideProgressBar: false,
+    hideProgressBar: true,
     closeOnClick: true,
     pauseOnFocusLoss: true,
     draggable: true,

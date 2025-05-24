@@ -6,15 +6,15 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography } from "antd";
-import { ClockCircleOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col } from "antd";
+import { ClockCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 import TextArea from "antd/es/input/TextArea";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import { notify } from "../Utils/ToastNotify.tsx";
-
+import { UserOutlined } from '@ant-design/icons';
 interface Activity {
   code: string;
   activityName: string;
@@ -61,6 +61,9 @@ export const StatusUpdate = () => {
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
+  const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
+  const [form] = Form.useForm();
+  const [formValid, setFormValid] = useState(false);
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -141,6 +144,7 @@ export const StatusUpdate = () => {
       }
 
       const projectTimeline = selectedProject?.projectTimeline || [];
+
       const latestVersionId = localStorage.getItem("latestProjectVersion");
 
       const extractedTimelines = projectTimeline.map((version: any) => ({
@@ -348,16 +352,10 @@ export const StatusUpdate = () => {
 
   const handleShare = () => {
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      toast.error("Please enter a valid email address.", {
-        position: "bottom-left",
-        theme: "colored",
-      });
+      notify.error("Please enter a valid email address.");
       return;
     }
-    toast.success(`Shared to ${email}`, {
-      position: "bottom-left",
-      theme: "colored",
-    });
+    notify.success(`Shared to ${email}`);
     setIsModalOpen(false);
     setEmail("");
   };
@@ -375,35 +373,9 @@ export const StatusUpdate = () => {
       projectTimeline: updatedProjectTimeline,
     };
     await db.updateProject(selectedProjectId, updatedSelectedProject);
-    toast.success("Timeline approved successfully", {
-      position: "bottom-left",
-      theme: "colored",
-    });
+    notify.success("Timeline approved successfully");
     setIsApproveModalOpen(false);
     defaultSetup();
-  };
-
-  const isPreReqCompleted = (preRequisiteCode: string, allData: any[]): boolean => {
-    let isCompleted = false;
-
-    const findActivityByCode = (data: any[]): any => {
-      for (const item of data) {
-        if (item.children && item.children.length > 0) {
-          const found = findActivityByCode(item.children);
-          if (found) return found;
-        } else if (item.Code === preRequisiteCode) {
-          return item;
-        }
-      }
-      return null;
-    };
-
-    if (!preRequisiteCode) return true;
-
-    const preReqActivity = findActivityByCode(allData);
-    isCompleted = preReqActivity?.activityStatus === 'completed';
-
-    return isCompleted;
   };
 
   const handleLibraryChange = (libraryItems: any) => {
@@ -434,7 +406,8 @@ export const StatusUpdate = () => {
             remarks: activity.remarks ?? "",
             isModule: false,
             activityStatus: activity.activityStatus || "yetToStart",
-            fin_status: activity.fin_status || ''
+            fin_status: activity.fin_status || '',
+            notes: activity.notes || [],
           };
         });
 
@@ -473,22 +446,72 @@ export const StatusUpdate = () => {
 
   const renderStatusSelect = (
     status: string,
-    recordKey: string,
-    fin_status: string,
-    disabled: boolean = false
+    record: any,
+    dataSource: any[],
   ) => {
+    const getAllActivities = (data: any[]): any[] => {
+      const result: any[] = [];
+      const traverse = (items: any[]) => {
+        for (const item of items) {
+          result.push(item);
+          if (item.children) traverse(item.children);
+        }
+      };
+      traverse(data);
+      return result;
+    };
+
+    const flatList = getAllActivities(dataSource);
+
+    const isBlockedByPreRequisite = () => {
+      if (!record.preRequisite) return false;
+
+      const preReqCodes = record.preRequisite
+        .split(',')
+        .map((c: string) => c.trim().toLowerCase());
+
+      return preReqCodes.some((code: any) => {
+        const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+        return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
+      });
+    };
+
+    const isBlockedByChildStatus = () => {
+      if (!record.children || !Array.isArray(record.children)) return false;
+      return record.children.some((child: any) => {
+        const st = (child.activityStatus || '').toLowerCase();
+        return st === 'inprogress' || st === 'completed';
+      });
+    };
+
+    const isBlockedByDependents = () => {
+      const currentCode = (record.Code || '').toLowerCase();
+
+      return flatList.some((item) => {
+        const preReqs = (item.preRequisite || '')
+          .split(',')
+          .map((c: string) => c.trim().toLowerCase());
+
+        return preReqs.includes(currentCode) &&
+          ['inprogress', 'completed'].includes((item.activityStatus || '').toLowerCase());
+      });
+    };
+
+    const disabled = isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
+
     return (
       <Select
         value={status}
-        onChange={(value) => handleFieldChange(value, recordKey, "activityStatus")}
+        onChange={(value) => handleFieldChange(value, record.key, "activityStatus")}
         options={[
           { label: "Yet to Start", value: "yetToStart" },
           { label: "In Progress", value: "inProgress" },
           { label: "Completed", value: "completed" },
         ]}
-        disabled={disabled || fin_status === "completed"}
+        disabled={disabled}
         className={`status-select ${status}`}
         style={{ width: "100%", fontWeight: "bold" }}
+        title={undefined}
       />
     );
   };
@@ -579,12 +602,11 @@ export const StatusUpdate = () => {
             {duration ? (
               <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
             ) : (
-              <span style={{ width: 34, height: 34 }} /> // Keeps layout
+              <span style={{ width: 34, height: 34 }} />
             )}
             {keyActivity}
           </span>
         );
-
       },
     },
     {
@@ -642,11 +664,11 @@ export const StatusUpdate = () => {
       width: 150,
       align: "center",
       render: (_, record) => {
-        const preReqDone = isPreReqCompleted(record.preRequisite, dataSource);
         return isEditing && !record.isModule
-          ? renderStatusSelect(record.activityStatus, record.key, record.fin_status, !preReqDone)
+          ? renderStatusSelect(record.activityStatus, record, dataSource)
           : record.activityStatus;
       },
+
     },
     {
       title: "Actual / Expected Start",
@@ -702,6 +724,248 @@ export const StatusUpdate = () => {
   ];
 
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
+  // const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
+  //   console.log(dataSource);
+
+  //   setDataSource((prevData: any) => {
+  //     const today = dayjs();
+
+  //     const parseDate = (date: string | null | undefined) =>
+  //       date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
+
+  //     const addBusinessDays = (start: dayjs.Dayjs, numDays: number): dayjs.Dayjs => {
+  //       let count = 0;
+  //       let date = start.clone();
+  //       while (count < numDays) {
+  //         date = date.add(1, 'day');
+  //         const day = date.day();
+  //         if (day !== 0 && day !== 6) count++;
+  //       }
+  //       return date;
+  //     };
+
+  //     const businessDaysBetween = (start: dayjs.Dayjs, end: dayjs.Dayjs): number => {
+  //       let count = 0;
+  //       let date = start.clone();
+  //       while (date.isBefore(end, 'day') || date.isSame(end, 'day')) {
+  //         const day = date.day();
+  //         if (day !== 0 && day !== 6) count++;
+  //         date = date.add(1, 'day');
+  //       }
+  //       return count;
+  //     };
+
+  //     const findActivityByCode = (data: any[], code: string): any | null => {
+  //       for (const item of data) {
+  //         if (item.Code === code) return item;
+  //         if (item.children) {
+  //           const found = findActivityByCode(item.children, code);
+  //           if (found) return found;
+  //         }
+  //       }
+  //       return null;
+  //     };
+
+  //     const getAllActivities = (data: any[]): any[] => {
+  //       const result: any[] = [];
+  //       const traverse = (items: any[]) => {
+  //         for (const item of items) {
+  //           result.push(item);
+  //           if (item.children) traverse(item.children);
+  //         }
+  //       };
+  //       traverse(data);
+  //       return result;
+  //     };
+
+  //     const getLatestPreReqFinishDate = (data: any[], preReqCodes: string[]) => {
+  //       const preReqActivities = preReqCodes
+  //         .map((code: any) => findActivityByCode(data, code))
+  //         .filter((item: any) => item && item.actualFinish);
+
+  //       const dates = preReqActivities
+  //         .map((item: any) => parseDate(item.actualFinish))
+  //         .filter((d: any) => d != null)
+  //         .sort((a: any, b: any) => b!.isAfter(a!) ? 1 : -1);
+
+  //       return dates[0];
+  //     };
+
+  //     const updateDeepDependents = (data: any[], updatedCodes: Set<string>): any[] => {
+  //       const flatList = getAllActivities(data);
+  //       const updated = new Set<string>(updatedCodes);
+
+  //       let changed = true;
+  //       while (changed) {
+  //         changed = false;
+  //         for (const activity of flatList) {
+  //           if (activity.actualStart || !activity.preRequisite) continue;
+
+  //           const preReq = activity.preRequisite.split(',').map((c: string) => c.trim());
+  //           const allPresent = preReq.every((code: any) =>
+  //             flatList.find((x) => x.Code === code && x.actualFinish)
+  //           );
+
+  //           if (allPresent && preReq.some((code: any) => updated.has(code))) {
+  //             const latest: any = getLatestPreReqFinishDate(data, preReq);
+  //             const duration = activity.duration ? parseInt(activity.duration, 10) : 0;
+  //             const start = latest.add(1, 'day');
+  //             const finish = addBusinessDays(start, duration);
+
+  //             activity.actualStart = start.format('DD-MM-YYYY');
+  //             activity.actualFinish = finish.format('DD-MM-YYYY');
+  //             activity.expectedDuration = duration;
+
+  //             updated.add(activity.Code);
+  //             changed = true;
+  //           }
+  //         }
+  //       }
+  //       return data;
+  //     };
+
+  //     let updatedCodes = new Set<string>();
+  //     const updatedData = prevData.map((item: any) => {
+  //       const recursiveUpdate = (subItem: any): any => {
+  //         if (subItem.key === recordKey) {
+  //           const plannedStart = parseDate(subItem.plannedStart);
+  //           const plannedFinish = parseDate(subItem.plannedFinish);
+  //           const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
+
+  //           let tempStart = null;
+  //           let tempFinish = null;
+
+  //           if (fieldName === 'activityStatus') {
+  //             const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
+
+  //             if (alreadyHasDates && subItem.fin_status === 'completed') {
+  //               subItem.activityStatus = value;
+  //               return subItem;
+  //             }
+
+  //             if (value === 'inProgress' || value === 'completed') {
+  //               const preReqCodes = subItem.preRequisite
+  //                 ? subItem.preRequisite.split(',').map((code: any) => code.trim())
+  //                 : [];
+  //               const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
+  //               if (latestPreReqFinish) {
+  //                 tempStart = latestPreReqFinish.add(1, 'day');
+  //               } else {
+  //                 tempStart = plannedStart;
+  //               }
+  //               tempFinish = tempStart && plannedDuration >= 0
+  //                 ? addBusinessDays(tempStart, plannedDuration)
+  //                 : null;
+
+  //               if ((tempStart && tempStart.isAfter(today, 'day')) ||
+  //                 (value === 'completed' && tempFinish && tempFinish.isAfter(today, 'day'))) {
+  //                 notify.error(`Cannot mark as '${value}' when actual dates exceed today's date.`);
+  //                 return subItem;
+  //               }
+
+  //               subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
+  //               subItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
+  //               subItem.expectedDuration = plannedDuration;
+  //               subItem.activityStatus = value;
+  //               updatedCodes.add(subItem.Code);
+  //             } else if (value === 'yetToStart') {
+  //               const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
+
+  //               subItem.expectedDuration = plannedDuration;
+  //               subItem.activityStatus = value;
+
+  //               if (!alreadyHasDates) {
+  //                 subItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
+  //                 subItem.actualFinish = plannedFinish?.format('DD-MM-YYYY') || null;
+  //                 updatedCodes.add(subItem.Code);
+  //               } else {
+  //                 updatedCodes.add(subItem.Code);
+  //               }
+  //             }
+  //           } else if (fieldName === 'actualStart') {
+  //             const newStart = parseDate(value);
+  //             const preReqCodes = subItem.preRequisite
+  //               ? subItem.preRequisite.split(',').map((c: string) => c.trim())
+  //               : [];
+  //             const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
+
+  //             if (
+  //               latestPreReqFinish &&
+  //               newStart &&
+  //               (newStart.isBefore(latestPreReqFinish, 'day') || newStart.isSame(latestPreReqFinish, 'day'))
+  //             ) {
+  //               notify.error(`Actual start date cannot be before or on prerequisite completion date.`);
+  //               return subItem;
+  //             }
+
+  //             if (newStart && newStart.isAfter(today, 'day')) {
+  //               notify.error(`Actual start date cannot be be in the future.`);
+  //               return subItem;
+  //             }
+
+  //             subItem.actualStart = value;
+  //             if (newStart && subItem.expectedDuration != null) {
+  //               subItem.actualFinish = addBusinessDays(newStart, subItem.expectedDuration).format('DD-MM-YYYY');
+  //             }
+  //             updatedCodes.add(subItem.Code);
+  //           } else if (fieldName === 'actualFinish') {
+  //             const newFinish = parseDate(value);
+  //             const existingFinish = parseDate(subItem.actualFinish);
+
+  //             if (newFinish && newFinish.isAfter(today, 'day')) {
+  //               notify.error(`Actual finish date cannot be in the future.`);
+  //               return subItem;
+  //             }
+  //             if (
+  //               subItem.activityStatus === 'completed' &&
+  //               existingFinish &&
+  //               newFinish &&
+  //               newFinish.isBefore(existingFinish, 'day')
+  //             ) {
+  //               notify.error(`Cannot reduce actual finish date for a completed activity.`);
+  //               return subItem;
+  //             }
+
+  //             subItem.actualFinish = value;
+
+  //             const start = parseDate(subItem.actualStart);
+  //             if (start && newFinish) {
+  //               const dur = businessDaysBetween(start, newFinish);
+  //               subItem.expectedDuration = dur >= 0 ? dur : null;
+  //             }
+  //             updatedCodes.add(subItem.Code);
+  //           } else if (fieldName === 'expectedDuration') {
+  //             const duration = parseInt(value, 10);
+  //             subItem.expectedDuration = duration;
+
+  //             const actualStart = parseDate(subItem.actualStart);
+
+  //             if (actualStart && dayjs(actualStart).isValid() && !isNaN(duration)) {
+  //               const newFinish = addBusinessDays(actualStart, duration);
+  //               subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+  //             } else {
+  //               subItem.actualFinish = null;
+  //             }
+  //           } else {
+  //             subItem[fieldName] = value;
+  //           }
+  //           return subItem;
+  //         } else if (subItem.children) {
+  //           return {
+  //             ...subItem,
+  //             children: subItem.children.map((child: any) => recursiveUpdate(child)),
+  //           };
+  //         }
+  //         return subItem;
+  //       };
+
+  //       return recursiveUpdate(item);
+  //     });
+
+  //     return updateDeepDependents(updatedData, updatedCodes);
+  //   });
+  // };
+
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
     setDataSource((prevData: any) => {
       const today = dayjs();
@@ -786,7 +1050,7 @@ export const StatusUpdate = () => {
               const latest: any = getLatestPreReqFinishDate(data, preReq);
               const duration = activity.duration ? parseInt(activity.duration, 10) : 0;
               const start = latest.add(1, 'day');
-              const finish = addBusinessDays(start, duration - 1);
+              const finish = addBusinessDays(start, duration);
 
               activity.actualStart = start.format('DD-MM-YYYY');
               activity.actualFinish = finish.format('DD-MM-YYYY');
@@ -797,7 +1061,6 @@ export const StatusUpdate = () => {
             }
           }
         }
-
         return data;
       };
 
@@ -813,28 +1076,30 @@ export const StatusUpdate = () => {
             let tempFinish = null;
 
             if (fieldName === 'activityStatus') {
+              const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
+
+              if (alreadyHasDates && subItem.fin_status === 'completed') {
+                subItem.activityStatus = value;
+                return subItem;
+              }
+
               if (value === 'inProgress' || value === 'completed') {
                 const preReqCodes = subItem.preRequisite
                   ? subItem.preRequisite.split(',').map((code: any) => code.trim())
                   : [];
-
                 const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
                 if (latestPreReqFinish) {
                   tempStart = latestPreReqFinish.add(1, 'day');
                 } else {
                   tempStart = plannedStart;
                 }
-
                 tempFinish = tempStart && plannedDuration >= 0
-                  ? addBusinessDays(tempStart, plannedDuration - 1)
+                  ? addBusinessDays(tempStart, plannedDuration)
                   : null;
 
                 if ((tempStart && tempStart.isAfter(today, 'day')) ||
                   (value === 'completed' && tempFinish && tempFinish.isAfter(today, 'day'))) {
-                  toast.error(`Cannot mark as '${value}' when actual dates exceed today's date.`, {
-                    position: "bottom-left",
-                    theme: "colored",
-                  });
+                  notify.error(`Cannot mark as '${value}' when actual dates exceed today's date.`);
                   return subItem;
                 }
 
@@ -844,10 +1109,18 @@ export const StatusUpdate = () => {
                 subItem.activityStatus = value;
                 updatedCodes.add(subItem.Code);
               } else if (value === 'yetToStart') {
+                const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
+
                 subItem.expectedDuration = plannedDuration;
-                subItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
-                subItem.actualFinish = plannedFinish?.format('DD-MM-YYYY') || null;
                 subItem.activityStatus = value;
+
+                if (!alreadyHasDates) {
+                  subItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
+                  subItem.actualFinish = plannedFinish?.format('DD-MM-YYYY') || null;
+                  updatedCodes.add(subItem.Code);
+                } else {
+                  updatedCodes.add(subItem.Code);
+                }
               }
             } else if (fieldName === 'actualStart') {
               const newStart = parseDate(value);
@@ -856,19 +1129,17 @@ export const StatusUpdate = () => {
                 : [];
               const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
 
-              if (latestPreReqFinish && newStart && newStart.isBefore(latestPreReqFinish, 'day')) {
-                toast.error(`Actual start date cannot be before prerequisite completion.`, {
-                  position: "bottom-left",
-                  theme: "colored",
-                });
+              if (
+                latestPreReqFinish &&
+                newStart &&
+                (newStart.isBefore(latestPreReqFinish, 'day') || newStart.isSame(latestPreReqFinish, 'day'))
+              ) {
+                notify.error(`Actual start date cannot be before or on prerequisite completion date.`);
                 return subItem;
               }
 
               if (newStart && newStart.isAfter(today, 'day')) {
-                toast.error(`Actual start date cannot be be in the future.`, {
-                  position: "bottom-left",
-                  theme: "colored",
-                });
+                notify.error(`Actual start date cannot be in the future.`);
                 return subItem;
               }
 
@@ -876,24 +1147,66 @@ export const StatusUpdate = () => {
               if (newStart && subItem.expectedDuration != null) {
                 subItem.actualFinish = addBusinessDays(newStart, subItem.expectedDuration).format('DD-MM-YYYY');
               }
+              updatedCodes.add(subItem.Code);
             } else if (fieldName === 'actualFinish') {
               const newFinish = parseDate(value);
+              const existingFinish = parseDate(subItem.actualFinish);
+
               if (newFinish && newFinish.isAfter(today, 'day')) {
-                toast.error(`Actual finish date cannot be in the future.`, {
-                  position: "bottom-left",
-                  theme: "colored",
-                });
+                notify.error(`Actual finish date cannot be in the future.`);
+                return subItem;
+              }
+              if (
+                subItem.activityStatus === 'completed' &&
+                existingFinish &&
+                newFinish &&
+                newFinish.isBefore(existingFinish, 'day')
+              ) {
+                notify.error(`Cannot reduce actual finish date for a completed activity.`);
                 return subItem;
               }
 
               subItem.actualFinish = value;
+
               const start = parseDate(subItem.actualStart);
               if (start && newFinish) {
                 const dur = businessDaysBetween(start, newFinish);
                 subItem.expectedDuration = dur >= 0 ? dur : null;
               }
+              updatedCodes.add(subItem.Code);
+            } else if (fieldName === 'expectedDuration') {
+              const duration = parseInt(value, 10);
+              subItem.expectedDuration = duration;
+
+              const actualStart = parseDate(subItem.actualStart);
+
+              if (actualStart && dayjs(actualStart).isValid() && !isNaN(duration)) {
+                const newFinish = addBusinessDays(actualStart, duration);
+                subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+              } else {
+                subItem.actualFinish = null;
+              }
             } else {
               subItem[fieldName] = value;
+            }
+
+            const actualStart = parseDate(subItem.actualStart);
+            const actualFinish = parseDate(subItem.actualFinish);
+            if (
+              (subItem.activityStatus === 'inProgress' || subItem.activityStatus === 'completed') &&
+              actualStart &&
+              actualFinish &&
+              actualFinish.isBefore(today, 'day')
+            ) {
+              const newFinish = today;
+              const dur = businessDaysBetween(actualStart, newFinish);
+              if (subItem.expectedDuration != null && dur < subItem.expectedDuration) {
+                notify.error(`Cannot reduce duration by updating actual finish to today.`);
+              } else {
+                subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+                subItem.expectedDuration = dur >= 0 ? dur : null;
+                updatedCodes.add(subItem.Code);
+              }
             }
 
             return subItem;
@@ -947,11 +1260,11 @@ export const StatusUpdate = () => {
             }
           }
 
-          if (activityStatus === "yetToStart" && (actualStart || actualFinish)) {
-            errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
-            isValid = false;
-            return true;
-          }
+          // if (activityStatus === "yetToStart" && (actualStart || actualFinish)) {
+          //   errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
+          //   isValid = false;
+          //   return true;
+          // }
 
           return false;
         });
@@ -960,10 +1273,7 @@ export const StatusUpdate = () => {
     });
 
     if (!isValid) {
-      toast.error(`${errorMessage}`, {
-        position: "bottom-left",
-        theme: "colored",
-      });
+      notify.error(`${errorMessage}`);
       return;
     }
 
@@ -994,10 +1304,7 @@ export const StatusUpdate = () => {
     updatedProject.projectTimeline = updatedSequencedModules;
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
     defaultSetup();
-    toast.success(`Status updated successfully!`, {
-      position: "bottom-left",
-      theme: "colored",
-    });
+    notify.success(`Status updated successfully!`);
   };
 
   const getProjectTimelineById = (id: any) => {
@@ -1034,46 +1341,167 @@ export const StatusUpdate = () => {
     return findNotes(dataSource);
   }, [selectedActivityKey, dataSource]);
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
+    const timestamp = new Date();
     const newNote = {
       id: editNoteId || Date.now().toString(),
       text: noteInput.trim(),
-      updatedAt: new Date(),
+      updatedAt: timestamp,
+      createdAt: editNoteId ? undefined : timestamp,
+      createdBy: selectedProjectTimeline?.addedBy,
     };
 
-    setDataSource((prev: any) => {
-      const update = (items: any[]): any[] =>
-        items.map(item => {
-          if (item.key === selectedActivityKey) {
-            const notes = item.notes || [];
-            const updatedNotes = editNoteId
-              ? notes.map((n: any) => (n.id === editNoteId ? { ...n, text: noteInput.trim() } : n))
-              : [...notes, newNote];
-            return { ...item, notes: updatedNotes };
-          }
-          if (item.children) return { ...item, children: update(item.children) };
-          return item;
-        });
-      return update(prev);
+    const updatedDataSource = (prev: any[]): any[] =>
+      prev.map(item => {
+        if (item.key === selectedActivityKey) {
+          const notes = item.notes || [];
+          const updatedNotes = editNoteId
+            ? notes.map((n: any) => (n.id === editNoteId ? { ...n, ...newNote } : n))
+            : [...notes, newNote];
+          return { ...item, notes: updatedNotes };
+        }
+        if (item.children) return { ...item, children: updatedDataSource(item.children) };
+        return item;
+      });
+
+    const newDataSource = updatedDataSource(dataSource);
+    setDataSource(newDataSource);
+
+    const updatedNoteMap = new Map();
+    newDataSource.forEach((module: any) => {
+      module.children.forEach((activity: any) => {
+        if (activity.notes) {
+          updatedNoteMap.set(activity.Code, activity.notes);
+        }
+      });
     });
+
+    const updatedSequencedModules = sequencedModules.map((module: any) => ({
+      ...module,
+      activities: module.activities.map((activity: any) => ({
+        ...activity,
+        ...(updatedNoteMap.has(activity.code) ? { notes: updatedNoteMap.get(activity.code) } : {}),
+      })),
+    }));
+
+    setSequencedModules(updatedSequencedModules);
+    let updatedProject = selectedProject;
+    updatedProject.projectTimeline = updatedSequencedModules;
+    await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
 
     setNoteInput('');
     setEditNoteId(null);
+    setNoteModalVisible(false);
+    notify.success(`Note ${editNoteId ? 'updated' : 'added'} successfully!`);
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    setDataSource((prev: any) => {
-      const update = (items: any[]): any[] =>
-        items.map(item => {
-          if (item.key === selectedActivityKey) {
-            const notes = item.notes?.filter((n: any) => n.id !== noteId) || [];
-            return { ...item, notes };
-          }
-          if (item.children) return { ...item, children: update(item.children) };
-          return item;
-        });
-      return update(prev);
+  const handleDeleteNote = async (noteId: string) => {
+    const updatedDataSource = (prev: any[]): any[] =>
+      prev.map(item => {
+        if (item.key === selectedActivityKey) {
+          const notes = item.notes?.filter((n: any) => n.id !== noteId) || [];
+          return { ...item, notes };
+        }
+        if (item.children) return { ...item, children: updatedDataSource(item.children) };
+        return item;
+      });
+
+    const newDataSource = updatedDataSource(dataSource);
+    setDataSource(newDataSource);
+
+    const updatedNoteMap = new Map();
+    newDataSource.forEach((module: any) => {
+      module.children.forEach((activity: any) => {
+        if (activity.notes) {
+          updatedNoteMap.set(activity.Code, activity.notes);
+        }
+      });
     });
+
+    const updatedSequencedModules = sequencedModules.map((module: any) => ({
+      ...module,
+      activities: module.activities.map((activity: any) => ({
+        ...activity,
+        ...(updatedNoteMap.has(activity.code) ? { notes: updatedNoteMap.get(activity.code) } : {}),
+      })),
+    }));
+
+    setSequencedModules(updatedSequencedModules);
+    let updatedProject = selectedProject;
+    updatedProject.projectTimeline = updatedSequencedModules;
+    await db.updateProjectTimeline(
+      selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
+      updatedSequencedModules
+    );
+
+    notify.success(`Note deleted successfully!`);
+  };
+
+  const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+
+  const handleClose = () => {
+    setOpenCostCalcModal(false);
+    form.resetFields();
+    setFormValid(false);
+  };
+
+  const handleValuesChange = () => {
+    const { projectCost, opCost, delayCost } = form.getFieldsValue();
+    if (projectCost && opCost && delayCost) {
+      setFormValid(true);
+    } else {
+      setFormValid(false);
+    }
+  };
+
+  const handleConfirm = () => {
+    form.validateFields()
+      .then((values:any) => {
+        handleClose();
+      })
+      .catch(info => {
+        console.error('Validation Failed:', info);
+      });
+  };
+
+  const userOptions = [
+    { id: 'u1', name: 'Alice' },
+    { id: 'u2', name: 'Bob' },
+    { id: 'u3', name: 'Charlie' },
+    { id: 'u4', name: 'Diana' },
+  ];
+
+  // State variables
+  const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
+  const [raciForm] = Form.useForm();
+
+  // Open modal
+  const showResponsibilityModal = () => {
+    setOpenResponsibilityModal(true);
+  };
+
+
+  const handleCloseResponsibility = () => {
+    setOpenResponsibilityModal(false);
+    raciForm.resetFields();
+  };
+
+  const handleRaciChange = async () => {
+    try {
+      await raciForm.validateFields();
+      setFormValid(true);
+    } catch {
+      setFormValid(false);
+    }
+  };
+
+  const handleConfirmResponsibility = async () => {
+    try {
+      const values = await raciForm.validateFields();
+      handleCloseResponsibility();
+    } catch (error) {
+      console.error('Validation failed:', error);
+    }
   };
 
   return (
@@ -1198,6 +1626,32 @@ export const StatusUpdate = () => {
                 )}
               </div>
               <div className="actions">
+                <Button
+                  icon={<DollarOutlined />}
+                  disabled={!selectedActivityKey}
+                  onClick={handleOpenCostCalcModal}
+                  style={{
+                    backgroundColor: selectedActivityKey ? '#e67e22' : '#f5f5f5',
+                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  Cost
+                </Button>
+
+                <Button
+                  icon={<UserOutlined />}
+                  disabled={!selectedActivityKey}
+                  onClick={showResponsibilityModal}
+                  style={{
+                    backgroundColor: selectedActivityKey ? '#2c3e50' : '#f5f5f5',
+                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  RASI
+                </Button>
+
                 <Button
                   icon={<FormOutlined />}
                   disabled={!selectedActivityKey}
@@ -1469,14 +1923,175 @@ export const StatusUpdate = () => {
                   <a key="delete" onClick={() => handleDeleteNote(item.id)}>Delete</a>
                 ]}
               >
-                <Typography.Paragraph style={{ margin: 0 }}>{item.text}</Typography.Paragraph>
+                <List.Item.Meta
+                  title={
+                    <div className="note-meta">
+                      {item.createdBy && (
+                        <span className="note-author">
+                          <UserOutlined />
+                          {item.createdBy}
+                        </span>
+                      )}
+                      {(item.createdAt || item.updatedAt) && (
+                        <span className="note-timestamp">
+                          <ClockCircleOutlined />
+                          {dayjs(item.createdAt).format('DD MMM YYYY HH:mm')}
+                        </span>
+                      )}
+                    </div>
+                  }
+                  description={item.text}
+                />
               </List.Item>
             )}
           />
-
         </div>
       </Modal>
+
       <ToastContainer />
+
+      <Modal
+        title="Define Cost for Delay (₹ / Day)"
+        open={openCostCalcModal}
+        onCancel={handleClose}
+        onOk={handleConfirm}
+        okButtonProps={{ disabled: !formValid }}
+        destroyOnClose
+        className="modal-container"
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onValuesChange={handleValuesChange}
+          style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <Form.Item
+            label=""
+            style={{ marginBottom: 16 }}
+          >
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Project Cost</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="projectCost"
+                  noStyle
+                  rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                >
+                  <Input type="number" min={0} placeholder="Enter Project Cost" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 24 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Opportunity Cost</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="opCost"
+                  noStyle
+                  rules={[{ required: true, message: 'Please enter OP Cost' }]}
+                >
+                  <Input type="number" min={0} placeholder="Enter OP Cost" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+        </Form>
+
+      </Modal>
+
+      <Modal
+        title="Assign Responsibility"
+        open={openResponsibilityModal}
+        onCancel={handleCloseResponsibility}
+        onOk={handleConfirmResponsibility}
+        okButtonProps={{ disabled: !formValid }}
+        destroyOnClose
+        className="modal-container"
+      >
+        <Form
+          form={raciForm}
+          layout="vertical"
+          onValuesChange={handleRaciChange}
+          style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <Form.Item label="" style={{ marginBottom: 16 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Responsible</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="responsible"
+                  noStyle
+                  rules={[{ required: true, message: 'Please select a Responsible person' }]}
+                >
+                  <Select placeholder="Select Responsible">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 16 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Accountable</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="accountable"
+                  noStyle
+                  rules={[{ required: true, message: 'Please select an Accountable person' }]}
+                >
+                  <Select placeholder="Select Accountable">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 16 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Consulted</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="consulted"
+                  noStyle
+                >
+                  <Select mode="multiple" placeholder="Select Consulted">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 24 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Informed</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="informed"
+                  noStyle
+                >
+                  <Select mode="multiple" placeholder="Select Informed">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+        </Form>
+      </Modal>
+
     </>
   );
 };

@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     base: env.VITE_API_URL,
     server: {
-      port: 3000,
+      port: 5173,
     },
   }
 })
