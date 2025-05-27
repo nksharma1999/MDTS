@@ -64,6 +64,16 @@ export const StatusUpdate = () => {
   const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
   const [form] = Form.useForm();
   const [formValid, setFormValid] = useState(false);
+  const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+  const userOptions = [
+    { id: 'u1', name: 'Alice' },
+    { id: 'u2', name: 'Bob' },
+    { id: 'u3', name: 'Charlie' },
+    { id: 'u4', name: 'Diana' },
+  ];
+
+  const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
+  const [raciForm] = Form.useForm();
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -1437,8 +1447,6 @@ export const StatusUpdate = () => {
     notify.success(`Note deleted successfully!`);
   };
 
-  const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
-
   const handleClose = () => {
     setOpenCostCalcModal(false);
     form.resetFields();
@@ -1456,7 +1464,7 @@ export const StatusUpdate = () => {
 
   const handleConfirm = () => {
     form.validateFields()
-      .then((values:any) => {
+      .then((values: any) => {
         handleClose();
       })
       .catch(info => {
@@ -1464,22 +1472,9 @@ export const StatusUpdate = () => {
       });
   };
 
-  const userOptions = [
-    { id: 'u1', name: 'Alice' },
-    { id: 'u2', name: 'Bob' },
-    { id: 'u3', name: 'Charlie' },
-    { id: 'u4', name: 'Diana' },
-  ];
-
-  // State variables
-  const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
-  const [raciForm] = Form.useForm();
-
-  // Open modal
   const showResponsibilityModal = () => {
     setOpenResponsibilityModal(true);
   };
-
 
   const handleCloseResponsibility = () => {
     setOpenResponsibilityModal(false);
