@@ -30,7 +30,6 @@ interface Activity {
   actualDuration?: number;
 }
 
-
 interface Module {
   parentModuleCode: string;
   moduleName: string;
@@ -74,6 +73,7 @@ export const StatusUpdate = () => {
 
   const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
   const [raciForm] = Form.useForm();
+
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -839,44 +839,73 @@ export const StatusUpdate = () => {
             const plannedStart = parseDate(subItem.plannedStart);
             const plannedFinish = parseDate(subItem.plannedFinish);
             const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
-
-            let tempStart = null;
-            let tempFinish = null;
-
             if (fieldName === 'activityStatus') {
-              const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
-
-              if (alreadyHasDates && subItem.fin_status === 'completed') {
-                subItem.activityStatus = value;
-                return subItem;
-              }
 
               if (value === 'inProgress' || value === 'completed') {
+                const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
+
+                const actualStartDate = parseDate(subItem.actualStart);
+                const actualFinishDate = parseDate(subItem.actualFinish);
+
+                // ✅ CASE: Was completed before, now changed to inProgress, and finish is outdated
+                if (
+                  alreadyHasDates &&
+                  subItem.fin_status === 'completed' &&
+                  value === 'inProgress' &&
+                  actualStartDate &&
+                  actualFinishDate &&
+                  actualFinishDate.isBefore(today, 'day')
+                ) {
+                  subItem.actualFinish = today.format('DD-MM-YYYY');
+                  subItem.expectedDuration = businessDaysBetween(actualStartDate, today);
+                  subItem.activityStatus = value;
+                  updatedCodes.add(subItem.Code);
+                  return subItem;
+                }
+
+                if (alreadyHasDates && subItem.fin_status === 'completed') {
+                  subItem.activityStatus = value;
+                  updatedCodes.add(subItem.Code);
+                  return subItem;
+                }
+
                 const preReqCodes = subItem.preRequisite
                   ? subItem.preRequisite.split(',').map((code: any) => code.trim())
                   : [];
                 const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
-                if (latestPreReqFinish) {
-                  tempStart = latestPreReqFinish.add(1, 'day');
-                } else {
-                  tempStart = plannedStart;
-                }
-                tempFinish = tempStart && plannedDuration >= 0
-                  ? addBusinessDays(tempStart, plannedDuration)
-                  : null;
 
-                if ((tempStart && tempStart.isAfter(today, 'day')) ||
-                  (value === 'completed' && tempFinish && tempFinish.isAfter(today, 'day'))) {
+                let tempStart = latestPreReqFinish ? latestPreReqFinish.add(1, 'day') : plannedStart;
+                const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
+
+                if (
+                  (tempStart && tempStart.isAfter(today, 'day')) ||
+                  (value === 'completed' &&
+                    tempStart &&
+                    plannedDuration >= 0 &&
+                    addBusinessDays(tempStart, plannedDuration).isAfter(today, 'day'))
+                ) {
                   notify.error(`Cannot mark as '${value}' when actual dates exceed today's date.`);
                   return subItem;
                 }
 
                 subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
-                subItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
-                subItem.expectedDuration = plannedDuration;
+
+                if (value === 'inProgress' && tempStart && tempStart.isBefore(today, 'day')) {
+                  subItem.actualFinish = today.format('DD-MM-YYYY');
+                  subItem.expectedDuration = businessDaysBetween(tempStart, today);
+                } else {
+                  const tempFinish = tempStart && plannedDuration >= 0
+                    ? addBusinessDays(tempStart, plannedDuration)
+                    : null;
+                  subItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
+                  subItem.expectedDuration = plannedDuration;
+                }
+
                 subItem.activityStatus = value;
                 updatedCodes.add(subItem.Code);
-              } else if (value === 'yetToStart') {
+              }
+
+              else if (value === 'yetToStart') {
                 const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
 
                 subItem.expectedDuration = plannedDuration;
@@ -1232,7 +1261,7 @@ export const StatusUpdate = () => {
 
   const handleConfirm = () => {
     form.validateFields()
-      .then((values: any) => {
+      .then((_values: any) => {
         handleClose();
       })
       .catch(info => {
@@ -1260,7 +1289,6 @@ export const StatusUpdate = () => {
 
   const handleConfirmResponsibility = async () => {
     try {
-      const values = await raciForm.validateFields();
       handleCloseResponsibility();
     } catch (error) {
       console.error('Validation failed:', error);
@@ -1854,7 +1882,6 @@ export const StatusUpdate = () => {
           </Form.Item>
         </Form>
       </Modal>
-
     </>
   );
 };
