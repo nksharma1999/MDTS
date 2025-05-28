@@ -454,22 +454,23 @@ export const StatusUpdate = () => {
     navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline, rePlanTimeline: true } });
   };
 
+  const getAllActivities = (data: any[]): any[] => {
+    const result: any[] = [];
+    const traverse = (items: any[]) => {
+      for (const item of items) {
+        result.push(item);
+        if (item.children) traverse(item.children);
+      }
+    };
+    traverse(data);
+    return result;
+  };
+
   const renderStatusSelect = (
     status: string,
     record: any,
     dataSource: any[],
   ) => {
-    const getAllActivities = (data: any[]): any[] => {
-      const result: any[] = [];
-      const traverse = (items: any[]) => {
-        for (const item of items) {
-          result.push(item);
-          if (item.children) traverse(item.children);
-        }
-      };
-      traverse(data);
-      return result;
-    };
 
     const flatList = getAllActivities(dataSource);
 
@@ -508,7 +509,6 @@ export const StatusUpdate = () => {
     };
 
     const disabled = isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
-
     return (
       <Select
         value={status}
@@ -686,8 +686,46 @@ export const StatusUpdate = () => {
       key: "actualStart",
       width: 180,
       align: "center",
-      render: (_, { actualStart, activityStatus, key, isModule }) =>
-        isEditing && !isModule ? (
+      render: (_, record) => {
+        const { actualStart, activityStatus, key, isModule, preRequisite, children, Code } = record;
+
+        const flatList = getAllActivities(dataSource);
+        const isBlocked = (() => {
+          const isBlockedByPreRequisite = () => {
+            if (!preRequisite) return false;
+            const preReqCodes = preRequisite.split(',').map((c: string) => c.trim().toLowerCase());
+            return preReqCodes.some((code: any) => {
+              const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+              return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
+            });
+          };
+
+          const isBlockedByChildStatus = () => {
+            if (!children || !Array.isArray(children)) return false;
+            return children.some((child: any) => {
+              const st = (child.activityStatus || '').toLowerCase();
+              return st === 'inprogress' || st === 'completed';
+            });
+          };
+
+          const isBlockedByDependents = () => {
+            const currentCode = (Code || '').toLowerCase();
+            return flatList.some((item) => {
+              const preReqs = (item.preRequisite || '')
+                .split(',')
+                .map((c: string) => c.trim().toLowerCase());
+              return preReqs.includes(currentCode) &&
+                ['inprogress', 'completed'].includes((item.activityStatus || '').toLowerCase());
+            });
+          };
+
+          return isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
+        })();
+
+        const shouldDisable =
+          activityStatus === "yetToStart" || (activityStatus === "completed" && isBlocked);
+
+        return isEditing && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -698,11 +736,12 @@ export const StatusUpdate = () => {
             onChange={(date) =>
               handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualStart")
             }
-            disabled={activityStatus === "yetToStart"}
+            disabled={shouldDisable}
           />
         ) : (
           actualStart || ""
-        ),
+        );
+      },
     },
     {
       title: "Actual / Expected Finish",
@@ -710,8 +749,48 @@ export const StatusUpdate = () => {
       key: "actualFinish",
       width: 180,
       align: "center",
-      render: (_, { actualFinish, activityStatus, key, isModule }) =>
-        isEditing && !isModule ? (
+      render: (_, record) => {
+        const { actualFinish, activityStatus, key, isModule, preRequisite, children, Code } = record;
+
+        const flatList = getAllActivities(dataSource);
+        const isBlocked = (() => {
+          const isBlockedByPreRequisite = () => {
+            if (!preRequisite) return false;
+            const preReqCodes = preRequisite.split(',').map((c: string) => c.trim().toLowerCase());
+            return preReqCodes.some((code: any) => {
+              const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+              return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
+            });
+          };
+
+          const isBlockedByChildStatus = () => {
+            if (!children || !Array.isArray(children)) return false;
+            return children.some((child: any) => {
+              const st = (child.activityStatus || '').toLowerCase();
+              return st === 'inprogress' || st === 'completed';
+            });
+          };
+
+          const isBlockedByDependents = () => {
+            const currentCode = (Code || '').toLowerCase();
+            return flatList.some((item) => {
+              const preReqs = (item.preRequisite || '')
+                .split(',')
+                .map((c: string) => c.trim().toLowerCase());
+              return preReqs.includes(currentCode) &&
+                ['inprogress', 'completed'].includes((item.activityStatus || '').toLowerCase());
+            });
+          };
+
+          return isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
+        })();
+
+        const shouldDisable =
+          activityStatus === "yetToStart" ||
+          activityStatus === "inProgress" ||
+          (activityStatus === "completed" && isBlocked);
+
+        return isEditing && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -722,19 +801,19 @@ export const StatusUpdate = () => {
             onChange={(date) =>
               handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualFinish")
             }
-            disabled={
-              activityStatus === "yetToStart" ||
-              activityStatus === "inProgress"
-            }
+            disabled={shouldDisable}
           />
         ) : (
           actualFinish || ""
-        ),
-    },
+        );
+      },
+    }
   ];
 
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
+    console.log(dataSource);
+
     setDataSource((prevData: any) => {
       const today = dayjs();
 
@@ -847,7 +926,6 @@ export const StatusUpdate = () => {
                 const actualStartDate = parseDate(subItem.actualStart);
                 const actualFinishDate = parseDate(subItem.actualFinish);
 
-                // ✅ CASE: Was completed before, now changed to inProgress, and finish is outdated
                 if (
                   alreadyHasDates &&
                   subItem.fin_status === 'completed' &&
@@ -890,9 +968,12 @@ export const StatusUpdate = () => {
 
                 subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
 
-                if (value === 'inProgress' && tempStart && tempStart.isBefore(today, 'day')) {
-                  subItem.actualFinish = today.format('DD-MM-YYYY');
-                  subItem.expectedDuration = businessDaysBetween(tempStart, today);
+                if ((value === 'inProgress' || value === 'completed') && tempStart && tempStart.isBefore(today, 'day')) {
+                  const daysTillToday = businessDaysBetween(tempStart, today);
+                  const effectiveDuration = Math.max(daysTillToday, plannedDuration);
+                  const newFinish = addBusinessDays(tempStart, effectiveDuration);
+                  subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+                  subItem.expectedDuration = effectiveDuration;
                 } else {
                   const tempFinish = tempStart && plannedDuration >= 0
                     ? addBusinessDays(tempStart, plannedDuration)
@@ -954,7 +1035,7 @@ export const StatusUpdate = () => {
               if (newStart && subItem.expectedDuration != null) {
                 subItem.actualFinish = addBusinessDays(newStart, subItem.expectedDuration).format('DD-MM-YYYY');
               }
-              updatedCodes.add(subItem.Code);
+
             } else if (fieldName === 'actualFinish') {
               const newFinish = parseDate(value);
               const existingFinish = parseDate(subItem.actualFinish);
@@ -980,7 +1061,7 @@ export const StatusUpdate = () => {
                 const dur = businessDaysBetween(start, newFinish);
                 subItem.expectedDuration = dur >= 0 ? dur : null;
               }
-              updatedCodes.add(subItem.Code);
+
             } else if (fieldName === 'expectedDuration') {
               const duration = parseInt(value, 10);
               subItem.expectedDuration = duration;
