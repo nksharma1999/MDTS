@@ -15,7 +15,7 @@ type UserRole = {
   setState: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-const UserRolesPage: React.FC<{ open: boolean; onClose: () => void; selectedRow: any; moduleData: any }> = ({ open, onClose, selectedRow, moduleData }) => {
+const UserRolesPage: React.FC<{ open: boolean; onClose: () => void; selectedRow: any; moduleData: any }> = ({onClose, selectedRow, moduleData }) => {
   const [responsible, setResponsible] = useState<string[]>([]);
   const [accountable, setAccountable] = useState<string[]>([]);
   const [consulted, setConsulted] = useState<string[]>([]);

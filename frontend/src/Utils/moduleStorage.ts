@@ -42,7 +42,6 @@ export const updateModule = (newModule: any) => {
       ...modules[moduleIndex],
       ...newModule,
     };
-    console.log(`Updated module: ${newModule.moduleName}`);
   } else {
     window.alert("Didn't find any module with this module name & code!");
   }
