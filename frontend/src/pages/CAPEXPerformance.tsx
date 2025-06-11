@@ -170,7 +170,7 @@ const CAPEXPerformance: React.FC = () => {
                   outerRadius={100}
                   label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
-                  {overallData.map((_entry, index) => (
+                  {overallData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -191,7 +191,7 @@ const CAPEXPerformance: React.FC = () => {
                   outerRadius={100}
                   label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                 >
-                  {currentFYData.map((_entry, index) => (
+                  {currentFYData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

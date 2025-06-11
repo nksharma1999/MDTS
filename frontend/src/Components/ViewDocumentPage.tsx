@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Box,
   Typography,
@@ -15,7 +16,7 @@ const ViewDocumentPage = () => {
   const location = useLocation();
   const documentData = location.state?.document; // Retrieve document details passed via state
 
-  const handleDownload = (fileName:any) => {
+  const handleDownload = (fileName) => {
     alert(`Downloading file: ${fileName}`);
     // Add actual file download logic here
   };
@@ -112,7 +113,7 @@ const ViewDocumentPage = () => {
         <Typography variant="h6" sx={{ marginBottom: 2 }}>
           Files
         </Typography>
-        {documentData.files.map((file:any, index:any) => (
+        {documentData.files.map((file, index) => (
           <Box
             key={index}
             sx={{

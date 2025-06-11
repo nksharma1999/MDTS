@@ -15,36 +15,36 @@ const center = {
 const GOOGLE_MAPS_API_KEY = "AIzaSyBw5k_EaPbE_33caOOKnqMUfopDVEqN6xg";
 
 const MapComponent: React.FC = () => {
-    const [directionsResponse, _setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
-    const [distance, _setDistance] = useState<string>("");
-    const [duration, _setDuration] = useState<string>("");
-    // const [origin, setOrigin] = useState<string>("");
-    // const [destination, setDestination] = useState<string>("");
+    const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+    const [distance, setDistance] = useState<string>("");
+    const [duration, setDuration] = useState<string>("");
+    const [origin, setOrigin] = useState<string>("");
+    const [destination, setDestination] = useState<string>("");
 
-    // const calculateRoute = () => {
-    //     if (!origin || !destination) {
-    //         alert("Please enter both origin and destination.");
-    //         return;
-    //     }
+    const calculateRoute = () => {
+        if (!origin || !destination) {
+            alert("Please enter both origin and destination.");
+            return;
+        }
 
-    //     const directionsService = new google.maps.DirectionsService();
-    //     directionsService.route(
-    //         {
-    //             origin,
-    //             destination,
-    //             travelMode: google.maps.TravelMode.DRIVING,
-    //         },
-    //         (result: any, status: any) => {
-    //             if (status === google.maps.DirectionsStatus.OK) {
-    //                 setDirectionsResponse(result);
-    //                 setDistance(result.routes[0].legs[0].distance.text);
-    //                 setDuration(result.routes[0].legs[0].duration.text);
-    //             } else {
-    //                 console.error(`Error fetching directions: ${status}`);
-    //             }
-    //         }
-    //     );
-    // };
+        const directionsService = new google.maps.DirectionsService();
+        directionsService.route(
+            {
+                origin,
+                destination,
+                travelMode: google.maps.TravelMode.DRIVING,
+            },
+            (result: any, status: any) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    setDirectionsResponse(result);
+                    setDistance(result.routes[0].legs[0].distance.text);
+                    setDuration(result.routes[0].legs[0].duration.text);
+                } else {
+                    console.error(`Error fetching directions: ${status}`);
+                }
+            }
+        );
+    };
 
     return (
         <div className="map-container">

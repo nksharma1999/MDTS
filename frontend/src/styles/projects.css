@@ -252,32 +252,3 @@
         transform: translateY(0);
     }
 }
-
-.project-heading {
-    font-size: 18px;
-    font-weight: bold;
-    padding: 2px 12px;
-    border-radius: 20px;
-    transition: all 0.3s ease;
-    color: #444;
-    background-color: transparent;
-    border: 1px solid transparent;
-    display: inline-block;
-}
-
-.project-heading.focused {
-    background: #f0f5ff;
-    font-weight: 500;
-    font-size: 15px;
-    color: #1d39c4;
-    border: 1px solid #adc6ff;
-    box-shadow: inset 0 0 0 2px rgba(24, 144, 255, 0.15);
-    cursor: pointer;
-}
-
-.project-heading.focused:hover {
-    background: #d6e4ff;
-    color: #10239e;
-    box-shadow: 0 4px 10px rgba(24, 144, 255, 0.3);
-    transform: translateY(-1px);
-}

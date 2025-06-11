@@ -18,7 +18,7 @@ import { Accept, useDropzone } from "react-dropzone";
 import { message } from "antd";
 import "../styles/documents.css"
 import MapComponent from "./MapComponent.tsx";
-import ImageContainer from "../Components/ImageContainer"; 
+import ImageContainer from "./ImageContainer.tsx";
 const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
