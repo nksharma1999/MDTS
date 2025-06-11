@@ -39,7 +39,6 @@ const ProjectStatistics = (project: any) => {
             if (selectedProject?.projectTimeline) {
                 const timelineData = await getProjectTimeline(selectedProject);
                 handleLibraryChange(timelineData);
-                console.log(timelineData);
             }
             
         } catch (error) {

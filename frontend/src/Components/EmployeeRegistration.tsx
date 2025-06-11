@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Input, Select, Button, Form, Row, Col, message } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import "../styles/employee-registration.css"
-import ImageContainer from "../components/ImageContainer";
+import ImageContainer from "../Components/ImageContainer"; 
 import { db } from "../Utils/dataStorege.ts";
 interface EmployeeData {
   name: string;
