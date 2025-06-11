@@ -6,12 +6,15 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, List, Typography } from "antd";
-import { ClockCircleOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col } from "antd";
+import { ClockCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 import TextArea from "antd/es/input/TextArea";
+import { ToastContainer } from 'react-toastify';
+import { notify } from "../Utils/ToastNotify.tsx";
+import { UserOutlined } from '@ant-design/icons';
 interface Activity {
   code: string;
   activityName: string;
@@ -20,8 +23,11 @@ interface Activity {
   level: string;
   duration: number;
   start: string | null;
-  end: string | null;
+  end: string | null
   activityStatus: string | null;
+  actualStart?: string | null;
+  actualFinish?: string | null;
+  actualDuration?: number;
 }
 
 interface Module {
@@ -54,6 +60,20 @@ export const StatusUpdate = () => {
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
+  const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
+  const [form] = Form.useForm();
+  const [formValid, setFormValid] = useState(false);
+  const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+  const userOptions = [
+    { id: 'u1', name: 'Alice' },
+    { id: 'u2', name: 'Bob' },
+    { id: 'u3', name: 'Charlie' },
+    { id: 'u4', name: 'Diana' },
+  ];
+
+  const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
+  const [raciForm] = Form.useForm();
+
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -134,6 +154,7 @@ export const StatusUpdate = () => {
       }
 
       const projectTimeline = selectedProject?.projectTimeline || [];
+
       const latestVersionId = localStorage.getItem("latestProjectVersion");
 
       const extractedTimelines = projectTimeline.map((version: any) => ({
@@ -164,6 +185,7 @@ export const StatusUpdate = () => {
   };
 
   const handleProjectChange = async (projectId: any) => {
+    setSelectedActivityKey(null);
     setSelectedProjectId(projectId);
     const project = allProjects.find((p) => p.id === projectId);
     localStorage.setItem('selectedProjectId', projectId);
@@ -241,12 +263,17 @@ export const StatusUpdate = () => {
     const globalHeader = [
       "Sr No.",
       "Key Activity",
-      "Duration (Days)",
+      "Expected Duration (Days)",
+      "Actual Duration (Days)",
       "Pre-Requisite",
       "Slack",
       "Planned Start",
       "Planned Finish",
+      "Actual Start",
+      "Actual Finish",
+      "Status",
     ];
+
     const headerRow = worksheet.addRow(globalHeader);
 
     headerRow.eachCell((cell: any) => {
@@ -276,10 +303,14 @@ export const StatusUpdate = () => {
           `${moduleIndex + 1}.${activityIndex + 1}`,
           activity.activityName,
           activity.duration || 0,
-          activity.prerequisite,
+          activity.actualDuration || 0,
+          activity.prerequisite || "-",
           activity.slack || 0,
           activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
           activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+          activity.actualStart ? dayjs(activity.actualStart).format("DD-MM-YYYY") : "-",
+          activity.actualFinish ? dayjs(activity.actualFinish).format("DD-MM-YYYY") : "-",
+          activity.activityStatus || "-",
         ]);
 
         row.eachCell((cell: any) => {
@@ -302,11 +333,15 @@ export const StatusUpdate = () => {
     });
 
     worksheet.columns = [
-      { width: 10 },
-      { width: 35 },
-      { width: 18 },
+      { width: 20 },
+      { width: 45 },
+      { width: 20 },
+      { width: 20 },
       { width: 30 },
       { width: 15 },
+      { width: 20 },
+      { width: 20 },
+      { width: 20 },
       { width: 20 },
       { width: 20 },
     ];
@@ -322,15 +357,15 @@ export const StatusUpdate = () => {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
     saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-    message.success("Download started!");
+    notify.success("Download started!");
   };
 
   const handleShare = () => {
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      message.error("Please enter a valid email address.");
+      notify.error("Please enter a valid email address.");
       return;
     }
-    message.success(`Shared to ${email}`);
+    notify.success(`Shared to ${email}`);
     setIsModalOpen(false);
     setEmail("");
   };
@@ -348,32 +383,9 @@ export const StatusUpdate = () => {
       projectTimeline: updatedProjectTimeline,
     };
     await db.updateProject(selectedProjectId, updatedSelectedProject);
-    message.success("Timeline approved successfully");
+    notify.success("Timeline approved successfully");
     setIsApproveModalOpen(false);
     defaultSetup();
-  };
-
-  const isPreReqCompleted = (preRequisiteCode: string, allData: any[]): boolean => {
-    let isCompleted = false;
-
-    const findActivityByCode = (data: any[]): any => {
-      for (const item of data) {
-        if (item.children && item.children.length > 0) {
-          const found = findActivityByCode(item.children);
-          if (found) return found;
-        } else if (item.Code === preRequisiteCode) {
-          return item;
-        }
-      }
-      return null;
-    };
-
-    if (!preRequisiteCode) return true;
-
-    const preReqActivity = findActivityByCode(allData);
-    isCompleted = preReqActivity?.activityStatus === 'completed';
-
-    return isCompleted;
   };
 
   const handleLibraryChange = (libraryItems: any) => {
@@ -404,7 +416,8 @@ export const StatusUpdate = () => {
             remarks: activity.remarks ?? "",
             isModule: false,
             activityStatus: activity.activityStatus || "yetToStart",
-            fin_status: activity.fin_status || ''
+            fin_status: activity.fin_status || '',
+            notes: activity.notes || [],
           };
         });
 
@@ -441,24 +454,74 @@ export const StatusUpdate = () => {
     navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline, rePlanTimeline: true } });
   };
 
+  const getAllActivities = (data: any[]): any[] => {
+    const result: any[] = [];
+    const traverse = (items: any[]) => {
+      for (const item of items) {
+        result.push(item);
+        if (item.children) traverse(item.children);
+      }
+    };
+    traverse(data);
+    return result;
+  };
+
   const renderStatusSelect = (
     status: string,
-    recordKey: string,
-    fin_status: string,
-    disabled: boolean = false
+    record: any,
+    dataSource: any[],
   ) => {
+
+    const flatList = getAllActivities(dataSource);
+
+    const isBlockedByPreRequisite = () => {
+      if (!record.preRequisite) return false;
+
+      const preReqCodes = record.preRequisite
+        .split(',')
+        .map((c: string) => c.trim().toLowerCase());
+
+      return preReqCodes.some((code: any) => {
+        const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+        return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
+      });
+    };
+
+    const isBlockedByChildStatus = () => {
+      if (!record.children || !Array.isArray(record.children)) return false;
+      return record.children.some((child: any) => {
+        const st = (child.activityStatus || '').toLowerCase();
+        return st === 'inprogress' || st === 'completed';
+      });
+    };
+
+    const isBlockedByDependents = () => {
+      const currentCode = (record.Code || '').toLowerCase();
+
+      return flatList.some((item) => {
+        const preReqs = (item.preRequisite || '')
+          .split(',')
+          .map((c: string) => c.trim().toLowerCase());
+
+        return preReqs.includes(currentCode) &&
+          ['inprogress', 'completed'].includes((item.activityStatus || '').toLowerCase());
+      });
+    };
+
+    const disabled = isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
     return (
       <Select
         value={status}
-        onChange={(value) => handleFieldChange(value, recordKey, "activityStatus")}
+        onChange={(value) => handleFieldChange(value, record.key, "activityStatus")}
         options={[
           { label: "Yet to Start", value: "yetToStart" },
           { label: "In Progress", value: "inProgress" },
           { label: "Completed", value: "completed" },
         ]}
-        disabled={disabled || fin_status === "completed"}
+        disabled={disabled}
         className={`status-select ${status}`}
         style={{ width: "100%", fontWeight: "bold" }}
+        title={undefined}
       />
     );
   };
@@ -476,6 +539,21 @@ export const StatusUpdate = () => {
     return count - 1;
   };
 
+  function getBusinessDays(start: dayjs.Dayjs, end: dayjs.Dayjs): number {
+    let count = 0;
+    let current = start.clone();
+
+    while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
+      const day = current.day();
+      if (day !== 0 && day !== 5) {
+        count++;
+      }
+      current = current.add(1, 'day');
+    }
+
+    return count;
+  }
+
   const baseColumns: ColumnsType = [
     { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
     {
@@ -486,7 +564,7 @@ export const StatusUpdate = () => {
       align: "left",
       render: (_, record) => {
         const {
-          activityStatus, keyActivity, duration, actualStart, actualFinish, plannedStart, plannedFinish, remarks
+          activityStatus, keyActivity, duration, actualStart, actualFinish, plannedStart, plannedFinish,
         } = record;
 
         const plannedStartDate = plannedStart ? dayjs(plannedStart, 'DD-MM-YYYY') : null;
@@ -514,9 +592,9 @@ export const StatusUpdate = () => {
           <span
             style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
             onClick={() => {
-              setSelectedActivityKey(record.key)
-            }
-            }
+              if (record.duration != undefined)
+                setSelectedActivityKey(prevKey => prevKey === record.key ? null : record.key);
+            }}
           >
             {record.notes?.length > 0 && (
               <span
@@ -531,7 +609,11 @@ export const StatusUpdate = () => {
                 <FileTextOutlined style={{ fontSize: 22, color: '#1890ff' }} />
               </span>
             )}
-            {duration && <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />}
+            {duration ? (
+              <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+            ) : (
+              <span style={{ width: 34, height: 34 }} />
+            )}
             {keyActivity}
           </span>
         );
@@ -550,21 +632,6 @@ export const StatusUpdate = () => {
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
     { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
   ];
-
-  function getBusinessDays(start: dayjs.Dayjs, end: dayjs.Dayjs): number {
-    let count = 0;
-    let current = start.clone();
-
-    while (current.isBefore(end, 'day') || current.isSame(end, 'day')) {
-      const day = current.day();
-      if (day !== 0 && day !== 5) {
-        count++;
-      }
-      current = current.add(1, 'day');
-    }
-
-    return count;
-  }
 
   const editingColumns: ColumnsType = [
     {
@@ -586,11 +653,11 @@ export const StatusUpdate = () => {
 
         const displayDuration = expectedDuration ?? calculatedDuration ?? duration;
 
-        const isEditable = isEditing && !isModule && (activityStatus === "inProgress" || activityStatus === "yetToStart");
-
+        const isEditable = isEditing && !isModule && activityStatus === "inProgress";
         return isEditable ? (
           <Input
             type="number"
+            min={1}
             value={displayDuration}
             onChange={(e) => handleFieldChange(e.target.value, record.key, "expectedDuration")}
             style={{ width: 80 }}
@@ -607,11 +674,11 @@ export const StatusUpdate = () => {
       width: 150,
       align: "center",
       render: (_, record) => {
-        const preReqDone = isPreReqCompleted(record.preRequisite, dataSource);
         return isEditing && !record.isModule
-          ? renderStatusSelect(record.activityStatus, record.key, record.fin_status, !preReqDone)
+          ? renderStatusSelect(record.activityStatus, record, dataSource)
           : record.activityStatus;
       },
+
     },
     {
       title: "Actual / Expected Start",
@@ -619,8 +686,46 @@ export const StatusUpdate = () => {
       key: "actualStart",
       width: 180,
       align: "center",
-      render: (_, { actualStart, activityStatus, key, isModule }) =>
-        isEditing && !isModule ? (
+      render: (_, record) => {
+        const { actualStart, activityStatus, key, isModule, preRequisite, children, Code } = record;
+
+        const flatList = getAllActivities(dataSource);
+        const isBlocked = (() => {
+          const isBlockedByPreRequisite = () => {
+            if (!preRequisite) return false;
+            const preReqCodes = preRequisite.split(',').map((c: string) => c.trim().toLowerCase());
+            return preReqCodes.some((code: any) => {
+              const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+              return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
+            });
+          };
+
+          const isBlockedByChildStatus = () => {
+            if (!children || !Array.isArray(children)) return false;
+            return children.some((child: any) => {
+              const st = (child.activityStatus || '').toLowerCase();
+              return st === 'inprogress' || st === 'completed';
+            });
+          };
+
+          const isBlockedByDependents = () => {
+            const currentCode = (Code || '').toLowerCase();
+            return flatList.some((item) => {
+              const preReqs = (item.preRequisite || '')
+                .split(',')
+                .map((c: string) => c.trim().toLowerCase());
+              return preReqs.includes(currentCode) &&
+                ['inprogress', 'completed'].includes((item.activityStatus || '').toLowerCase());
+            });
+          };
+
+          return isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
+        })();
+
+        const shouldDisable =
+          activityStatus === "yetToStart" || (activityStatus === "completed" && isBlocked);
+
+        return isEditing && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -631,11 +736,12 @@ export const StatusUpdate = () => {
             onChange={(date) =>
               handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualStart")
             }
-            disabled={activityStatus === "yetToStart"}
+            disabled={shouldDisable}
           />
         ) : (
           actualStart || ""
-        ),
+        );
+      },
     },
     {
       title: "Actual / Expected Finish",
@@ -643,8 +749,48 @@ export const StatusUpdate = () => {
       key: "actualFinish",
       width: 180,
       align: "center",
-      render: (_, { actualFinish, activityStatus, key, isModule }) =>
-        isEditing && !isModule ? (
+      render: (_, record) => {
+        const { actualFinish, activityStatus, key, isModule, preRequisite, children, Code } = record;
+
+        const flatList = getAllActivities(dataSource);
+        const isBlocked = (() => {
+          const isBlockedByPreRequisite = () => {
+            if (!preRequisite) return false;
+            const preReqCodes = preRequisite.split(',').map((c: string) => c.trim().toLowerCase());
+            return preReqCodes.some((code: any) => {
+              const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+              return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
+            });
+          };
+
+          const isBlockedByChildStatus = () => {
+            if (!children || !Array.isArray(children)) return false;
+            return children.some((child: any) => {
+              const st = (child.activityStatus || '').toLowerCase();
+              return st === 'inprogress' || st === 'completed';
+            });
+          };
+
+          const isBlockedByDependents = () => {
+            const currentCode = (Code || '').toLowerCase();
+            return flatList.some((item) => {
+              const preReqs = (item.preRequisite || '')
+                .split(',')
+                .map((c: string) => c.trim().toLowerCase());
+              return preReqs.includes(currentCode) &&
+                ['inprogress', 'completed'].includes((item.activityStatus || '').toLowerCase());
+            });
+          };
+
+          return isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
+        })();
+
+        const shouldDisable =
+          activityStatus === "yetToStart" ||
+          activityStatus === "inProgress" ||
+          (activityStatus === "completed" && isBlocked);
+
+        return isEditing && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -655,23 +801,22 @@ export const StatusUpdate = () => {
             onChange={(date) =>
               handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualFinish")
             }
-            disabled={
-              activityStatus === "yetToStart" ||
-              activityStatus === "inProgress"
-            }
+            disabled={shouldDisable}
           />
         ) : (
           actualFinish || ""
-        ),
-    },
+        );
+      },
+    }
   ];
 
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
-
-
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
+    console.log(dataSource);
+
     setDataSource((prevData: any) => {
       const today = dayjs();
+
       const parseDate = (date: string | null | undefined) =>
         date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
 
@@ -708,154 +853,264 @@ export const StatusUpdate = () => {
         return null;
       };
 
-      const updateItem = (item: any): any => {
-        if (item.key !== recordKey) return item;
-
-        let updatedItem = { ...item };
-
-        const plannedStart = parseDate(updatedItem.plannedStart);
-        const plannedFinish = parseDate(updatedItem.plannedFinish);
-        const plannedDuration = updatedItem.duration ? parseInt(updatedItem.duration, 10) : 0;
-
-        switch (fieldName) {
-          case "activityStatus": {
-            updatedItem.activityStatus = value;
-
-            if (value === "yetToStart") {
-              updatedItem.expectedDuration = plannedDuration;
-
-              if (plannedStart && plannedFinish) {
-                updatedItem.actualStart = plannedStart.format('DD-MM-YYYY');
-                updatedItem.actualFinish = plannedFinish.format('DD-MM-YYYY');
-              } else {
-                updatedItem.actualStart = null;
-                updatedItem.actualFinish = null;
-              }
-            }
-
-            if (value === "inProgress") {
-              const plannedStartValid = plannedStart && plannedStart.isValid();
-              let startCandidate = plannedStartValid && plannedStart.isAfter(today) ? plannedStart : today;
-
-              if (!updatedItem.preRequisite) {
-                updatedItem.actualStart = startCandidate.format('DD-MM-YYYY');
-              } else {
-                const preReqCodes = updatedItem.preRequisite.split(',').map((code: any) => code.trim());
-                const preReqActivities = preReqCodes
-                  .map((code: any) => findActivityByCode(prevData, code))
-                  .filter((item: any) => item && item.actualFinish);
-
-                const latestPreReqFinish = preReqActivities
-                  .map((item: any) => parseDate(item.actualFinish))
-                  .sort((a: any, b: any) => b!.isAfter(a!) ? 1 : -1)[0];
-
-                if (latestPreReqFinish) {
-                  const preReqBasedStart = latestPreReqFinish.add(1, 'day');
-                  if (preReqBasedStart.isAfter(startCandidate)) {
-                    startCandidate = preReqBasedStart;
-                  }
-                }
-
-                updatedItem.actualStart = startCandidate.format('DD-MM-YYYY');
-              }
-
-              const actualStartDate = parseDate(updatedItem.actualStart);
-              if (actualStartDate) {
-                const workingDaysSinceStart = businessDaysBetween(actualStartDate, today);
-                const newExpectedDuration = Math.max(plannedDuration, workingDaysSinceStart);
-
-                updatedItem.expectedDuration = newExpectedDuration;
-                updatedItem.actualFinish = addBusinessDays(actualStartDate, newExpectedDuration).format('DD-MM-YYYY');
-              }
-            }
-
-            if (value === "completed") {
-              if (!updatedItem.preRequisite) {
-                updatedItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
-              } else {
-                const preReqCodes = updatedItem.preRequisite.split(',').map((code: any) => code.trim());
-                const preReqActivities = preReqCodes
-                  .map((code: any) => findActivityByCode(prevData, code))
-                  .filter((item: any) => item && item.actualFinish);
-
-                const latestPreReqFinish = preReqActivities
-                  .map((item: any) => parseDate(item.actualFinish))
-                  .sort((a: any, b: any) => b!.isAfter(a!) ? 1 : -1)[0];
-
-                if (latestPreReqFinish) {
-                  const candidateStart = latestPreReqFinish.add(1, 'day');
-                  updatedItem.actualStart = candidateStart.isAfter(plannedFinish!)
-                    ? null
-                    : candidateStart.format('DD-MM-YYYY');
-                }
-              }
-
-              const startDate = parseDate(updatedItem.actualStart);
-              if (startDate && plannedDuration >= 0) {
-                updatedItem.expectedDuration = plannedDuration;
-                updatedItem.actualFinish = addBusinessDays(startDate, plannedDuration).format('DD-MM-YYYY');
-              }
-            }
-
-            break;
+      const getAllActivities = (data: any[]): any[] => {
+        const result: any[] = [];
+        const traverse = (items: any[]) => {
+          for (const item of items) {
+            result.push(item);
+            if (item.children) traverse(item.children);
           }
-
-          case "expectedDuration": {
-            const parsed = parseInt(value, 10);
-            if (!isNaN(parsed)) {
-              updatedItem.expectedDuration = parsed;
-
-              const actualStart = parseDate(updatedItem.actualStart);
-              if (actualStart) {
-                updatedItem.actualFinish = addBusinessDays(actualStart, parsed).format('DD-MM-YYYY');
-              }
-            }
-            break;
-          }
-
-          case "actualStart": {
-            updatedItem.actualStart = value;
-            const newStart = parseDate(value);
-            if (newStart && updatedItem.expectedDuration != null) {
-              updatedItem.actualFinish = addBusinessDays(newStart, updatedItem.expectedDuration).format('DD-MM-YYYY');
-            }
-            break;
-          }
-
-          case "actualFinish": {
-            updatedItem.actualFinish = value;
-            const newFinish = parseDate(value);
-            const start = parseDate(updatedItem.actualStart);
-            if (start && newFinish) {
-              const dur = businessDaysBetween(start, newFinish);
-              updatedItem.expectedDuration = dur >= 0 ? dur : null;
-            }
-            break;
-          }
-
-
-          default:
-            updatedItem[fieldName] = value;
-        }
-
-        return updatedItem;
+        };
+        traverse(data);
+        return result;
       };
 
-      const updateData = (data: any[]): any[] => {
-        return data.map((item) => {
-          if (item.key === recordKey) {
-            return updateItem(item);
-          } else if (item.children) {
+      const getLatestPreReqFinishDate = (data: any[], preReqCodes: string[]) => {
+        const preReqActivities = preReqCodes
+          .map((code: any) => findActivityByCode(data, code))
+          .filter((item: any) => item && item.actualFinish);
+
+        const dates = preReqActivities
+          .map((item: any) => parseDate(item.actualFinish))
+          .filter((d: any) => d != null)
+          .sort((a: any, b: any) => b!.isAfter(a!) ? 1 : -1);
+
+        return dates[0];
+      };
+
+      const updateDeepDependents = (data: any[], updatedCodes: Set<string>): any[] => {
+        const flatList = getAllActivities(data);
+        const updated = new Set<string>(updatedCodes);
+
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const activity of flatList) {
+            if (activity.actualStart || !activity.preRequisite) continue;
+
+            const preReq = activity.preRequisite.split(',').map((c: string) => c.trim());
+            const allPresent = preReq.every((code: any) =>
+              flatList.find((x) => x.Code === code && x.actualFinish)
+            );
+
+            if (allPresent && preReq.some((code: any) => updated.has(code))) {
+              const latest: any = getLatestPreReqFinishDate(data, preReq);
+              const duration = activity.duration ? parseInt(activity.duration, 10) : 0;
+              const start = latest.add(1, 'day');
+              const finish = addBusinessDays(start, duration);
+
+              activity.actualStart = start.format('DD-MM-YYYY');
+              activity.actualFinish = finish.format('DD-MM-YYYY');
+              activity.expectedDuration = duration;
+
+              updated.add(activity.Code);
+              changed = true;
+            }
+          }
+        }
+        return data;
+      };
+
+      let updatedCodes = new Set<string>();
+      const updatedData = prevData.map((item: any) => {
+        const recursiveUpdate = (subItem: any): any => {
+          if (subItem.key === recordKey) {
+            const plannedStart = parseDate(subItem.plannedStart);
+            const plannedFinish = parseDate(subItem.plannedFinish);
+            const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
+            if (fieldName === 'activityStatus') {
+
+              if (value === 'inProgress' || value === 'completed') {
+                const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
+
+                const actualStartDate = parseDate(subItem.actualStart);
+                const actualFinishDate = parseDate(subItem.actualFinish);
+
+                if (
+                  alreadyHasDates &&
+                  subItem.fin_status === 'completed' &&
+                  value === 'inProgress' &&
+                  actualStartDate &&
+                  actualFinishDate &&
+                  actualFinishDate.isBefore(today, 'day')
+                ) {
+                  subItem.actualFinish = today.format('DD-MM-YYYY');
+                  subItem.expectedDuration = businessDaysBetween(actualStartDate, today);
+                  subItem.activityStatus = value;
+                  updatedCodes.add(subItem.Code);
+                  return subItem;
+                }
+
+                if (alreadyHasDates && subItem.fin_status === 'completed') {
+                  subItem.activityStatus = value;
+                  updatedCodes.add(subItem.Code);
+                  return subItem;
+                }
+
+                const preReqCodes = subItem.preRequisite
+                  ? subItem.preRequisite.split(',').map((code: any) => code.trim())
+                  : [];
+                const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
+
+                let tempStart = latestPreReqFinish ? latestPreReqFinish.add(1, 'day') : plannedStart;
+                const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
+
+                if (
+                  (tempStart && tempStart.isAfter(today, 'day')) ||
+                  (value === 'completed' &&
+                    tempStart &&
+                    plannedDuration >= 0 &&
+                    addBusinessDays(tempStart, plannedDuration).isAfter(today, 'day'))
+                ) {
+                  notify.error(`Cannot mark as '${value}' when actual dates exceed today's date.`);
+                  return subItem;
+                }
+
+                subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
+
+                if ((value === 'inProgress' || value === 'completed') && tempStart && tempStart.isBefore(today, 'day')) {
+                  const daysTillToday = businessDaysBetween(tempStart, today);
+                  const effectiveDuration = Math.max(daysTillToday, plannedDuration);
+                  const newFinish = addBusinessDays(tempStart, effectiveDuration);
+                  subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+                  subItem.expectedDuration = effectiveDuration;
+                } else {
+                  const tempFinish = tempStart && plannedDuration >= 0
+                    ? addBusinessDays(tempStart, plannedDuration)
+                    : null;
+                  subItem.actualFinish = tempFinish?.format('DD-MM-YYYY') || null;
+                  subItem.expectedDuration = plannedDuration;
+                }
+
+                subItem.activityStatus = value;
+                updatedCodes.add(subItem.Code);
+              }
+
+              else if (value === 'yetToStart') {
+                const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
+
+                subItem.expectedDuration = plannedDuration;
+                subItem.activityStatus = value;
+
+                if (!alreadyHasDates) {
+                  subItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
+                  subItem.actualFinish = plannedFinish?.format('DD-MM-YYYY') || null;
+                  updatedCodes.add(subItem.Code);
+                } else {
+                  updatedCodes.add(subItem.Code);
+                }
+              }
+            } else if (fieldName === 'actualStart') {
+              const newStart = parseDate(value);
+              const preReqCodes = subItem.preRequisite
+                ? subItem.preRequisite.split(',').map((c: string) => c.trim())
+                : [];
+              const latestPreReqFinish = getLatestPreReqFinishDate(prevData, preReqCodes);
+
+              if (
+                latestPreReqFinish &&
+                newStart &&
+                (newStart.isBefore(latestPreReqFinish, 'day') || newStart.isSame(latestPreReqFinish, 'day'))
+              ) {
+                notify.error(`Actual start date cannot be before or on prerequisite completion date.`);
+                return subItem;
+              }
+
+              if (newStart && newStart.isAfter(today, 'day')) {
+                notify.error(`Actual start date cannot be in the future.`);
+                return subItem;
+              }
+              if (
+                subItem.activityStatus === 'completed' &&
+                newStart &&
+                subItem.expectedDuration != null
+              ) {
+                const newCalculatedFinish = addBusinessDays(newStart, subItem.expectedDuration);
+                if (newCalculatedFinish.isAfter(today, 'day')) {
+                  notify.error(`Cannot change actual start — it pushes actual finish beyond today's date for a completed activity.`);
+                  return subItem;
+                }
+              }
+              subItem.actualStart = value;
+              if (newStart && subItem.expectedDuration != null) {
+                subItem.actualFinish = addBusinessDays(newStart, subItem.expectedDuration).format('DD-MM-YYYY');
+              }
+
+            } else if (fieldName === 'actualFinish') {
+              const newFinish = parseDate(value);
+              const existingFinish = parseDate(subItem.actualFinish);
+
+              if (newFinish && newFinish.isAfter(today, 'day')) {
+                notify.error(`Actual finish date cannot be in the future.`);
+                return subItem;
+              }
+              if (
+                subItem.activityStatus === 'completed' &&
+                existingFinish &&
+                newFinish &&
+                newFinish.isBefore(existingFinish, 'day')
+              ) {
+                notify.error(`Cannot reduce actual finish date for a completed activity.`);
+                return subItem;
+              }
+
+              subItem.actualFinish = value;
+
+              const start = parseDate(subItem.actualStart);
+              if (start && newFinish) {
+                const dur = businessDaysBetween(start, newFinish);
+                subItem.expectedDuration = dur >= 0 ? dur : null;
+              }
+
+            } else if (fieldName === 'expectedDuration') {
+              const duration = parseInt(value, 10);
+              subItem.expectedDuration = duration;
+
+              const actualStart = parseDate(subItem.actualStart);
+
+              if (actualStart && dayjs(actualStart).isValid() && !isNaN(duration)) {
+                const newFinish = addBusinessDays(actualStart, duration);
+                subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+              } else {
+                subItem.actualFinish = null;
+              }
+            } else {
+              subItem[fieldName] = value;
+            }
+
+            const actualStart = parseDate(subItem.actualStart);
+            const actualFinish = parseDate(subItem.actualFinish);
+            if (
+              (subItem.activityStatus === 'inProgress' || subItem.activityStatus === 'completed') &&
+              actualStart &&
+              actualFinish &&
+              actualFinish.isBefore(today, 'day')
+            ) {
+              const newFinish = today;
+              const dur = businessDaysBetween(actualStart, newFinish);
+              if (subItem.expectedDuration != null && dur < subItem.expectedDuration) {
+                notify.error(`Cannot reduce duration by updating actual finish to today.`);
+              } else {
+                subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+                subItem.expectedDuration = dur >= 0 ? dur : null;
+                updatedCodes.add(subItem.Code);
+              }
+            }
+
+            return subItem;
+          } else if (subItem.children) {
             return {
-              ...item,
-              children: updateData(item.children),
+              ...subItem,
+              children: subItem.children.map((child: any) => recursiveUpdate(child)),
             };
           }
-          return item;
-        });
-      };
+          return subItem;
+        };
 
-      return updateData(prevData);
+        return recursiveUpdate(item);
+      });
+
+      return updateDeepDependents(updatedData, updatedCodes);
     });
   };
 
@@ -893,11 +1148,11 @@ export const StatusUpdate = () => {
             }
           }
 
-          if (activityStatus === "yetToStart" && (actualStart || actualFinish)) {
-            errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
-            isValid = false;
-            return true;
-          }
+          // if (activityStatus === "yetToStart" && (actualStart || actualFinish)) {
+          //   errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
+          //   isValid = false;
+          //   return true;
+          // }
 
           return false;
         });
@@ -906,7 +1161,7 @@ export const StatusUpdate = () => {
     });
 
     if (!isValid) {
-      message.error(errorMessage);
+      notify.error(`${errorMessage}`);
       return;
     }
 
@@ -937,7 +1192,7 @@ export const StatusUpdate = () => {
     updatedProject.projectTimeline = updatedSequencedModules;
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
     defaultSetup();
-    message.success("Status updated successfully!");
+    notify.success(`Status updated successfully!`);
   };
 
   const getProjectTimelineById = (id: any) => {
@@ -974,46 +1229,151 @@ export const StatusUpdate = () => {
     return findNotes(dataSource);
   }, [selectedActivityKey, dataSource]);
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
+    const timestamp = new Date();
     const newNote = {
       id: editNoteId || Date.now().toString(),
       text: noteInput.trim(),
-      updatedAt: new Date(),
+      updatedAt: timestamp,
+      createdAt: editNoteId ? undefined : timestamp,
+      createdBy: selectedProjectTimeline?.addedBy,
     };
 
-    setDataSource((prev: any) => {
-      const update = (items: any[]): any[] =>
-        items.map(item => {
-          if (item.key === selectedActivityKey) {
-            const notes = item.notes || [];
-            const updatedNotes = editNoteId
-              ? notes.map((n: any) => (n.id === editNoteId ? { ...n, text: noteInput.trim() } : n))
-              : [...notes, newNote];
-            return { ...item, notes: updatedNotes };
-          }
-          if (item.children) return { ...item, children: update(item.children) };
-          return item;
-        });
-      return update(prev);
+    const updatedDataSource = (prev: any[]): any[] =>
+      prev.map(item => {
+        if (item.key === selectedActivityKey) {
+          const notes = item.notes || [];
+          const updatedNotes = editNoteId
+            ? notes.map((n: any) => (n.id === editNoteId ? { ...n, ...newNote } : n))
+            : [...notes, newNote];
+          return { ...item, notes: updatedNotes };
+        }
+        if (item.children) return { ...item, children: updatedDataSource(item.children) };
+        return item;
+      });
+
+    const newDataSource = updatedDataSource(dataSource);
+    setDataSource(newDataSource);
+
+    const updatedNoteMap = new Map();
+    newDataSource.forEach((module: any) => {
+      module.children.forEach((activity: any) => {
+        if (activity.notes) {
+          updatedNoteMap.set(activity.Code, activity.notes);
+        }
+      });
     });
+
+    const updatedSequencedModules = sequencedModules.map((module: any) => ({
+      ...module,
+      activities: module.activities.map((activity: any) => ({
+        ...activity,
+        ...(updatedNoteMap.has(activity.code) ? { notes: updatedNoteMap.get(activity.code) } : {}),
+      })),
+    }));
+
+    setSequencedModules(updatedSequencedModules);
+    let updatedProject = selectedProject;
+    updatedProject.projectTimeline = updatedSequencedModules;
+    await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
 
     setNoteInput('');
     setEditNoteId(null);
+    setNoteModalVisible(false);
+    notify.success(`Note ${editNoteId ? 'updated' : 'added'} successfully!`);
   };
 
-  const handleDeleteNote = (noteId: string) => {
-    setDataSource((prev: any) => {
-      const update = (items: any[]): any[] =>
-        items.map(item => {
-          if (item.key === selectedActivityKey) {
-            const notes = item.notes?.filter((n: any) => n.id !== noteId) || [];
-            return { ...item, notes };
-          }
-          if (item.children) return { ...item, children: update(item.children) };
-          return item;
-        });
-      return update(prev);
+  const handleDeleteNote = async (noteId: string) => {
+    const updatedDataSource = (prev: any[]): any[] =>
+      prev.map(item => {
+        if (item.key === selectedActivityKey) {
+          const notes = item.notes?.filter((n: any) => n.id !== noteId) || [];
+          return { ...item, notes };
+        }
+        if (item.children) return { ...item, children: updatedDataSource(item.children) };
+        return item;
+      });
+
+    const newDataSource = updatedDataSource(dataSource);
+    setDataSource(newDataSource);
+
+    const updatedNoteMap = new Map();
+    newDataSource.forEach((module: any) => {
+      module.children.forEach((activity: any) => {
+        if (activity.notes) {
+          updatedNoteMap.set(activity.Code, activity.notes);
+        }
+      });
     });
+
+    const updatedSequencedModules = sequencedModules.map((module: any) => ({
+      ...module,
+      activities: module.activities.map((activity: any) => ({
+        ...activity,
+        ...(updatedNoteMap.has(activity.code) ? { notes: updatedNoteMap.get(activity.code) } : {}),
+      })),
+    }));
+
+    setSequencedModules(updatedSequencedModules);
+    let updatedProject = selectedProject;
+    updatedProject.projectTimeline = updatedSequencedModules;
+    await db.updateProjectTimeline(
+      selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
+      updatedSequencedModules
+    );
+
+    notify.success(`Note deleted successfully!`);
+  };
+
+  const handleClose = () => {
+    setOpenCostCalcModal(false);
+    form.resetFields();
+    setFormValid(false);
+  };
+
+  const handleValuesChange = () => {
+    const { projectCost, opCost, delayCost } = form.getFieldsValue();
+    if (projectCost && opCost && delayCost) {
+      setFormValid(true);
+    } else {
+      setFormValid(false);
+    }
+  };
+
+  const handleConfirm = () => {
+    form.validateFields()
+      .then((_values: any) => {
+        handleClose();
+      })
+      .catch(info => {
+        console.error('Validation Failed:', info);
+      });
+  };
+
+  const showResponsibilityModal = () => {
+    setOpenResponsibilityModal(true);
+  };
+
+  const handleCloseResponsibility = () => {
+    setOpenResponsibilityModal(false);
+    raciForm.resetFields();
+  };
+
+  const handleRaciChange = async () => {
+    try {
+      await raciForm.validateFields();
+      setFormValid(true);
+    } catch {
+      setFormValid(false);
+    }
+  };
+
+  const handleConfirmResponsibility = async () => {
+    try {
+      handleCloseResponsibility();
+    } catch (error) {
+      console.error('Validation failed:', error);
+    }
   };
 
   return (
@@ -1115,6 +1475,7 @@ export const StatusUpdate = () => {
                         setSelectedProjectTimeline(selectedVersion);
                         setSelectedVersionId(value);
                         handleChangeVersionTimeline(value);
+                        setSelectedActivityKey(null);
                       }}
                       popupMatchSelectWidth={false}
                       style={{ width: '100%' }}
@@ -1138,19 +1499,43 @@ export const StatusUpdate = () => {
               </div>
               <div className="actions">
                 <Button
+                  icon={<DollarOutlined />}
+                  disabled={!selectedActivityKey}
+                  onClick={handleOpenCostCalcModal}
+                  style={{
+                    backgroundColor: selectedActivityKey ? '#e67e22' : '#f5f5f5',
+                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  Cost
+                </Button>
+
+                <Button
+                  icon={<UserOutlined />}
+                  disabled={!selectedActivityKey}
+                  onClick={showResponsibilityModal}
+                  style={{
+                    backgroundColor: selectedActivityKey ? '#2c3e50' : '#f5f5f5',
+                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  RASI
+                </Button>
+
+                <Button
                   icon={<FormOutlined />}
                   disabled={!selectedActivityKey}
                   onClick={() => setNoteModalVisible(true)}
                   style={{
-                    backgroundColor: selectedActivityKey ? '#f6ffed' : '#f5f5f5',
-                    borderColor: selectedActivityKey ? '#b7eb8f' : '#d9d9d9',
-                    color: selectedActivityKey ? '#52c41a' : '#bfbfbf',
+                    backgroundColor: selectedActivityKey ? '#990000' : '#f5f5f5',
+                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
                     cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
                   }}
                 >
                   Add Note
                 </Button>
-
                 <Button
                   type="primary"
                   disabled={!selectedProjectId}
@@ -1243,8 +1628,9 @@ export const StatusUpdate = () => {
                   }}
                   rowClassName={(record) => {
                     if (record.isModule) return "module-header";
-                    return record.key === selectedActivityKey ? "selected-row activity-row" : "activity-row";
+                    return record.key === selectedActivityKey ? "activity-row selected-red-row" : "activity-row";
                   }}
+
                   bordered
                   scroll={{
                     x: "max-content",
@@ -1277,6 +1663,7 @@ export const StatusUpdate = () => {
           </div>
         )}
       </div>
+
       <Modal
         title="Share Timeline"
         visible={isModalOpen}
@@ -1408,15 +1795,174 @@ export const StatusUpdate = () => {
                   <a key="delete" onClick={() => handleDeleteNote(item.id)}>Delete</a>
                 ]}
               >
-                <Typography.Paragraph style={{ margin: 0 }}>{item.text}</Typography.Paragraph>
+                <List.Item.Meta
+                  title={
+                    <div className="note-meta">
+                      {item.createdBy && (
+                        <span className="note-author">
+                          <UserOutlined />
+                          {item.createdBy}
+                        </span>
+                      )}
+                      {(item.createdAt || item.updatedAt) && (
+                        <span className="note-timestamp">
+                          <ClockCircleOutlined />
+                          {dayjs(item.createdAt).format('DD MMM YYYY HH:mm')}
+                        </span>
+                      )}
+                    </div>
+                  }
+                  description={item.text}
+                />
               </List.Item>
             )}
           />
-
         </div>
       </Modal>
 
+      <ToastContainer />
 
+      <Modal
+        title="Define Cost for Delay (₹ / Day)"
+        open={openCostCalcModal}
+        onCancel={handleClose}
+        onOk={handleConfirm}
+        okButtonProps={{ disabled: !formValid }}
+        destroyOnClose
+        className="modal-container"
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onValuesChange={handleValuesChange}
+          style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <Form.Item
+            label=""
+            style={{ marginBottom: 16 }}
+          >
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Project Cost</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="projectCost"
+                  noStyle
+                  rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                >
+                  <Input type="number" min={0} placeholder="Enter Project Cost" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 24 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Opportunity Cost</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="opCost"
+                  noStyle
+                  rules={[{ required: true, message: 'Please enter OP Cost' }]}
+                >
+                  <Input type="number" min={0} placeholder="Enter OP Cost" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+        </Form>
+
+      </Modal>
+
+      <Modal
+        title="Assign Responsibility"
+        open={openResponsibilityModal}
+        onCancel={handleCloseResponsibility}
+        onOk={handleConfirmResponsibility}
+        okButtonProps={{ disabled: !formValid }}
+        destroyOnClose
+        className="modal-container"
+      >
+        <Form
+          form={raciForm}
+          layout="vertical"
+          onValuesChange={handleRaciChange}
+          style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+        >
+          <Form.Item label="" style={{ marginBottom: 16 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Responsible</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="responsible"
+                  noStyle
+                  rules={[{ required: true, message: 'Please select a Responsible person' }]}
+                >
+                  <Select placeholder="Select Responsible">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 16 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Accountable</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="accountable"
+                  noStyle
+                  rules={[{ required: true, message: 'Please select an Accountable person' }]}
+                >
+                  <Select placeholder="Select Accountable">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 16 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Consulted</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="consulted"
+                  noStyle
+                >
+                  <Select mode="multiple" placeholder="Select Consulted">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+
+          <Form.Item label="" style={{ marginBottom: 24 }}>
+            <Row align="middle" gutter={8}>
+              <Col flex="150px">Informed</Col>
+              <Col flex="auto">
+                <Form.Item
+                  name="informed"
+                  noStyle
+                >
+                  <Select mode="multiple" placeholder="Select Informed">
+                    {userOptions.map(user => (
+                      <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   );
 };

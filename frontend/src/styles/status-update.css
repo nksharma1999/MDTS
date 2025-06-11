@@ -42,10 +42,6 @@
     }
 }
 
-.status-update-items {
-    /* margin-top: 10px; */
-}
-
 .custom-table-cell {
     color: #fff !important;
 }
@@ -198,7 +194,6 @@
     font-weight: bold;
 }
 
-.selected-row {
-    background-color: #084967 !important;
-    border-left: 3px solid #1890ff !important;
+.project-timeline-table .selected-red-row>td {
+    background-color: #e0e3f2 !important;
 }

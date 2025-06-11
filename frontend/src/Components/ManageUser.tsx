@@ -4,12 +4,11 @@ import { getCurrentUser } from "../Utils/moduleStorage";
 import { useNavigate } from "react-router-dom";
 import "../styles/user-management.css";
 import { Notifications, DeleteOutlined } from "@mui/icons-material";
-import { Button, Col, Form, Input, List, message, Modal, Row, Select, Table, Typography } from "antd";
+import { Button, Col, Form, Input, message, Modal, Row, Select, Table } from "antd";
 import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
 
 const { Option } = Select;
-const { Text } = Typography;
 interface Module {
   parentModuleCode: string;
 }
@@ -69,7 +68,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     text: true,
   });
   const [form] = Form.useForm();
-  const [selectedEmails, setSelectedEmails] = useState<any>([]);
+  // const [selectedEmails, setSelectedEmails] = useState<any>([]);
   const [currentUser, setCurrentUser] = useState<any>({});
 
   useEffect(() => {
@@ -165,16 +164,16 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       : parts[0][0]?.toUpperCase() || "";
   }
 
-  const invitationSuggestions = [
-    { name: 'sudhindra rao', role: 'Founder & COO', email: 'sudhindra@simpro.co.in' },
-    { name: 'amit tiwari', role: 'Manager-Business', email: 'amit.tiwari@simpro.co.in' }
-  ];
+  // const invitationSuggestions = [
+  //   { name: 'sudhindra rao', role: 'Founder & COO', email: 'sudhindra@simpro.co.in' },
+  //   { name: 'amit tiwari', role: 'Manager-Business', email: 'amit.tiwari@simpro.co.in' }
+  // ];
 
-  const handleAddEmail = (email: any) => {
-    if (!selectedEmails.includes(email)) {
-      setSelectedEmails([...selectedEmails, email]);
-    }
-  };
+  // const handleAddEmail = (email: any) => {
+  //   if (!selectedEmails.includes(email)) {
+  //     setSelectedEmails([...selectedEmails, email]);
+  //   }
+  // };
 
   const handleSendInvites = async () => {
     try {
