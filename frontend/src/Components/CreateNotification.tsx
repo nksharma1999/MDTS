@@ -81,6 +81,7 @@ const CreateNotification: React.FC<CreateNotificationProps> = ({ onClose }) => {
   };
 
   const handleSave = () => {
+    console.log("Form Data Saved:", form);
     alert("Form saved successfully!");
     onClose?.();
     navigate("/modules");

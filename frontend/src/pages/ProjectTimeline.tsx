@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/project-timeline.css";
 import { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -6,8 +6,8 @@ import { FolderOpenOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Space, List } from "antd";
-import { ClockCircleOutlined, DownloadOutlined, DownOutlined, FileTextOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined, UserOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Checkbox, Space } from "antd";
+import { ClockCircleOutlined, DownloadOutlined, DownOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -22,11 +22,8 @@ interface Activity {
     level: string;
     duration: number;
     start: string | null;
-    end: string | null
+    end: string | null;
     activityStatus: string | null;
-    actualStart?: string | null;
-    actualFinish?: string | null;
-    actualDuration?: number;
 }
 
 interface Module {
@@ -35,14 +32,14 @@ interface Module {
     activities: Activity[];
 }
 
+const { Option } = Select;
+
 import { Dropdown } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';
-import { notify } from "../Utils/ToastNotify.tsx";
 
 const tabs = [
     "All",
     "In-Progress",
-    "Completed",
     "Upcoming 1 Month",
     "Recent Completed",
     "Yet To Start",
@@ -66,13 +63,10 @@ const ProjectTimeline = (project: any) => {
     const [allVersions, setAllVersions] = useState<any>();
     const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
     const [reviseRemarks, setReviseRemarks] = useState("");
-    const [statusFilter, _setStatusFilter] = useState(null);
-    const [plannedDate, _setPlannedDate] = useState(null);
+    const [statusFilter, setStatusFilter] = useState(null);
+    const [plannedDate, setPlannedDate] = useState(null);
     const [assignedUsers, setAssignedUsers] = useState([]);
-    const [selectedActivityKey, setSelectedActivityKey] = useState<string | null>(null);
-    const [noteModalVisible, setNoteModalVisible] = useState(false);
-    const [_noteInput, setNoteInput] = useState('');
-    const [_editNoteId, setEditNoteId] = useState<string | null>(null);
+
 
     const [activeTab, setActiveTab] = useState(0);
     const showModal = () => {
@@ -222,17 +216,12 @@ const ProjectTimeline = (project: any) => {
         const globalHeader = [
             "Sr No.",
             "Key Activity",
-            "Expected Duration (Days)",
-            "Actual Duration (Days)",
+            "Duration (Days)",
             "Pre-Requisite",
             "Slack",
             "Planned Start",
             "Planned Finish",
-            "Actual Start",
-            "Actual Finish",
-            "Status",
         ];
-
         const headerRow = worksheet.addRow(globalHeader);
 
         headerRow.eachCell((cell: any) => {
@@ -262,14 +251,10 @@ const ProjectTimeline = (project: any) => {
                     `${moduleIndex + 1}.${activityIndex + 1}`,
                     activity.activityName,
                     activity.duration || 0,
-                    activity.actualDuration || 0,
-                    activity.prerequisite || "-",
+                    activity.prerequisite,
                     activity.slack || 0,
                     activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
                     activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-                    activity.actualStart ? dayjs(activity.actualStart).format("DD-MM-YYYY") : "-",
-                    activity.actualFinish ? dayjs(activity.actualFinish).format("DD-MM-YYYY") : "-",
-                    activity.activityStatus || "-",
                 ]);
 
                 row.eachCell((cell: any) => {
@@ -292,15 +277,11 @@ const ProjectTimeline = (project: any) => {
         });
 
         worksheet.columns = [
-            { width: 20 },
-            { width: 45 },
-            { width: 20 },
-            { width: 20 },
+            { width: 10 },
+            { width: 35 },
+            { width: 18 },
             { width: 30 },
             { width: 15 },
-            { width: 20 },
-            { width: 20 },
-            { width: 20 },
             { width: 20 },
             { width: 20 },
         ];
@@ -316,7 +297,7 @@ const ProjectTimeline = (project: any) => {
             type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
         saveAs(blob, `${selectedProject?.projectParameters.projectName}.xlsx`);
-        notify.success("Download started!");
+        message.success("Download started!");
     };
 
     const handleShare = () => {
@@ -398,8 +379,7 @@ const ProjectTimeline = (project: any) => {
                         remarks: activity.remarks ?? "",
                         isModule: false,
                         activityStatus: activity.activityStatus || "yetToStart",
-                        fin_status: activity.fin_status || '',
-                        notes: activity.notes || [],
+                        fin_status: activity.fin_status || ''
                     };
                 });
 
@@ -471,7 +451,13 @@ const ProjectTimeline = (project: any) => {
             align: "left",
             render: (_, record) => {
                 const {
-                    activityStatus, keyActivity, duration, actualStart, actualFinish, plannedStart, plannedFinish,
+                    activityStatus,
+                    plannedStart,
+                    actualStart,
+                    plannedFinish,
+                    actualFinish,
+                    duration,
+                    keyActivity
                 } = record;
 
                 const plannedStartDate = plannedStart ? dayjs(plannedStart, 'DD-MM-YYYY') : null;
@@ -480,10 +466,14 @@ const ProjectTimeline = (project: any) => {
                 const actualFinishDate = actualFinish ? dayjs(actualFinish, 'DD-MM-YYYY') : null;
 
                 let iconSrc = '';
+                const label = keyActivity;
+
                 const isStartSame = plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, 'day');
                 const isFinishSame = plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, 'day');
                 const isWithinPlannedDuration =
-                    plannedStartDate && plannedFinishDate && actualStartDate &&
+                    plannedStartDate &&
+                    plannedFinishDate &&
+                    actualStartDate &&
                     getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
 
                 if (activityStatus === 'completed') {
@@ -491,40 +481,19 @@ const ProjectTimeline = (project: any) => {
                     iconSrc = isCompletedOnTime ? '/images/icons/completed.png' : '/images/icons/overdue.png';
                 } else if (activityStatus === 'inProgress') {
                     iconSrc = isWithinPlannedDuration ? '/images/icons/inprogress.png' : '/images/icons/overdue.png';
-                } else {
+                } else if (activityStatus === 'yetToStart') {
                     iconSrc = '/images/icons/yettostart.png';
                 }
 
                 return (
-                    <span
-                        style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
-                        onClick={() => {
-                            if (record.duration != undefined)
-                                setSelectedActivityKey(prevKey => prevKey === record.key ? null : record.key);
-                        }}
-                    >
-                        {record.notes?.length > 0 && (
-                            <span
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedActivityKey(record.key);
-                                    setNoteModalVisible(true);
-                                    setNoteInput('');
-                                    setEditNoteId(null);
-                                }}
-                            >
-                                <FileTextOutlined style={{ fontSize: 22, color: '#1890ff' }} />
-                            </span>
-                        )}
-                        {duration ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        {duration && iconSrc && (
                             <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
-                        ) : (
-                            <span style={{ width: 34, height: 34 }} />
                         )}
-                        {keyActivity}
+                        {label}
                     </span>
                 );
-            },
+            }
         },
         {
             title: "Duration",
@@ -532,7 +501,7 @@ const ProjectTimeline = (project: any) => {
             key: "duration",
             width: 80,
             align: "center",
-            render: (_, record) => `${record.duration ? record.duration : ''}`
+            render: (_, record) => `${record.duration ? record.duration + ' days' : ''}`
         },
         { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
         { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
@@ -859,9 +828,7 @@ const ProjectTimeline = (project: any) => {
         { label: 'Bob Williams', value: 'user4' },
         { label: 'Eve Adams', value: 'user5' },
     ]);
-
     const [fetchingUsers, setFetchingUsers] = useState(false);
-
     const fetchUserList = debounce((search: string) => {
         setFetchingUsers(true);
         setTimeout(() => {
@@ -873,7 +840,6 @@ const ProjectTimeline = (project: any) => {
             setFetchingUsers(false);
         }, 1000);
     }, 800);
-
     const dropdownContent = (
         <div className="custom-dropdown">
             <Input.Search placeholder="Search activity..." className="dropdown-search" />
@@ -885,7 +851,8 @@ const ProjectTimeline = (project: any) => {
                     </Button>
                 </Dropdown>
             </div>
-            {/* <div className="dropdown-section">
+            {/* Status Filter */}
+            <div className="dropdown-section">
                 <p className="dropdown-title">Status</p>
                 <Select
                     className="full-width-select"
@@ -898,20 +865,22 @@ const ProjectTimeline = (project: any) => {
                     <Option value="inProgress">In Progress</Option>
                     <Option value="yetToStart">Yet to Start</Option>
                 </Select>
-            </div> */}
+            </div>
 
-            {/* <div className="dropdown-section">
+            {/* Planned Date Filter */}
+            <div className="dropdown-section">
                 <p className="dropdown-title">Planned Start Date</p>
                 <DatePicker
                     className="full-width-range"
                     value={plannedDate}
                     onChange={setPlannedDate}
                 />
-            </div> */}
+            </div>
 
             <div className="dropdown-section">
                 <p className="dropdown-title">Assigned Users</p>
                 <Select
+                    mode="multiple"
                     showSearch
                     placeholder="Search and select users"
                     value={assignedUsers}
@@ -927,20 +896,6 @@ const ProjectTimeline = (project: any) => {
         </div>
     );
 
-    const selectedNotes = useMemo(() => {
-        const findNotes = (items: any[]): any[] => {
-            for (const item of items) {
-                if (item.key === selectedActivityKey) return item.notes || [];
-                if (item.children) {
-                    const found = findNotes(item.children);
-                    if (found) return found;
-                }
-            }
-            return [];
-        };
-        return findNotes(dataSource);
-    }, [selectedActivityKey, dataSource]);
-
     const getAppliedFilterCount = () => {
         let count = 0;
         if (statusFilter) count++;
@@ -949,6 +904,7 @@ const ProjectTimeline = (project: any) => {
         if (activeTab !== 0) count++;
         return count;
     };
+
 
     return (
         <>
@@ -1194,78 +1150,6 @@ const ProjectTimeline = (project: any) => {
                         value={reviseRemarks}
                         onChange={(e) => setReviseRemarks(e.target.value)}
                         placeholder="Enter revision notes..."
-                    />
-                </div>
-            </Modal>
-
-            <Modal
-                title="Activity Notes"
-                open={noteModalVisible}
-                onCancel={() => {
-                    setNoteModalVisible(false);
-                    setNoteInput('');
-                    setEditNoteId(null);
-                }}
-                width={'60%'}
-                footer={null}
-                className="modal-container"
-            >
-                <div style={{ padding: "10px 24px" }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        {/* <Typography.Title level={5}>
-                            {editNoteId ? "Edit Note" : "Add New Note"}
-                        </Typography.Title> */}
-
-                        {/* <Button
-                            type="primary"
-                            block
-                            onClick={handleSaveNote}
-                            disabled={!noteInput.trim()}
-                            style={{ width: '15%', marginBottom: 8 }}
-                        >
-                            {editNoteId ? "Update Note" : "Add Note"}
-                        </Button> */}
-
-                    </div>
-
-                    {/* <Input.TextArea
-                        value={noteInput}
-                        onChange={(e) => setNoteInput(e.target.value)}
-                        placeholder="Write your note here..."
-                        rows={4}
-                    /> */}
-
-                    <List
-                        // header={<strong style={{ fontSize: 16 }}>Previous Notes</strong>}
-                        dataSource={selectedNotes}
-                        locale={{ emptyText: "No notes available" }}
-                        itemLayout="horizontal"
-                        style={{ marginBottom: 20 }}
-                        renderItem={(item: any) => (
-                            <List.Item
-                                style={{ padding: "8px 0" }}
-                            >
-                                <List.Item.Meta
-                                    title={
-                                        <div className="note-meta">
-                                            {item.createdBy && (
-                                                <span className="note-author">
-                                                    <UserOutlined />
-                                                    {item.createdBy}
-                                                </span>
-                                            )}
-                                            {(item.createdAt||item.updatedAt) && (
-                                                <span className="note-timestamp">
-                                                    <ClockCircleOutlined />
-                                                    {dayjs(item.createdAt).format('DD MMM YYYY HH:mm')}
-                                                </span>
-                                            )}
-                                        </div>
-                                    }
-                                    description={item.text}
-                                />
-                            </List.Item>
-                        )}
                     />
                 </div>
             </Modal>

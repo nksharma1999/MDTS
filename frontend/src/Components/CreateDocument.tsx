@@ -13,7 +13,7 @@ import {
 } from "antd";
 import { saveDocument, updateDocument, getModules } from "../Utils/moduleStorage";
 import "../styles/documents.css"
-import ImageContainer from "../Components/ImageContainer"; 
+import ImageContainer from "../components/ImageContainer";
 const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
