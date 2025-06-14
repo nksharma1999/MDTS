@@ -955,8 +955,13 @@ export const StatusUpdate = () => {
             const plannedFinish = parseDate(subItem.plannedFinish);
             const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
             if (fieldName === 'activityStatus') {
-
               if (value === 'inProgress' || value === 'completed') {
+                if (['inProgress', 'completed'].includes(subItem.fin_status)) {
+                  subItem.activityStatus = value;
+                  updatedCodes.add(subItem.Code);
+                  return subItem;
+                }
+
                 const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
 
                 const actualStartDate = parseDate(subItem.actualStart);
@@ -1033,8 +1038,7 @@ export const StatusUpdate = () => {
 
                 subItem.expectedDuration = plannedDuration;
                 subItem.activityStatus = value;
-
-                if (!alreadyHasDates) {
+                if (!alreadyHasDates || !['inProgress', 'completed'].includes(subItem.fin_status)) {
                   subItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
                   subItem.actualFinish = plannedFinish?.format('DD-MM-YYYY') || null;
                   updatedCodes.add(subItem.Code);
@@ -1232,6 +1236,8 @@ export const StatusUpdate = () => {
     setSequencedModules(updatedSequencedModules);
     let updatedProject = selectedProject;
     updatedProject.projectTimeline = updatedSequencedModules;
+    console.log(updatedSequencedModules);
+
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
     defaultSetup();
     notify.success(`Status updated successfully!`);
@@ -1501,7 +1507,7 @@ export const StatusUpdate = () => {
           }
         });
       });
-      
+
       const updatedSequencedModules = sequencedModules.map((module: any) => ({
         ...module,
         activities: module.activities.map((activity: any) => ({
