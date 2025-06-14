@@ -62,3 +62,40 @@
     background-color: #f3f4f6;
     font-weight: 600;
 }
+
+.raci-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    font-size: 14px;
+    padding: 8px 0;
+}
+
+.raci-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid #eee;
+    padding: 6px 0;
+}
+
+.raci-label {
+    font-weight: 600;
+    color: #444;
+    width: 120px;
+}
+
+.raci-value {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    color: #333;
+}
+
+.raci-tag {
+    background: #f0f2f5;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+}

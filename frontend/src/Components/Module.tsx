@@ -933,7 +933,7 @@ const Module = () => {
                                     <Col>
                                         <Tooltip title="Define Activity Cost">
                                             <Button
-                                                icon={<FileTextOutlined style={{ color: '#52c41a' }} />}
+                                                icon={<FileTextOutlined style={{ color: '#7f8c8d' }} />}
                                                 className="icon-button"
                                                 onClick={showDocumentModal}
                                                 disabled={!selectedRow}

@@ -62,7 +62,7 @@ export const StatusUpdate = () => {
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
   const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
   const [form] = Form.useForm();
-  const [formValid, setFormValid] = useState(false);
+  const [_formValid, setFormValid] = useState(false);
   const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
   const userOptions = [
     { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
@@ -110,6 +110,32 @@ export const StatusUpdate = () => {
       setTimeout(() => navigate(".", { replace: true }), 0);
     }
   }, [location.state]);
+
+  useEffect(() => {
+    if (openCostCalcModal && selectedActivityKey) {
+      const activity = findActivityByKey(dataSource, selectedActivityKey);
+      if (activity?.cost) {
+        form.setFieldsValue({
+          projectCost: activity.cost.projectCost,
+          opCost: activity.cost.opCost
+        });
+      }
+    }
+  }, [openCostCalcModal, selectedActivityKey]);
+
+  useEffect(() => {
+    if (openResponsibilityModal && selectedActivityKey) {
+      const activity = findActivityByKey(dataSource, selectedActivityKey);
+      if (activity?.raci) {
+        raciForm.setFieldsValue({
+          responsible: activity.raci.responsible,
+          accountable: activity.raci.accountable,
+          consulted: activity.raci.consulted || [],
+          informed: activity.raci.informed || []
+        });
+      }
+    }
+  }, [openResponsibilityModal, selectedActivityKey]);
 
   const getProjectTimeline = async (project: any) => {
     if (Array.isArray(project?.projectTimeline)) {
@@ -424,6 +450,9 @@ export const StatusUpdate = () => {
             activityStatus: activity.activityStatus || "yetToStart",
             fin_status: activity.fin_status || '',
             notes: activity.notes || [],
+            raci: activity.raci || {},
+            cost: activity.cost || {},
+
           };
         });
 
@@ -918,6 +947,7 @@ export const StatusUpdate = () => {
       };
 
       let updatedCodes = new Set<string>();
+
       const updatedData = prevData.map((item: any) => {
         const recursiveUpdate = (subItem: any): any => {
           if (subItem.key === recordKey) {
@@ -1288,6 +1318,7 @@ export const StatusUpdate = () => {
     let updatedProject = selectedProject;
     updatedProject.projectTimeline = updatedSequencedModules;
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
+    console.log(updatedSequencedModules);
 
     setNoteInput('');
     setEditNoteId(null);
@@ -1352,16 +1383,6 @@ export const StatusUpdate = () => {
     }
   };
 
-  const handleConfirm = () => {
-    form.validateFields()
-      .then((_values: any) => {
-        handleClose();
-      })
-      .catch(info => {
-        console.error('Validation Failed:', info);
-      });
-  };
-
   const showResponsibilityModal = () => {
     setOpenResponsibilityModal(true);
   };
@@ -1380,13 +1401,134 @@ export const StatusUpdate = () => {
     }
   };
 
-  const handleConfirmResponsibility = async () => {
+  const findActivityByKey = (list: any[], key: string): any => {
+    for (const item of list) {
+      if (item.key === key) return item;
+      if (item.children) {
+        const result = findActivityByKey(item.children, key);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
+  const handleConfirm = async () => {
     try {
-      handleCloseResponsibility();
+      const values = await form.validateFields();
+
+      const updatedDataSource = (prev: any[]): any[] =>
+        prev.map(item => {
+          if (item.key === selectedActivityKey) {
+            return {
+              ...item,
+              cost: {
+                projectCost: values.projectCost,
+                opCost: values.opCost
+              }
+            };
+          }
+          if (item.children) return { ...item, children: updatedDataSource(item.children) };
+          return item;
+        });
+
+      const newDataSource = updatedDataSource(dataSource);
+      setDataSource(newDataSource);
+
+      const updatedCostMap = new Map();
+      newDataSource.forEach((module: any) => {
+        module.children.forEach((activity: any) => {
+          if (activity.cost) {
+            updatedCostMap.set(activity.Code, activity.cost);
+          }
+        });
+      });
+
+      const updatedSequencedModules = sequencedModules.map((module: any) => ({
+        ...module,
+        activities: module.activities.map((activity: any) => ({
+          ...activity,
+          ...(updatedCostMap.has(activity.code) ? { cost: updatedCostMap.get(activity.code) } : {})
+        }))
+      }));
+
+      setSequencedModules(updatedSequencedModules);
+
+      let updatedProject = selectedProject;
+      updatedProject.projectTimeline = updatedSequencedModules;
+
+      await db.updateProjectTimeline(
+        selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
+        updatedSequencedModules
+      );
+
+      form.resetFields();
+      setOpenCostCalcModal(false);
+      notify.success("Cost updated successfully!");
     } catch (error) {
-      console.error('Validation failed:', error);
+      console.error("Validation Failed:", error);
     }
   };
+
+  const handleConfirmResponsibility = async () => {
+    try {
+      const values = await raciForm.validateFields();
+
+      const updatedDataSource = (prev: any[]): any[] =>
+        prev.map(item => {
+          if (item.key === selectedActivityKey) {
+            return {
+              ...item,
+              raci: {
+                responsible: values.responsible,
+                accountable: values.accountable,
+                consulted: values.consulted || [],
+                informed: values.informed || []
+              }
+            };
+          }
+          if (item.children) return { ...item, children: updatedDataSource(item.children) };
+          return item;
+        });
+
+      const newDataSource = updatedDataSource(dataSource);
+      setDataSource(newDataSource);
+
+      const updatedRaciMap = new Map();
+      newDataSource.forEach((module: any) => {
+        module.children.forEach((activity: any) => {
+          if (activity.raci) {
+            updatedRaciMap.set(activity.Code, activity.raci);
+          }
+        });
+      });
+      
+      const updatedSequencedModules = sequencedModules.map((module: any) => ({
+        ...module,
+        activities: module.activities.map((activity: any) => ({
+          ...activity,
+          ...(updatedRaciMap.has(activity.code) ? { raci: updatedRaciMap.get(activity.code) } : {})
+        }))
+      }));
+
+      setSequencedModules(updatedSequencedModules);
+
+      let updatedProject = selectedProject;
+      updatedProject.projectTimeline = updatedSequencedModules;
+
+      await db.updateProjectTimeline(
+        selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
+        updatedSequencedModules
+      );
+
+      raciForm.resetFields();
+      setOpenResponsibilityModal(false);
+      notify.success("Responsibilities updated successfully!");
+    } catch (error) {
+      console.error("Validation Failed:", error);
+    }
+  };
+
+
 
   return (
     <>
@@ -1546,7 +1688,7 @@ export const StatusUpdate = () => {
                     cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  Add Note
+                  Note
                 </Button>
                 <Button
                   type="primary"
@@ -1839,7 +1981,7 @@ export const StatusUpdate = () => {
         open={openCostCalcModal}
         onCancel={handleClose}
         onOk={handleConfirm}
-        okButtonProps={{ disabled: !formValid }}
+        // okButtonProps={{ disabled: !formValid }}
         destroyOnClose
         className="modal-container"
       >
@@ -1890,7 +2032,7 @@ export const StatusUpdate = () => {
         open={openResponsibilityModal}
         onCancel={handleCloseResponsibility}
         onOk={handleConfirmResponsibility}
-        okButtonProps={{ disabled: !formValid }}
+        // okButtonProps={{ disabled: !formValid }}
         destroyOnClose
         className="modal-container"
       >

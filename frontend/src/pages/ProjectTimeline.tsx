@@ -7,13 +7,15 @@ import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Space, List } from "antd";
-import { ClockCircleOutlined, DownloadOutlined, DownOutlined, FileTextOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined, UserOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, DownloadOutlined, DownOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined, UserOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
-import TextArea from "antd/es/input/TextArea";
 import { Spin } from 'antd';
 import debounce from 'lodash/debounce';
+import { Tabs } from 'antd';
+const { TabPane } = Tabs;
+
 interface Activity {
     code: string;
     activityName: string;
@@ -58,14 +60,11 @@ const ProjectTimeline = (project: any) => {
     const [sequencedModules, setSequencedModules] = useState<Module[]>([]);
     const [dataSource, setDataSource] = useState<any>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
     const [email, setEmail] = useState("");
     const [isEditing, setIsEditing] = useState(false);
     const [selectedProjectTimeline, setSelectedProjectTimeline] = useState<any>([]);
     const [selectedVersionId, setSelectedVersionId] = useState(null);
     const [allVersions, setAllVersions] = useState<any>();
-    const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
-    const [reviseRemarks, setReviseRemarks] = useState("");
     const [statusFilter, _setStatusFilter] = useState(null);
     const [plannedDate, _setPlannedDate] = useState(null);
     const [assignedUsers, setAssignedUsers] = useState([]);
@@ -73,6 +72,7 @@ const ProjectTimeline = (project: any) => {
     const [noteModalVisible, setNoteModalVisible] = useState(false);
     const [_noteInput, setNoteInput] = useState('');
     const [_editNoteId, setEditNoteId] = useState<string | null>(null);
+    const [selectedActivity, setSelectedActivity] = useState<any>(null);
 
     const [activeTab, setActiveTab] = useState(0);
     const showModal = () => {
@@ -329,24 +329,6 @@ const ProjectTimeline = (project: any) => {
         setEmail("");
     };
 
-    const handleApproveTimeline = async () => {
-        const updatedProjectTimeline = selectedProject.projectTimeline.map((timeline: any) => {
-            if (timeline.timelineId === selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId) {
-                return { ...timeline, status: "Approved" };
-            }
-            return timeline;
-        });
-
-        const updatedSelectedProject = {
-            ...selectedProject,
-            projectTimeline: updatedProjectTimeline,
-        };
-        await db.updateProject(selectedProjectId, updatedSelectedProject);
-        message.success("Timeline approved successfully");
-        setIsApproveModalOpen(false);
-        defaultSetup();
-    };
-
     const isPreReqCompleted = (preRequisiteCode: string, allData: any[]): boolean => {
         let isCompleted = false;
 
@@ -400,6 +382,8 @@ const ProjectTimeline = (project: any) => {
                         activityStatus: activity.activityStatus || "yetToStart",
                         fin_status: activity.fin_status || '',
                         notes: activity.notes || [],
+                        raci: activity.raci || {},
+                        cost: activity.cost || {},
                     };
                 });
 
@@ -412,6 +396,8 @@ const ProjectTimeline = (project: any) => {
                     children,
                 };
             });
+            console.log(finDataSource);
+
             setDataSource(finDataSource);
             setExpandedKeys(finDataSource.map((_: any, index: any) => `module-${index}`));
             if (editingRequired) {
@@ -508,12 +494,14 @@ const ProjectTimeline = (project: any) => {
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setSelectedActivityKey(record.key);
+                                    setSelectedActivity(record);
                                     setNoteModalVisible(true);
                                     setNoteInput('');
                                     setEditNoteId(null);
                                 }}
+
                             >
-                                <FileTextOutlined style={{ fontSize: 22, color: '#1890ff' }} />
+                                <InfoCircleOutlined style={{ fontSize: 22, color: '#1890ff' }} />
                             </span>
                         )}
                         {duration ? (
@@ -780,10 +768,6 @@ const ProjectTimeline = (project: any) => {
         handleLibraryChange(timelineData);
     }
 
-    const handleReviseConfirm = () => {
-        setIsReviseModalOpen(false);
-    };
-
     const formattedDate = selectedProjectTimeline?.createdAt
         ? new Date(selectedProjectTimeline.createdAt).toLocaleString("en-US", {
             year: "numeric",
@@ -859,6 +843,20 @@ const ProjectTimeline = (project: any) => {
         { label: 'Bob Williams', value: 'user4' },
         { label: 'Eve Adams', value: 'user5' },
     ]);
+
+    const usersOptions = [
+        { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
+        { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
+        { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
+        { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
+        { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
+        { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
+        { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
+        { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
+        { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
+        { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
+    ];
+
 
     const [fetchingUsers, setFetchingUsers] = useState(false);
 
@@ -949,6 +947,10 @@ const ProjectTimeline = (project: any) => {
         if (activeTab !== 0) count++;
         return count;
     };
+
+    const userMap = useMemo(() => {
+        return Object.fromEntries(usersOptions.map((user: any) => [user.id, user.name]));
+    }, [usersOptions]);
 
     return (
         <>
@@ -1143,63 +1145,7 @@ const ProjectTimeline = (project: any) => {
             </Modal>
 
             <Modal
-                title="Project Timeline Confirmation"
-                visible={isApproveModalOpen}
-                onCancel={() => setIsApproveModalOpen(false)}
-                onOk={handleApproveTimeline}
-                okText="Yes"
-                className="modal-container"
-                okButtonProps={{ className: "bg-secondary" }}
-            >
-                <div style={{ padding: "0px 10px", fontWeight: "400", fontSize: "16px" }}>
-                    <p>Are You sure you want to confirm?</p>
-                </div>
-            </Modal>
-
-            <Modal
-                title="Revise Project Timeline"
-                visible={isReviseModalOpen}
-                onCancel={() => setIsReviseModalOpen(false)}
-                onOk={handleReviseConfirm}
-                okText="Confirm"
-                cancelText="Cancel"
-                className="modal-container"
-                okButtonProps={{ danger: true }}
-            >
-                <div style={{ padding: "0px 20px" }}>
-                    <div className="times-stamps revise" style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                            <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created By</p>
-                            <p style={{ fontWeight: "bold", color: "#007bff" }}>
-                                {selectedProjectTimeline?.addedBy}
-                            </p>
-                        </div>
-                        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                            <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created At</p>
-                            <p style={{ fontWeight: "bold", color: "#007bff" }}>
-                                {new Date(selectedProjectTimeline?.createdAt).toLocaleString('en-US', {
-                                    year: 'numeric',
-                                    month: 'short',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: true
-                                })}
-                            </p>
-                        </div>
-                    </div>
-
-                    <TextArea
-                        rows={4}
-                        value={reviseRemarks}
-                        onChange={(e) => setReviseRemarks(e.target.value)}
-                        placeholder="Enter revision notes..."
-                    />
-                </div>
-            </Modal>
-
-            <Modal
-                title="Activity Notes"
+                title="Activity Details"
                 open={noteModalVisible}
                 onCancel={() => {
                     setNoteModalVisible(false);
@@ -1210,65 +1156,87 @@ const ProjectTimeline = (project: any) => {
                 footer={null}
                 className="modal-container"
             >
-                <div style={{ padding: "10px 24px" }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        {/* <Typography.Title level={5}>
-                            {editNoteId ? "Edit Note" : "Add New Note"}
-                        </Typography.Title> */}
+                <Tabs defaultActiveKey="notes" style={{ padding: '0 24px 24px 10px' }}>
+                    <TabPane tab="Notes" key="notes">
+                        <List
+                            dataSource={selectedNotes}
+                            locale={{ emptyText: "No notes available" }}
+                            itemLayout="horizontal"
+                            style={{ marginBottom: 20 }}
+                            renderItem={(item: any) => (
+                                <List.Item style={{ padding: "8px 0" }}>
+                                    <List.Item.Meta
+                                        title={
+                                            <div className="note-meta">
+                                                {item.createdBy && (
+                                                    <span className="note-author">
+                                                        <UserOutlined />
+                                                        {item.createdBy}
+                                                    </span>
+                                                )}
+                                                {(item.createdAt || item.updatedAt) && (
+                                                    <span className="note-timestamp">
+                                                        <ClockCircleOutlined />
+                                                        {dayjs(item.createdAt).format('DD MMM YYYY HH:mm')}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        }
+                                        description={item.text}
+                                    />
+                                </List.Item>
+                            )}
+                        />
+                    </TabPane>
 
-                        {/* <Button
-                            type="primary"
-                            block
-                            onClick={handleSaveNote}
-                            disabled={!noteInput.trim()}
-                            style={{ width: '15%', marginBottom: 8 }}
-                        >
-                            {editNoteId ? "Update Note" : "Add Note"}
-                        </Button> */}
-
-                    </div>
-
-                    {/* <Input.TextArea
-                        value={noteInput}
-                        onChange={(e) => setNoteInput(e.target.value)}
-                        placeholder="Write your note here..."
-                        rows={4}
-                    /> */}
-
-                    <List
-                        // header={<strong style={{ fontSize: 16 }}>Previous Notes</strong>}
-                        dataSource={selectedNotes}
-                        locale={{ emptyText: "No notes available" }}
-                        itemLayout="horizontal"
-                        style={{ marginBottom: 20 }}
-                        renderItem={(item: any) => (
-                            <List.Item
-                                style={{ padding: "8px 0" }}
-                            >
-                                <List.Item.Meta
-                                    title={
-                                        <div className="note-meta">
-                                            {item.createdBy && (
-                                                <span className="note-author">
-                                                    <UserOutlined />
-                                                    {item.createdBy}
-                                                </span>
-                                            )}
-                                            {(item.createdAt||item.updatedAt) && (
-                                                <span className="note-timestamp">
-                                                    <ClockCircleOutlined />
-                                                    {dayjs(item.createdAt).format('DD MMM YYYY HH:mm')}
-                                                </span>
-                                            )}
-                                        </div>
-                                    }
-                                    description={item.text}
-                                />
-                            </List.Item>
+                    <TabPane tab="Cost" key="cost">
+                        {selectedActivity?.cost ? (
+                            <div style={{ lineHeight: '2' }}>
+                                <div><strong>Project Cost:</strong> ₹{selectedActivity.cost.projectCost}</div>
+                                <div><strong>Operational Cost:</strong> ₹{selectedActivity.cost.opCost}</div>
+                            </div>
+                        ) : (
+                            <div>No cost information available</div>
                         )}
-                    />
-                </div>
+                    </TabPane>
+
+                    <TabPane tab="RACI" key="raci">
+                        {selectedActivity?.raci ? (
+                            <div className="raci-grid">
+                                <div className="raci-row">
+                                    <span className="raci-label">Responsible:</span>
+                                    <span className="raci-value">{userMap[selectedActivity.raci.responsible] || 'N/A'}</span>
+                                </div>
+                                <div className="raci-row">
+                                    <span className="raci-label">Accountable:</span>
+                                    <span className="raci-value">{userMap[selectedActivity.raci.accountable] || 'N/A'}</span>
+                                </div>
+                                <div className="raci-row">
+                                    <span className="raci-label">Consulted:</span>
+                                    <span className="raci-value">
+                                        {selectedActivity.raci.consulted?.map((id:any) => (
+                                            <span key={id} className="raci-tag">{userMap[id]}</span>
+                                        ))}
+                                    </span>
+                                </div>
+                                <div className="raci-row">
+                                    <span className="raci-label">Informed:</span>
+                                    <span className="raci-value">
+                                        {selectedActivity.raci.informed?.map((id:any) => (
+                                            <span key={id} className="raci-tag">{userMap[id]}</span>
+                                        ))}
+                                    </span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div>No RACI information available</div>
+                        )}
+                    </TabPane>
+
+
+                </Tabs>
             </Modal>
+
         </>
     )
 }
