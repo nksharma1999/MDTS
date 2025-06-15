@@ -12,6 +12,18 @@ export interface Library {
   content?: string;
 }
 
+export interface Document {
+  id?: number;
+  [key: string]: any;
+}
+
+export interface DiskStorage {
+  id?: number;
+  path: string;
+  content: string;
+}
+
+
 export class DataStorage extends Dexie {
   mineTypes!: Table<MineType, number>;
   modules!: Table<any, number>;
@@ -20,7 +32,8 @@ export class DataStorage extends Dexie {
   users!: Table<any, number>;
   holidays!: Table<any, number>;
   projectTimelines!: Table<any, number>;
-
+  documents!: Table<Document, number>;
+  diskStorage!: Table<DiskStorage, number>;
   constructor() {
     super("MTDS");
     this.version(1).stores({
@@ -30,7 +43,9 @@ export class DataStorage extends Dexie {
       projects: "++id",
       users: "++id",
       holidays: "++id",
-      projectTimelines: "++id"
+      projectTimelines: "++id",
+      documents: "++id, name",
+      diskStorage: "++id, path",
     });
 
     this.mineTypes = this.table("mineTypes");
@@ -40,6 +55,8 @@ export class DataStorage extends Dexie {
     this.users = this.table("users");
     this.holidays = this.table("holidays");
     this.projectTimelines = this.table("projectTimelines");
+    this.documents = this.table("documents");
+    this.diskStorage = this.table("diskStorage");
   }
 
   async addModule(module: any): Promise<number> {
@@ -259,14 +276,14 @@ export class DataStorage extends Dexie {
   async getProjectTimelineById(id: any): Promise<any> {
     return this.projectTimelines.get(id);
   }
-  
+
   async updateProjectTimeline(id: number, newRecord: any): Promise<void> {
     try {
       const existingProjectTimeline = await this.projectTimelines.get(id);
       if (existingProjectTimeline) {
         const sanitizedRecord = JSON.parse(JSON.stringify(newRecord));
         sanitizedRecord['id'] = id;
-  
+
         await this.projectTimelines.put(sanitizedRecord);
       } else {
         message.warning(`Project Timeline with ID ${id} not found.`);
@@ -276,7 +293,7 @@ export class DataStorage extends Dexie {
       message.error("Error updating Project Timeline in IndexedDB");
     }
   }
-  
+
   async deleteProjectTimeline(id: number): Promise<void> {
     try {
       const existingprojectTimelines = await this.projectTimelines.get(id);
@@ -289,6 +306,47 @@ export class DataStorage extends Dexie {
     } catch (error) {
       message.error("Error deleting Project Timelines from IndexedDB:");
     }
+  }
+
+  //documents
+  async addDocument(doc: any): Promise<number> {
+    return this.documents.add({ ...doc });
+  }
+
+  async getAllDocuments(): Promise<any[]> {
+    return this.documents.toArray();
+  }
+
+  async getDocumentById(id: number): Promise<any> {
+    return this.documents.get(id);
+  }
+
+  async updateDocument(id: number, updatedData: any): Promise<void> {
+    const existingDoc = await this.documents.get(id);
+    if (existingDoc) {
+      await this.documents.put({ ...existingDoc, ...updatedData, id });
+    } else {
+      message.warning(`Document with ID ${id} not found.`);
+    }
+  }
+
+  async deleteDocument(id: number): Promise<void> {
+    const existingDoc = await this.documents.get(id);
+    if (existingDoc) {
+      await this.documents.delete(id);
+    } else {
+      message.warning(`Document with ID ${id} not found.`);
+    }
+  }
+
+  //disk storage
+  async addDiskEntry(path: string, content: string): Promise<void> {
+    await this.diskStorage.add({ path, content });
+  }
+
+  async getDiskEntry(path: string): Promise<string | null> {
+    const entry = await this.diskStorage.where("path").equals(path).first();
+    return entry?.content || null;
   }
 }
 

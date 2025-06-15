@@ -6,8 +6,8 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col } from "antd";
-import { ClockCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, message } from "antd";
+import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -62,13 +62,22 @@ export const StatusUpdate = () => {
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
   const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
   const [form] = Form.useForm();
-  const [formValid, setFormValid] = useState(false);
+  const [_formValid, setFormValid] = useState(false);
   const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+  const [replaneMode, setIsReplanMode] = useState(false);
+  const [discardReplaneMode, setIsDiscardReplanMode] = useState(false);
+  const [confirmReplan, setConfirmReplan] = useState(false);
   const userOptions = [
-    { id: 'u1', name: 'Alice' },
-    { id: 'u2', name: 'Bob' },
-    { id: 'u3', name: 'Charlie' },
-    { id: 'u4', name: 'Diana' },
+    { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
+    { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
+    { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
+    { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
+    { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
+    { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
+    { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
+    { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
+    { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
+    { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
   ];
 
   const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
@@ -105,13 +114,82 @@ export const StatusUpdate = () => {
     }
   }, [location.state]);
 
+  useEffect(() => {
+    if (openCostCalcModal && selectedActivityKey) {
+      const activity = findActivityByKey(dataSource, selectedActivityKey);
+      if (activity?.cost) {
+        form.setFieldsValue({
+          projectCost: activity.cost.projectCost,
+          opCost: activity.cost.opCost
+        });
+      }
+    }
+  }, [openCostCalcModal, selectedActivityKey]);
+
+  useEffect(() => {
+    if (openResponsibilityModal && selectedActivityKey) {
+      const activity = findActivityByKey(dataSource, selectedActivityKey);
+      if (activity?.raci) {
+        raciForm.setFieldsValue({
+          responsible: activity.raci.responsible,
+          accountable: activity.raci.accountable,
+          consulted: activity.raci.consulted || [],
+          informed: activity.raci.informed || []
+        });
+      }
+    }
+  }, [openResponsibilityModal, selectedActivityKey]);
+
+  // const getProjectTimeline = async (project: any) => {
+  //   if (Array.isArray(project?.projectTimeline)) {
+  //     try {
+  //       const latestVersionId = localStorage.getItem("latestProjectVersion");
+
+  //       const foundTimeline = project.projectTimeline.filter(
+  //         (item: any) => item.version == latestVersionId
+  //       );
+
+  //       const timelineId = !latestVersionId || foundTimeline.length === 0
+  //         ? project.projectTimeline[0].timelineId
+  //         : foundTimeline[0].timelineId;
+
+  //       const timeline = await db.getProjectTimelineById(timelineId);
+  //       const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
+  //       return finTimeline;
+  //     } catch (err) {
+  //       console.error("Error fetching timeline:", err);
+  //       return [];
+  //     }
+  //   }
+
+  //   if (Array.isArray(project?.initialStatus?.items)) {
+  //     return project.initialStatus.items.filter(
+  //       (item: any) => item?.status?.toLowerCase() !== "completed"
+  //     );
+  //   }
+
+  //   return [];
+  // };
   const getProjectTimeline = async (project: any) => {
     if (Array.isArray(project?.projectTimeline)) {
       try {
         const latestVersionId = localStorage.getItem("latestProjectVersion");
-        const foundTimeline = project?.projectTimeline.filter((item: any) => item.version == latestVersionId);
-        const timelineId = !latestVersionId ? project.projectTimeline[0].timelineId : foundTimeline[0].timelineId;
+
+        const foundTimeline = project.projectTimeline.filter(
+          (item: any) => item.version == latestVersionId
+        );
+
+        const timelineId =
+          !latestVersionId || foundTimeline.length === 0
+            ? project.projectTimeline[0].timelineId
+            : foundTimeline[0].timelineId;
+
         const timeline = await db.getProjectTimelineById(timelineId);
+        if (!Array.isArray(timeline)) {
+          console.warn("Timeline is not an array or is undefined", timeline);
+          return [];
+        }
+
         const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
         return finTimeline;
       } catch (err) {
@@ -418,6 +496,9 @@ export const StatusUpdate = () => {
             activityStatus: activity.activityStatus || "yetToStart",
             fin_status: activity.fin_status || '',
             notes: activity.notes || [],
+            raci: activity.raci || {},
+            cost: activity.cost || {},
+
           };
         });
 
@@ -451,7 +532,8 @@ export const StatusUpdate = () => {
 
   const rePlanTimeline = () => {
     eventBus.emit("updateTab", "/create/timeline-builder");
-    navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline, rePlanTimeline: true } });
+    setIsReplanMode(true);
+    // navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline, rePlanTimeline: true } });
   };
 
   const getAllActivities = (data: any[]): any[] => {
@@ -470,6 +552,7 @@ export const StatusUpdate = () => {
     status: string,
     record: any,
     dataSource: any[],
+    replaneMode?: boolean
   ) => {
 
     const flatList = getAllActivities(dataSource);
@@ -508,7 +591,12 @@ export const StatusUpdate = () => {
       });
     };
 
-    const disabled = isBlockedByPreRequisite() || isBlockedByChildStatus() || isBlockedByDependents();
+    const disabled =
+      isBlockedByPreRequisite() ||
+      isBlockedByChildStatus() ||
+      isBlockedByDependents() ||
+      (replaneMode && ["completed", "inProgress"].includes(record.fin_status));
+
     return (
       <Select
         value={status}
@@ -653,7 +741,11 @@ export const StatusUpdate = () => {
 
         const displayDuration = expectedDuration ?? calculatedDuration ?? duration;
 
-        const isEditable = isEditing && !isModule && activityStatus === "inProgress";
+        const isEditable =
+          isEditing &&
+          !isModule &&
+          activityStatus === "inProgress" &&
+          !(replaneMode && ["completed", "inProgress"].includes(record.fin_status));
         return isEditable ? (
           <Input
             type="number"
@@ -675,7 +767,7 @@ export const StatusUpdate = () => {
       align: "center",
       render: (_, record) => {
         return isEditing && !record.isModule
-          ? renderStatusSelect(record.activityStatus, record, dataSource)
+          ? renderStatusSelect(record.activityStatus, record, dataSource, replaneMode)
           : record.activityStatus;
       },
 
@@ -688,7 +780,8 @@ export const StatusUpdate = () => {
       align: "center",
       render: (_, record) => {
         const { actualStart, activityStatus, key, isModule, preRequisite, children, Code } = record;
-
+        const disableDueToReplan =
+          replaneMode && ["completed", "inProgress"].includes(record.fin_status)
         const flatList = getAllActivities(dataSource);
         const isBlocked = (() => {
           const isBlockedByPreRequisite = () => {
@@ -736,7 +829,7 @@ export const StatusUpdate = () => {
             onChange={(date) =>
               handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualStart")
             }
-            disabled={shouldDisable}
+            disabled={shouldDisable || disableDueToReplan}
           />
         ) : (
           actualStart || ""
@@ -751,7 +844,8 @@ export const StatusUpdate = () => {
       align: "center",
       render: (_, record) => {
         const { actualFinish, activityStatus, key, isModule, preRequisite, children, Code } = record;
-
+        const disableDueToReplan =
+          replaneMode && ["completed", "inProgress"].includes(record.fin_status)
         const flatList = getAllActivities(dataSource);
         const isBlocked = (() => {
           const isBlockedByPreRequisite = () => {
@@ -801,7 +895,7 @@ export const StatusUpdate = () => {
             onChange={(date) =>
               handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualFinish")
             }
-            disabled={shouldDisable}
+            disabled={shouldDisable || disableDueToReplan}
           />
         ) : (
           actualFinish || ""
@@ -812,8 +906,6 @@ export const StatusUpdate = () => {
 
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
-    console.log(dataSource);
-
     setDataSource((prevData: any) => {
       const today = dayjs();
 
@@ -912,6 +1004,7 @@ export const StatusUpdate = () => {
       };
 
       let updatedCodes = new Set<string>();
+
       const updatedData = prevData.map((item: any) => {
         const recursiveUpdate = (subItem: any): any => {
           if (subItem.key === recordKey) {
@@ -919,8 +1012,13 @@ export const StatusUpdate = () => {
             const plannedFinish = parseDate(subItem.plannedFinish);
             const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
             if (fieldName === 'activityStatus') {
-
               if (value === 'inProgress' || value === 'completed') {
+                if (['inProgress', 'completed'].includes(subItem.fin_status)) {
+                  subItem.activityStatus = value;
+                  updatedCodes.add(subItem.Code);
+                  return subItem;
+                }
+
                 const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
 
                 const actualStartDate = parseDate(subItem.actualStart);
@@ -968,13 +1066,19 @@ export const StatusUpdate = () => {
 
                 subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
 
-                if ((value === 'inProgress' || value === 'completed') && tempStart && tempStart.isBefore(today, 'day')) {
+                if ((value === 'inProgress') && tempStart && tempStart.isBefore(today, 'day')) {
                   const daysTillToday = businessDaysBetween(tempStart, today);
                   const effectiveDuration = Math.max(daysTillToday, plannedDuration);
                   const newFinish = addBusinessDays(tempStart, effectiveDuration);
                   subItem.actualFinish = newFinish.format('DD-MM-YYYY');
                   subItem.expectedDuration = effectiveDuration;
-                } else {
+                } if ((value === 'completed') && tempStart) {
+                  const duration = subItem.expectedDuration ?? plannedDuration;
+                  const newFinish = addBusinessDays(tempStart, duration);
+                  subItem.actualFinish = newFinish.format('DD-MM-YYYY');
+                  subItem.expectedDuration = duration;
+                }
+                else {
                   const tempFinish = tempStart && plannedDuration >= 0
                     ? addBusinessDays(tempStart, plannedDuration)
                     : null;
@@ -991,8 +1095,7 @@ export const StatusUpdate = () => {
 
                 subItem.expectedDuration = plannedDuration;
                 subItem.activityStatus = value;
-
-                if (!alreadyHasDates) {
+                if (!alreadyHasDates || !['inProgress', 'completed'].includes(subItem.fin_status)) {
                   subItem.actualStart = plannedStart?.format('DD-MM-YYYY') || null;
                   subItem.actualFinish = plannedFinish?.format('DD-MM-YYYY') || null;
                   updatedCodes.add(subItem.Code);
@@ -1081,7 +1184,7 @@ export const StatusUpdate = () => {
             const actualStart = parseDate(subItem.actualStart);
             const actualFinish = parseDate(subItem.actualFinish);
             if (
-              (subItem.activityStatus === 'inProgress' || subItem.activityStatus === 'completed') &&
+              subItem.activityStatus === 'inProgress' &&
               actualStart &&
               actualFinish &&
               actualFinish.isBefore(today, 'day')
@@ -1276,7 +1379,6 @@ export const StatusUpdate = () => {
     let updatedProject = selectedProject;
     updatedProject.projectTimeline = updatedSequencedModules;
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
-
     setNoteInput('');
     setEditNoteId(null);
     setNoteModalVisible(false);
@@ -1340,16 +1442,6 @@ export const StatusUpdate = () => {
     }
   };
 
-  const handleConfirm = () => {
-    form.validateFields()
-      .then((_values: any) => {
-        handleClose();
-      })
-      .catch(info => {
-        console.error('Validation Failed:', info);
-      });
-  };
-
   const showResponsibilityModal = () => {
     setOpenResponsibilityModal(true);
   };
@@ -1368,11 +1460,237 @@ export const StatusUpdate = () => {
     }
   };
 
+  const findActivityByKey = (list: any[], key: string): any => {
+    for (const item of list) {
+      if (item.key === key) return item;
+      if (item.children) {
+        const result = findActivityByKey(item.children, key);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
+  const handleConfirm = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const updatedDataSource = (prev: any[]): any[] =>
+        prev.map(item => {
+          if (item.key === selectedActivityKey) {
+            return {
+              ...item,
+              cost: {
+                projectCost: values.projectCost,
+                opCost: values.opCost
+              }
+            };
+          }
+          if (item.children) return { ...item, children: updatedDataSource(item.children) };
+          return item;
+        });
+
+      const newDataSource = updatedDataSource(dataSource);
+      setDataSource(newDataSource);
+
+      const updatedCostMap = new Map();
+      newDataSource.forEach((module: any) => {
+        module.children.forEach((activity: any) => {
+          if (activity.cost) {
+            updatedCostMap.set(activity.Code, activity.cost);
+          }
+        });
+      });
+
+      const updatedSequencedModules = sequencedModules.map((module: any) => ({
+        ...module,
+        activities: module.activities.map((activity: any) => ({
+          ...activity,
+          ...(updatedCostMap.has(activity.code) ? { cost: updatedCostMap.get(activity.code) } : {})
+        }))
+      }));
+
+      setSequencedModules(updatedSequencedModules);
+
+      let updatedProject = selectedProject;
+      updatedProject.projectTimeline = updatedSequencedModules;
+
+      await db.updateProjectTimeline(
+        selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
+        updatedSequencedModules
+      );
+
+      form.resetFields();
+      setOpenCostCalcModal(false);
+      notify.success("Cost updated successfully!");
+    } catch (error) {
+      console.error("Validation Failed:", error);
+    }
+  };
+
   const handleConfirmResponsibility = async () => {
     try {
-      handleCloseResponsibility();
+      const values = await raciForm.validateFields();
+
+      const updatedDataSource = (prev: any[]): any[] =>
+        prev.map(item => {
+          if (item.key === selectedActivityKey) {
+            return {
+              ...item,
+              raci: {
+                responsible: values.responsible,
+                accountable: values.accountable,
+                consulted: values.consulted || [],
+                informed: values.informed || []
+              }
+            };
+          }
+          if (item.children) return { ...item, children: updatedDataSource(item.children) };
+          return item;
+        });
+
+      const newDataSource = updatedDataSource(dataSource);
+      setDataSource(newDataSource);
+
+      const updatedRaciMap = new Map();
+      newDataSource.forEach((module: any) => {
+        module.children.forEach((activity: any) => {
+          if (activity.raci) {
+            updatedRaciMap.set(activity.Code, activity.raci);
+          }
+        });
+      });
+
+      const updatedSequencedModules = sequencedModules.map((module: any) => ({
+        ...module,
+        activities: module.activities.map((activity: any) => ({
+          ...activity,
+          ...(updatedRaciMap.has(activity.code) ? { raci: updatedRaciMap.get(activity.code) } : {})
+        }))
+      }));
+
+      setSequencedModules(updatedSequencedModules);
+
+      let updatedProject = selectedProject;
+      updatedProject.projectTimeline = updatedSequencedModules;
+
+      await db.updateProjectTimeline(
+        selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
+        updatedSequencedModules
+      );
+
+      raciForm.resetFields();
+      setOpenResponsibilityModal(false);
+      notify.success("Responsibilities updated successfully!");
     } catch (error) {
-      console.error('Validation failed:', error);
+      console.error("Validation Failed:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (replaneMode) {
+      const updated = dataSource.map((item: any) => {
+        const recursiveUpdate = (activity: any): any => {
+          if (activity.fin_status === 'yetToStart') {
+            if (activity.actualStart) {
+              activity.plannedStart = activity.actualStart;
+            }
+            if (activity.actualFinish) {
+              activity.plannedFinish = activity.actualFinish;
+            }
+            if (activity.expectedDuration) {
+              activity.duration = activity.expectedDuration;
+            }
+          }
+
+          if (activity.children) {
+            activity.children = activity.children.map((child: any) =>
+              recursiveUpdate(child)
+            );
+          }
+
+          return activity;
+        };
+
+        return recursiveUpdate(item);
+      });
+
+      setDataSource(updated);
+    }
+
+  }, [replaneMode]);
+
+  const handlesaveReplan = async () => {
+    try {
+      const currentUser = getCurrentUser();
+      const currentTimestamp = new Date().toISOString();
+
+      const createTimelineEntry = (timelineId: string, version: string) => ({
+        timelineId,
+        status: "pending",
+        version,
+        addedBy: currentUser.name,
+        addedUserEmail: currentUser.email,
+        createdAt: currentTimestamp,
+        updatedAt: currentTimestamp,
+      });
+
+      const updatedSequencedModules = sequencedModules.map((mod: any) => {
+        const updatedActivities = mod.activities.map((act: any) => {
+          if (act.fin_status === "yetToStart") {
+            return {
+              ...act,
+              start: act.actualStart
+                ? dayjs(act.actualStart, "DD-MM-YYYY").toISOString()
+                : act.start,
+              end: act.actualFinish
+                ? dayjs(act.actualFinish, "DD-MM-YYYY").toISOString()
+                : act.end,
+              duration: act.expectedDuration || act.duration,
+            };
+          }
+          return act;
+        });
+
+        return {
+          ...mod,
+          activities: updatedActivities,
+        };
+      });
+
+      const createdTimeLineId: any = await db.addProjectTimeline(updatedSequencedModules);
+      const existingTimeline = selectedProject.projectTimeline || [];
+      const newVersion = `${existingTimeline.length + 1}.0`;
+      localStorage.setItem("latestProjectVersion", newVersion);
+
+      let updatedTimeline = [...existingTimeline];
+      if (existingTimeline.length > 0) {
+        const lastIndex = existingTimeline.length - 1;
+        updatedTimeline[lastIndex] = {
+          ...updatedTimeline[lastIndex],
+          status: "replanned",
+        };
+      }
+
+      const updatedProjectWithTimeline = {
+        ...selectedProject,
+        projectTimeline: [
+          ...updatedTimeline,
+          createTimelineEntry(createdTimeLineId, newVersion),
+        ],
+        processedTimelineData: sequencedModules,
+      };
+
+      await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
+      message.success("Replanned timeline saved successfully!");
+      navigate(".", { replace: true });
+      setIsReplanMode(false);
+      setConfirmReplan(false);
+      defaultSetup();
+
+    } catch (error) {
+      console.error("Error saving replanned timeline:", error);
+      message.error("Failed to save replanned timeline. Please try again.");
     }
   };
 
@@ -1439,6 +1757,7 @@ export const StatusUpdate = () => {
                     onChange={handleProjectChange}
                     popupMatchSelectWidth={false}
                     style={{ width: "100%" }}
+                    disabled={replaneMode}
                   >
                     {allProjects.map((project) => (
                       <Option key={project.id} value={project.id}>
@@ -1534,18 +1853,20 @@ export const StatusUpdate = () => {
                     cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  Add Note
+                  Note
                 </Button>
-                <Button
-                  type="primary"
-                  disabled={!selectedProjectId}
-                  icon={<DownloadOutlined />}
-                  onClick={handleDownload}
-                  style={{ backgroundColor: "#4CAF50" }}
-                >
-                  Download Timeline
-                </Button>
-                {selectedProjectTimeline?.status != 'replanned' && (
+                {!replaneMode && (
+                  <Button
+                    type="primary"
+                    disabled={!selectedProjectId}
+                    icon={<DownloadOutlined />}
+                    onClick={handleDownload}
+                    style={{ backgroundColor: "#4CAF50" }}
+                  >
+                    Download Timeline
+                  </Button>
+                )}
+                {(selectedProjectTimeline?.status != 'replanned' && !replaneMode) && (
                   <Button
                     type="primary"
                     disabled={!selectedProjectId}
@@ -1556,16 +1877,18 @@ export const StatusUpdate = () => {
                     {selectedProjectTimeline?.status != 'Approved' ? 'Edit Timeline' : 'Replan Timeline'}
                   </Button>
                 )}
-                <Button
-                  type="primary"
-                  disabled={!selectedProjectId}
-                  icon={<ShareAltOutlined />}
-                  onClick={showModal}
-                  style={{ backgroundColor: "#00BFA6" }}
-                >
-                  Share
-                </Button>
 
+                {!replaneMode && (
+                  <Button
+                    type="primary"
+                    disabled={!selectedProjectId}
+                    icon={<ShareAltOutlined />}
+                    onClick={showModal}
+                    style={{ backgroundColor: "#00BFA6" }}
+                  >
+                    Share
+                  </Button>
+                )}
                 {(selectedProjectTimeline?.status == 'Approved') && (
                   <Button
                     type={isEditing ? "primary" : "default"}
@@ -1634,10 +1957,31 @@ export const StatusUpdate = () => {
                   bordered
                   scroll={{
                     x: "max-content",
-                    y: "calc(100vh - 250px)",
+                    y: replaneMode ? "calc(100vh - 290px)" : "calc(100vh - 250px)",
                   }}
                 />
               </div>
+              {replaneMode && (
+                <div style={{ display: 'flex', gap: '10px', margin: '5px 10px 10px 0', justifyContent: 'end' }}>
+                  <Button
+                    type="primary"
+                    disabled={!selectedProjectId}
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => setIsDiscardReplanMode(true)}
+                    style={{ marginLeft: "15px", backgroundColor: "#e74c3c", borderColor: "#e74c3c" }}
+                  >
+                    Discard
+                  </Button>
+                  <Button
+                    type="primary"
+                    disabled={!selectedProjectId}
+                    onClick={() => setConfirmReplan(true)}
+                    style={{ backgroundColor: "#258790" }}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -1827,7 +2171,7 @@ export const StatusUpdate = () => {
         open={openCostCalcModal}
         onCancel={handleClose}
         onOk={handleConfirm}
-        okButtonProps={{ disabled: !formValid }}
+        // okButtonProps={{ disabled: !formValid }}
         destroyOnClose
         className="modal-container"
       >
@@ -1878,7 +2222,7 @@ export const StatusUpdate = () => {
         open={openResponsibilityModal}
         onCancel={handleCloseResponsibility}
         onOk={handleConfirmResponsibility}
-        okButtonProps={{ disabled: !formValid }}
+        // okButtonProps={{ disabled: !formValid }}
         destroyOnClose
         className="modal-container"
       >
@@ -1962,6 +2306,46 @@ export const StatusUpdate = () => {
             </Row>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Confirm Discard Changes"
+        visible={discardReplaneMode}
+        onOk={() => {
+          setIsDiscardReplanMode(false);
+          setIsReplanMode(false);
+          defaultSetup();
+        }}
+        onCancel={() => {
+          setIsDiscardReplanMode(false);
+        }}
+        okText="Yes, Discard"
+        cancelText="Cancel"
+        className="modal-container"
+        okButtonProps={{ className: "bg-secondary" }}
+      >
+        <p style={{ padding: "10px" }}>
+          Are you sure you want to discard? Any unsaved changes will be lost.
+        </p>
+      </Modal>
+
+      <Modal
+        title="Confirm Replan"
+        visible={confirmReplan}
+        onOk={() => {
+          handlesaveReplan();
+        }}
+        onCancel={() => {
+          setConfirmReplan(false);
+        }}
+        okText="Confirm"
+        cancelText="Cancel"
+        className="modal-container"
+        okButtonProps={{ className: "bg-secondary" }}
+      >
+        <p style={{ padding: "10px" }}>
+          Are you sure you want to submit?
+        </p>
       </Modal>
     </>
   );

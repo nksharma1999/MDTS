@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Space, notification, Modal, Form, Input, Select, List, message } from "antd";
-import { DownloadOutlined, DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined, CloseCircleOutlined } from "@ant-design/icons";
+import { DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined, CloseCircleOutlined, EyeOutlined } from "@ant-design/icons";
 import "../styles/documents.css";
-import { getAllDocuments, deleteDocument, getModules, saveDocument, updateDocument } from "../Utils/moduleStorage";
+import { getAllDocuments, getModules } from "../Utils/moduleStorage";
 import { useDropzone, Accept } from "react-dropzone";
-import { useLocation } from "react-router-dom";
 import { Typography } from "antd";
-import "../styles/documents.css"
-import ImageContainer from "../Components/ImageContainer.tsx";
+import "../styles/documents.css";
+import { db } from "../Utils/dataStorege.ts";
+import { v4 as uuidv4 } from 'uuid';
 const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
@@ -22,29 +22,26 @@ interface Document {
 }
 interface Module {
     moduleName: string;
+    activities: any
 }
 
-interface DocumentData {
-    id: number;
-    documentName: string;
-    description: string;
-    milestone: string;
-    files: string[];
-    uploadedAt: string;
-}
 const Document: React.FC = () => {
-    const [documents, setDocuments] = useState([]);
+    const [documents, setDocuments] = useState<any>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
-    const location = useLocation();
-    const documentToEdit = location.state?.documentToEdit as DocumentData | undefined;
     const [documentName, setDocumentName] = useState<string>("");
     const [description, setDescription] = useState<string>("");
     const [milestone, setMilestone] = useState<string>("");
     const [linkedActivity, SetLinkedActivity] = useState<string>("");
     const [files, setFiles] = useState<File[]>([]);
-    const [milestones, setMilestones] = useState<Module[]>([]);
+    const [_milestones, setMilestones] = useState<Module[]>([]);
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+    const [modulesData, setModulesData] = useState<Module[]>([]);
+    const [activities, setActivities] = useState<any[]>([]);
+    const [activityDocs, setActivityDocs] = useState<string[]>([]);
+    const [selectedDocName, setSelectedDocName] = useState<string | null>(null);
+    const [previewVisible, setPreviewVisible] = useState(false);
+    const [previewContent, setPreviewContent] = useState<string | null>(null);
 
     useEffect(() => {
         const savedDocuments = getAllDocuments();
@@ -58,6 +55,28 @@ const Document: React.FC = () => {
         }
     }, []);
 
+    useEffect(() => {
+        db.getModules().then(setModulesData);
+    }, []);
+
+    useEffect(() => {
+        db.getAllDocuments().then(setDocuments);
+    }, []);
+
+    const handlePreview = async (record: any) => {
+        if (record.files && record.files.length > 0) {
+            const filePath = record.files[0]?.path;
+            const fileData = await db.getDiskEntry(filePath);
+
+            if (fileData) {
+                setPreviewContent(fileData);
+                setPreviewVisible(true);
+            } else {
+                message.error("File not found in IndexedDB.");
+            }
+        }
+    };
+
     const columns: any = [
         {
             title: "Id",
@@ -67,8 +86,8 @@ const Document: React.FC = () => {
         },
         {
             title: "Document Name",
-            dataIndex: "documentName",
-            key: "documentName",
+            dataIndex: "documentname",
+            key: "documentname",
             width: "20%",
             align: "left",
         },
@@ -94,11 +113,12 @@ const Document: React.FC = () => {
                 <Space size="middle" style={{ display: "flex", gap: "28px", justifyContent: "center" }}>
                     {record.files && record.files.length > 0 && (
                         <Button
-                            className="download-btn"
-                            icon={<DownloadOutlined />}
-                            onClick={() => handleDownload(record.files[0])}
+                            className="view-btn"
+                            icon={<EyeOutlined />}
+                            onClick={() => handlePreview(record)}
                             size="small"
                         />
+
                     )}
                     <Button
                         className="delete-btn"
@@ -112,22 +132,16 @@ const Document: React.FC = () => {
         },
     ];
 
-    const handleDownload = (fileName: any) => {
-        notification.info({
-            message: "Downloading file",
-            description: `Downloading the file: ${fileName}`,
-        });
-    };
-
     const showDeleteModal = (id: number) => {
         setSelectedDocumentId(id);
         setIsModalVisible(true);
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (selectedDocumentId !== null) {
-            deleteDocument(selectedDocumentId);
-            setDocuments(getAllDocuments());
+            await db.deleteDocument(selectedDocumentId);
+            const updatedDocs = await db.getAllDocuments();
+            setDocuments(updatedDocs);
 
             notification.success({
                 message: "Document Deleted",
@@ -154,35 +168,90 @@ const Document: React.FC = () => {
         multiple: true,
     });
 
-    const handleSave = () => {
-        if (!documentName || !milestone || files.length === 0) {
+    const handleSave = async () => {
+        if (!milestone || files.length === 0 || !linkedActivity) {
             message.error("Please fill all fields and upload files.");
             return;
         }
 
-        const newDocument: DocumentData = {
-            id: Math.floor(Math.random() * (100 - 10 + 1) + 10),
-            documentName,
-            description,
-            milestone,
-            files: files.map((file) => file.name),
-            uploadedAt: documentToEdit ? documentToEdit.uploadedAt : new Date().toISOString(),
-        };
+        const encodedFiles: { docId: string; name: string; path: string }[] = [];
 
-        if (documentToEdit) {
-            updateDocument(documentToEdit.id, newDocument);
-            message.success("Document updated successfully!");
-        } else {
-            const isSaved = saveDocument(newDocument);
-            if (isSaved) {
-                message.success("Document saved successfully!");
-                setDocuments(getAllDocuments());
-                setIsAddModalVisible(false);
-            } else {
-                message.error("Failed to save the document. Please try again.");
+        try {
+            for (const file of files) {
+                const docId = uuidv4();
+                await saveFileToDisk(file, docId);
+                encodedFiles.push({
+                    docId,
+                    name: file.name,
+                    path: `documents/${docId}`
+                });
             }
+
+            const documentGUID = uuidv4();
+            const userRaw = localStorage.getItem("user");
+            const user = userRaw ? JSON.parse(userRaw) : null;
+
+            if (!user) {
+                message.error("User information is missing in local storage.");
+                return;
+            }
+
+            const newDocumentEntry = {
+                guid: documentGUID,
+                documentName,
+                description,
+                milestone,
+                linkedActivity,
+                linkedDoc: selectedDocName || null,
+                files: encodedFiles,
+                uploadedAt: new Date().toISOString(),
+                uploadedBy: {
+                    userId: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    company: user.company,
+                },
+            };
+
+            await db.documents.add(newDocumentEntry);
+            message.success("Document saved successfully!");
+            const updatedDocs = await db.getAllDocuments();
+            setDocuments(updatedDocs);
+            setIsAddModalVisible(false);
+            resetForm();
+        } catch (error) {
+            message.error("Failed to save document.");
+            console.error(error);
         }
     };
+
+    const resetForm = () => {
+        setDocumentName("");
+        setDescription("");
+        setMilestone("");
+        SetLinkedActivity("");
+        setSelectedDocName(null);
+        setFiles([]);
+    };
+
+    async function saveFileToDisk(file: File, fileId: string) {
+        const reader = new FileReader();
+
+        reader.onload = async function () {
+            const base64 = reader.result as string;
+            const filePath = `documents/${fileId}`;
+
+            const existing = await db.diskStorage.where("path").equals(filePath).first();
+            if (!existing) {
+                await db.diskStorage.add({ path: filePath, content: base64 });
+            } else {
+                console.log(`File already exists in diskStorage: ${filePath}`);
+            }
+        };
+
+        reader.readAsDataURL(file);
+    }
 
     const handleCancelAddedDoc = () => {
         setDocumentName("");
@@ -219,10 +288,8 @@ const Document: React.FC = () => {
                         className="custom-table"
                     />
                 </div>
-                <div className="right-images image-container">
-                    <ImageContainer imageUrl={["/images/auths/m8.jpg", "/images/auths/m2.jpg"]} />
-                </div>
             </div>
+
             <Modal
                 title="Confirm Delete"
                 visible={isModalVisible}
@@ -245,18 +312,78 @@ const Document: React.FC = () => {
                             <div className="main-create-doc-container">
                                 <div className="left-create-document-item">
                                     <Form.Item
-                                        label={<span style={{ textAlign: "left" }}> Document Name </span>}
-                                        name="documentName"
-                                        rules={[{ required: true, message: "Document Name is required" }]}
+                                        label={<span style={{ textAlign: "left" }}> Select Milestone </span>}
+                                        name="milestone"
+                                        rules={[{ required: true, message: "Milestone is required" }]}
                                         labelAlign="left"
                                         colon={false}
                                     >
-                                        <Input
-                                            placeholder="Document Name"
-                                            value={documentName}
+                                        <Select
+                                            placeholder="Select Milestone"
+                                            value={milestone}
+                                            onChange={(value) => {
+                                                setMilestone(value);
+                                                const selectedModule = modulesData.find(mod => mod.moduleName === value);
+                                                const activities = selectedModule?.activities || [];
+                                                setActivities(activities);
+                                                SetLinkedActivity("");
+                                                setActivityDocs([]);
+                                                setSelectedDocName(null);
+                                            }}
                                             style={{ marginBottom: "15px" }}
-                                            onChange={(e) => setDocumentName(e.target.value)}
-                                        />
+                                        >
+                                            {modulesData.map((module, index) => (
+                                                <Option key={index} value={module.moduleName}>
+                                                    {module.moduleName}
+                                                </Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label={<span style={{ textAlign: "left" }}> Linked Activity </span>}
+                                        name="linked-activity"
+                                        rules={[{ required: true, message: "Linked-Activity is required" }]}
+                                        labelAlign="left"
+                                        colon={false}
+                                    >
+                                        <Select
+                                            placeholder="Select Linked Activity"
+                                            value={linkedActivity}
+                                            onChange={(value) => {
+                                                SetLinkedActivity(value);
+                                                const selectedActivity = activities.find(act => act.activityName === value);
+                                                setActivityDocs(selectedActivity?.documents || []);
+                                                setSelectedDocName(null);
+                                            }}
+                                        >
+                                            {activities.map((activity, index) => (
+                                                <Option key={index} value={activity.activityName}>
+                                                    {activity.activityName}
+                                                </Option>
+                                            ))}
+                                        </Select>
+
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label="Document Name"
+                                        name="documentname"
+                                        labelAlign="left"
+                                        colon={false}
+                                    >
+                                        <Select
+                                            placeholder="Select Document Name"
+                                            value={selectedDocName}
+                                            onChange={setSelectedDocName}
+                                            allowClear
+                                        >
+                                            {activityDocs.map((doc, index) => (
+                                                <Option key={index} value={doc}>
+                                                    {doc}
+                                                </Option>
+                                            ))}
+                                        </Select>
                                     </Form.Item>
 
                                     <Form.Item
@@ -273,49 +400,6 @@ const Document: React.FC = () => {
                                             style={{ marginBottom: "15px" }}
                                             onChange={(e) => setDescription(e.target.value)}
                                         />
-                                    </Form.Item>
-
-                                    <Form.Item
-                                        label={<span style={{ textAlign: "left" }}> Select Milestone </span>}
-                                        name="milestone"
-                                        rules={[{ required: true, message: "Milestone is required" }]}
-                                        labelAlign="left"
-                                        colon={false}
-                                    >
-                                        <Select
-                                            placeholder="Select Milestone"
-                                            value={milestone}
-                                            onChange={setMilestone}
-                                            style={{ marginBottom: "15px" }}
-                                        >
-                                            {milestones.map((option, index) => (
-                                                <Option key={index} value={option.moduleName}>
-                                                    {option.moduleName}
-                                                </Option>
-                                            ))}
-                                        </Select>
-                                    </Form.Item>
-
-
-                                    <Form.Item
-                                        label={<span style={{ textAlign: "left" }}> Linked Activity </span>}
-                                        name="linked-activity"
-                                        rules={[{ required: true, message: "Linked-Activity is required" }]}
-                                        labelAlign="left"
-                                        colon={false}
-                                    >
-                                        <Select
-                                            placeholder="Select Linked Activity"
-                                            value={linkedActivity}
-                                            onChange={SetLinkedActivity}
-                                            style={{ marginBottom: "15px" }}
-                                        >
-                                            {milestones.map((option, index) => (
-                                                <Option key={index} value={option.moduleName}>
-                                                    {option.moduleName}
-                                                </Option>
-                                            ))}
-                                        </Select>
                                     </Form.Item>
 
                                     <Form.Item
@@ -372,6 +456,39 @@ const Document: React.FC = () => {
                     </div>
                 </Form>
             </Modal>
+
+            <Modal
+                visible={previewVisible}
+                onCancel={() => setPreviewVisible(false)}
+                footer={null}
+                width="80%"
+                bodyStyle={{ height: '75vh' }}
+                title="Preview Document"
+                className="modal-container"
+            >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px", height: "calc(100vh - 180px)" }}>
+                    {previewContent?.startsWith("data:application/pdf") ? (
+                        <iframe
+                            src={previewContent}
+                            title="PDF Preview"
+                            width="100%"
+                            height="100%"
+                            style={{ border: "none" }}
+                        />
+                    ) : previewContent?.startsWith("data:image/") ? (
+                        <img
+                            src={previewContent}
+                            alt="Document Preview"
+                            style={{ maxWidth: "100%", maxHeight: "100%" }}
+                        />
+                    ) : (
+                        <div>
+                            <p>Preview not available for this file type. Please download to view.</p>
+                        </div>
+                    )}
+                </div>
+            </Modal>
+
         </>
     );
 };

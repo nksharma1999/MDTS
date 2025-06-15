@@ -89,6 +89,11 @@ const ModuleLibrary = () => {
 
   useEffect(() => {
     db.getModules().then(setModulesData);
+    setTimeout(() => {
+      
+      console.log(modulesData);
+    }, 2000);
+    
   }, []);
 
   const fetchAllProjects = async () => {

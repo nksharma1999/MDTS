@@ -4,14 +4,15 @@ import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message, Form } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, ArrowRightOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined } from '@ant-design/icons';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message, Form, Switch } from 'antd';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUserId } from '../Utils/moduleStorage';
 import { RollbackOutlined } from '@ant-design/icons';
+import { v4 as uuidv4 } from 'uuid';
 
 const Module = () => {
     const { state } = useLocation();
@@ -23,9 +24,6 @@ const Module = () => {
     const [openModal, setOpenModal] = useState<boolean>(false);
     const [selectedRow, setSelectedRow] = useState<any>(null);
     const [open, setOpen] = useState<boolean>(false);
-    const parentModuleCode = moduleCode
-        ? moduleCode
-        : generateTwoLetterAcronym(moduleName, existingAcronyms);
     const [openPopup, setOpenPopup] = useState<boolean>(false);
     const [openCancelUpdateModulePopup, setOpenCancelUpdateModulePopup] = useState<boolean>(false);
     const [newModelName, setNewModelName] = useState<string>("");
@@ -35,9 +33,12 @@ const Module = () => {
     const [newMineType, setNewMineType] = useState<string>("");
     const [shorthandCode, setShorthandCode] = useState<string>("");
     const [moduleCodeName, setModuleCodeName] = useState<string>("");
-    const [filteredModuleData, setFilteredModuleData] = useState<any>(null);
+    const [filteredModuleData, _setFilteredModuleData] = useState<any>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
+    const parentModuleCode = moduleCode
+        ? moduleCode
+        : generateTwoLetterAcronym(moduleName, existingAcronyms);
     const [moduleData, setModuleData] = useState<any>({
         parentModuleCode: parentModuleCode,
         moduleName: moduleName,
@@ -55,13 +56,32 @@ const Module = () => {
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
     const [originalActivities, setOriginalActivities] = useState<any[]>(moduleData.activities);
     const [isOriginalActivitiesStateStored, setIsOriginalActivitiesStateStored] = useState(false);
+    const [openNotificationModal, setOpenNotificationModal] = useState(false);
+    const [openDocumentModal, setOpenDocumentModal] = useState(false);
+    const [notificationForm] = Form.useForm();
+    const [documentForm] = Form.useForm();
     const [undoStack, setUndoStack] = useState<any[]>([]);
-
+    const [form] = Form.useForm();
+    const [formValid, setFormValid] = useState(false);
+    const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
+    const [raciForm] = Form.useForm();
+    const userOptions = [
+        { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
+        { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
+        { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
+        { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
+        { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
+        { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
+        { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
+        { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
+        { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
+        { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
+    ];
     const pushToUndoStack = (currentState: any) => {
         setUndoStack((prevStack) => {
             const newStack = [...prevStack, currentState];
             if (newStack.length > 10) {
-                return newStack.slice(1); // Keep only the last 10 states
+                return newStack.slice(1);
             }
             return newStack;
         });
@@ -80,7 +100,6 @@ const Module = () => {
                 activities: state.activities
             });
             setUndoStack([]);
-            // Initialize originalActivities only if it's empty
             if (originalActivities.length === 0) {
                 setOriginalActivities(JSON.parse(JSON.stringify(state.activities)));
             }
@@ -106,6 +125,14 @@ const Module = () => {
             //handlePrerequisite();
         }
     }, [moduleData.activities]);
+
+    useEffect(() => {
+        if (isOriginalActivitiesStateStored === false) {
+            setOriginalActivities(JSON.parse(JSON.stringify(moduleData.activities)));
+            setIsOriginalActivitiesStateStored(true);
+        }
+        handleSortModule(sortOrder);
+    }, [sortOrder]);
 
     const handleSaveModuleAndActivity = async () => {
         try {
@@ -155,11 +182,13 @@ const Module = () => {
                 }
             } else {
                 await db.addModule({ ...moduleData, userId });
+                console.log(moduleData);
                 notification.success({
                     message: "Module saved successfully!",
                     duration: 3,
                 });
             }
+
             navigate('/create/module-library');
         } catch (error) {
             notification.error({
@@ -190,11 +219,12 @@ const Module = () => {
             : `${parentCode.split('/').slice(0, -1).join('/')}/${newNumber}`;
 
         const timestamp = new Date().toLocaleTimeString('en-GB');
-
+        const generatedId = uuidv4();
         const newActivity = {
             code: newCode,
             activityName: "New Activity " + timestamp,
             duration: 1,
+            guicode: generatedId,
             prerequisite: isModuleSelected ? "" : selectedRow.code,
             level: newLevel
         };
@@ -398,7 +428,6 @@ const Module = () => {
             let activity = activities[activityIndex];
             let currentLevel = parseInt(activity.level.slice(1));
 
-            // Find the new parent activity (one level above)
             let aboveIndex = activityIndex - 1;
             let newParentCode = "";
             while (aboveIndex >= 0) {
@@ -414,13 +443,10 @@ const Module = () => {
 
             if (!newParentCode) return prev;
 
-            // Generate the new code for the updated activity
             let splited = newParentCode.split("/");
             let newNumber = parseInt(splited[splited.length - 1]) + 10;
             let newCode = `${removeLastSegment(newParentCode)}/${newNumber}`;
             let newLevel = `L${currentLevel - 1}`;
-
-            // Update the current activity
             let updatedActivity = {
                 ...activity,
                 code: newCode,
@@ -428,11 +454,9 @@ const Module = () => {
                 level: newLevel,
             };
 
-            // Update the activities array
             let updatedActivities = [...activities];
             updatedActivities[activityIndex] = updatedActivity;
 
-            // Re-number sibling activities
             let siblings = updatedActivities.filter((a) => a.level === newLevel && a.code.startsWith(removeLastSegment(newCode)));
             siblings.sort((a, b) => parseInt(a.code.split("/").pop()) - parseInt(b.code.split("/").pop()));
 
@@ -446,7 +470,6 @@ const Module = () => {
                 count += 10;
             });
 
-            // Sort all activities by code to ensure correct order
             updatedActivities.sort((a, b) => {
                 let aParts = a.code.split("/").map(Number);
                 let bParts = b.code.split("/").map(Number);
@@ -479,7 +502,9 @@ const Module = () => {
     const handleModulePlus = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
+                const generatedId = uuidv4();
                 setModuleData({
+                    guiId: generatedId,
                     parentModuleCode: moduleCodeName
                         ? moduleCodeName
                         : generateTwoLetterAcronym(newModelName, existingAcronyms),
@@ -550,10 +575,10 @@ const Module = () => {
             const updatedActivities = prev.activities.map((activity: any, index: number) => {
                 if (firstIndex === 0) {
                     firstIndex = 1;
-                    parentCode = activity.code; // Set parentCode for the first activity
+                    parentCode = activity.code;
                     return { ...activity, prerequisite: "" };
                 } else if (activity.level === "L2") {
-                    parentCode = activity.code; // Update parentCode when L2 is found
+                    parentCode = activity.code;
                     return { ...activity, prerequisite: prev.activities[index - 1]?.code || "" };
                 } else if (activity.level !== "L1") {
                     return { ...activity, prerequisite: parentCode };
@@ -565,29 +590,27 @@ const Module = () => {
         });
     };
 
-    const handleAssignRACI = () => {
-        if (!selectedRow) {
-            notification.warning({
-                message: "Please select a row to assign RACI.",
-                duration: 3,
-            });
-            return;
-        }
+    // const handleAssignRACI = () => {
+    //     console.log(selectedRow);
 
-        // Filter activities to include only the selected activity
-        const filteredData = {
-            ...moduleData, // Copy all other properties
-            activities: moduleData.activities.filter(
-                (activity: any) => activity.code === selectedRow.code
-            ),
-        };
+    //     if (!selectedRow) {
+    //         notification.warning({
+    //             message: "Please select a row to assign RACI.",
+    //             duration: 3,
+    //         });
+    //         return;
+    //     }
 
-        // Set the filtered data in state
-        setFilteredModuleData(filteredData);
+    //     const filteredData = {
+    //         ...moduleData,
+    //         activities: moduleData.activities.filter(
+    //             (activity: any) => activity.code === selectedRow.code
+    //         ),
+    //     };
+    //     setFilteredModuleData(filteredData);
 
-        // Open the modal
-        setOpenModal(true);
-    };
+    //     setOpenModal(true);
+    // };
 
     const handleCancelUpdateModule = () => {
         setOpenCancelUpdateModulePopup(false);
@@ -631,7 +654,6 @@ const Module = () => {
             if (originalActivities.length === 0) {
                 return;
             }
-            // Restore the original activities
             sortedActivities = JSON.parse(JSON.stringify(originalActivities));
         }
 
@@ -641,18 +663,6 @@ const Module = () => {
             activities: sortedActivities
         }));
     };
-
-    useEffect(() => {
-        if (isOriginalActivitiesStateStored === false) {
-            setOriginalActivities(JSON.parse(JSON.stringify(moduleData.activities)));
-            setIsOriginalActivitiesStateStored(true);
-        }
-        handleSortModule(sortOrder);
-    }, [sortOrder]);
-
-    useEffect(() => {
-    }, [originalActivities]);
-
 
     const toggleSortOrder = () => {
         const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
@@ -664,43 +674,233 @@ const Module = () => {
         if (sortOrder === 'desc') return <SortDescendingOutlined />;
         return <ReloadOutlined />;
     };
+
     const handleUndo = () => {
         if (undoStack.length === 0) return;
 
         const lastState = undoStack[undoStack.length - 1];
-        setUndoStack((prevStack) => prevStack.slice(0, -1)); // Remove the last state from the stack
-        setModuleData(lastState); // Restore the last state
+        setUndoStack((prevStack) => prevStack.slice(0, -1));
+        setModuleData(lastState);
     };
 
-    const [form] = Form.useForm();
-    const [formValid, setFormValid] = useState(false);
-
-    const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
     const handleClose = () => {
         setOpenCostCalcModal(false);
         form.resetFields();
         setFormValid(false);
     };
 
-    const handleValuesChange = () => {
-        const { projectCost, opCost, delayCost } = form.getFieldsValue();
-        if (projectCost && opCost && delayCost) {
+    const handleValuesChange = async () => {
+        try {
+            await form.validateFields();
             setFormValid(true);
-        } else {
+        } catch {
             setFormValid(false);
         }
     };
 
-    const handleConfirm = () => {
-        form.validateFields()
-            .then(values => {
-                console.error('Confirmed values:', values);
-                handleClose();
-            })
-            .catch(info => {
-                console.error('Validation Failed:', info);
-            });
+    const showNotificationModal = () => setOpenNotificationModal(true);
+    const showDocumentModal = () => setOpenDocumentModal(true);
+    const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+
+    const showResponsibilityModal = () => {
+        setOpenResponsibilityModal(true);
     };
+
+    const handleCloseResponsibility = () => {
+        setOpenResponsibilityModal(false);
+        raciForm.resetFields();
+    };
+
+    const handleRaciChange = async () => {
+        try {
+            await raciForm.validateFields();
+            setFormValid(true);
+        } catch {
+            setFormValid(false);
+        }
+    };
+
+    const handleConfirmResponsibility = async () => {
+        try {
+            const values = await raciForm.validateFields();
+
+            const selectedActivityCode = selectedRow?.code;
+            if (!selectedActivityCode) {
+                console.error("No activity selected");
+                return;
+            }
+
+            const updatedActivities = moduleData.activities.map((activity: any) => {
+                if (activity.code === selectedActivityCode) {
+                    return {
+                        ...activity,
+                        raci: {
+                            responsible: values.responsible,
+                            accountable: values.accountable,
+                            consulted: values.consulted || [],
+                            informed: values.informed || []
+                        }
+                    };
+                }
+                return activity;
+            });
+
+            const updatedModuleData = {
+                ...moduleData,
+                activities: updatedActivities
+            };
+            setModuleData(updatedModuleData);
+            handleCloseResponsibility();
+        } catch (error) {
+            console.error('Validation failed:', error);
+        }
+    };
+
+    const handleCloseNotification = () => {
+        setOpenNotificationModal(false);
+        notificationForm.resetFields();
+    };
+
+    const handleNotificationChange = () => {
+        // Optional validation logic here
+    };
+
+    const handleConfirmNotification = async () => {
+        try {
+            const values = await notificationForm.validateFields();
+
+            const selectedActivityCode = selectedRow?.code;
+            const updatedActivities = moduleData.activities.map((activity: any) => {
+                if (activity.code === selectedActivityCode) {
+                    return {
+                        ...activity,
+                        notifications: values
+                    };
+                }
+                return activity;
+            });
+
+            const updatedModuleData = {
+                ...moduleData,
+                activities: updatedActivities
+            };
+
+            setModuleData(updatedModuleData);
+
+            handleCloseNotification();
+        } catch (err) {
+            console.error('Validation Error:', err);
+        }
+    };
+
+    const handleCloseDocument = () => {
+        setOpenDocumentModal(false);
+        documentForm.resetFields();
+    };
+
+    const handleConfirmDocument = async () => {
+        try {
+            const values = await documentForm.validateFields();
+            const selectedActivityCode = selectedRow?.code;
+
+            const updatedActivities = moduleData.activities.map((activity: any) => {
+                if (activity.code === selectedActivityCode) {
+                    return {
+                        ...activity,
+                        documents: values.documents
+                    };
+                }
+                return activity;
+            });
+
+            const updatedModuleData = {
+                ...moduleData,
+                activities: updatedActivities
+            };
+
+            setModuleData(updatedModuleData);
+            handleCloseDocument();
+        } catch (err) {
+            console.error("Document form error:", err);
+        }
+    };
+
+    const handleCostConfirm = async () => {
+        try {
+            const values = await form.validateFields();
+
+            const selectedActivityCode = selectedRow?.code;
+            if (!selectedActivityCode) {
+                console.warn("No activity selected");
+                return;
+            }
+
+            const updatedActivities = moduleData.activities.map((activity: any) => {
+                if (activity.code === selectedActivityCode) {
+                    return {
+                        ...activity,
+                        cost: {
+                            projectCost: values.projectCost,
+                            opCost: values.opCost
+                        }
+                    };
+                }
+                return activity;
+            });
+
+            const updatedModuleData = {
+                ...moduleData,
+                activities: updatedActivities
+            };
+            setModuleData(updatedModuleData);
+            handleClose();
+        } catch (err) {
+            console.error("Validation Failed:", err);
+        }
+    };
+    useEffect(() => {
+        if (openResponsibilityModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.raci) {
+                raciForm.setFieldsValue(activity.raci);
+            }
+        }
+    }, [openResponsibilityModal, selectedRow]);
+
+    useEffect(() => {
+        if (openCostCalcModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.cost) {
+                form.setFieldsValue({
+                    projectCost: activity.cost.projectCost,
+                    opCost: activity.cost.opCost
+                });
+            } else {
+                form.resetFields();
+            }
+        }
+    }, [openCostCalcModal, selectedRow]);
+
+    useEffect(() => {
+        if (openNotificationModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.notifications) {
+                notificationForm.setFieldsValue(activity.notifications);
+            } else {
+                notificationForm.resetFields();
+            }
+        }
+    }, [openNotificationModal, selectedRow]);
+    useEffect(() => {
+        if (openDocumentModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.documents) {
+                documentForm.setFieldsValue({ documents: activity.documents });
+            } else {
+                documentForm.resetFields();
+            }
+        }
+    }, [openDocumentModal, selectedRow]);
 
 
     return (
@@ -730,6 +930,16 @@ const Module = () => {
                         <Row justify="space-between" align="middle">
                             <Col>
                                 <Row gutter={16}>
+                                    <Col>
+                                        <Tooltip title="Define Activity Cost">
+                                            <Button
+                                                icon={<FileTextOutlined style={{ color: '#7f8c8d' }} />}
+                                                className="icon-button"
+                                                onClick={showDocumentModal}
+                                                disabled={!selectedRow}
+                                            />
+                                        </Tooltip>
+                                    </Col>
                                     <Col>
                                         <Tooltip title="Define Activity Cost">
                                             <Button
@@ -791,7 +1001,7 @@ const Module = () => {
                                         <Tooltip title="Assign RACI">
                                             <Button
                                                 icon={<UserOutlined />}
-                                                onClick={handleAssignRACI}
+                                                onClick={showResponsibilityModal}
                                                 className="icon-button blue"
                                                 disabled={!selectedRow}
                                             />
@@ -815,7 +1025,7 @@ const Module = () => {
                                         <Tooltip title="Notifications">
                                             <Button
                                                 icon={<BellOutlined />}
-                                                onClick={() => setOpen(true)}
+                                                onClick={showNotificationModal}
                                                 className="icon-button blue"
                                                 disabled={!selectedRow}
                                             />
@@ -985,7 +1195,7 @@ const Module = () => {
                             onClick={handleSaveModuleAndActivity}
                             disabled={!moduleData.parentModuleCode}
                         >
-                            {isEditing ? "Update" : "Save"} <ArrowRightOutlined className="save-button-icon" />
+                            {isEditing ? "Update" : "Save"}
                         </Button>
                     </div>
                 </div>
@@ -1128,8 +1338,7 @@ const Module = () => {
                     title="Define Cost for Delay (₹ / Day)"
                     open={openCostCalcModal}
                     onCancel={handleClose}
-                    onOk={handleConfirm}
-                    okButtonProps={{ disabled: !formValid }}
+                    onOk={handleCostConfirm}
                     destroyOnClose
                     className="modal-container"
                 >
@@ -1137,7 +1346,7 @@ const Module = () => {
                         form={form}
                         layout="vertical"
                         onValuesChange={handleValuesChange}
-                        style={{ padding: "0px 10px" ,display:'flex', flexDirection:'column',gap:'10px'}}
+                        style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
                     >
                         <Form.Item
                             label=""
@@ -1175,6 +1384,224 @@ const Module = () => {
 
                 </Modal>
 
+                <Modal
+                    title="Assign Responsibility"
+                    open={openResponsibilityModal}
+                    onCancel={handleCloseResponsibility}
+                    onOk={handleConfirmResponsibility}
+                    okButtonProps={{ disabled: !formValid }}
+                    destroyOnClose
+                    className="modal-container"
+                    maskClosable={false}
+                    keyboard={false}
+                >
+                    <Form
+                        form={raciForm}
+                        layout="vertical"
+                        onValuesChange={handleRaciChange}
+                        style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+                    >
+                        <Form.Item label="" style={{ marginBottom: 16 }}>
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Responsible</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="responsible"
+                                        noStyle
+                                        rules={[{ required: true, message: 'Please select a Responsible person' }]}
+                                    >
+                                        <Select placeholder="Select Responsible">
+                                            {userOptions.map(user => (
+                                                <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Form.Item>
+
+                        <Form.Item label="" style={{ marginBottom: 16 }}>
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Accountable</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="accountable"
+                                        noStyle
+                                        rules={[{ required: true, message: 'Please select an Accountable person' }]}
+                                    >
+                                        <Select placeholder="Select Accountable">
+                                            {userOptions.map(user => (
+                                                <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Form.Item>
+
+                        <Form.Item label="" style={{ marginBottom: 16 }}>
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Consulted</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="consulted"
+                                        noStyle
+                                    >
+                                        <Select mode="multiple" placeholder="Select Consulted">
+                                            {userOptions.map(user => (
+                                                <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Form.Item>
+
+                        <Form.Item label="" style={{ marginBottom: 24 }}>
+                            <Row align="middle" gutter={8}>
+                                <Col flex="150px">Informed</Col>
+                                <Col flex="auto">
+                                    <Form.Item
+                                        name="informed"
+                                        noStyle
+                                    >
+                                        <Select mode="multiple" placeholder="Select Informed">
+                                            {userOptions.map(user => (
+                                                <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                        </Form.Item>
+                    </Form>
+                </Modal>
+
+                <Modal
+                    title="Configure Notifications"
+                    open={openNotificationModal}
+                    onCancel={handleCloseNotification}
+                    onOk={handleConfirmNotification}
+                    maskClosable={false}
+                    keyboard={false}
+                    destroyOnClose
+                    className="modal-container"
+                >
+                    <Form
+                        form={notificationForm}
+                        layout="vertical"
+                        onValuesChange={handleNotificationChange}
+                        style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+                    >
+                        {['started', 'completed', 'delayed'].map((key) => (
+                            <Form.Item label="" key={key}>
+                                <Row align="middle" gutter={8}>
+                                    <Col flex="150px" style={{ textTransform: 'capitalize' }}>
+                                        {key}
+                                    </Col>
+                                    <Col>
+                                        <Form.Item name={[key, 'enabled']} valuePropName="checked" noStyle>
+                                            <Switch />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col flex="auto">
+                                        {key !== 'delayed' ? (
+                                            <Form.Item name={[key, 'message']} noStyle>
+                                                <Input placeholder="Enter text here" />
+                                            </Form.Item>
+                                        ) : (
+                                            <Form.Item
+                                                shouldUpdate={(prev, curr) =>
+                                                    prev.delayed?.enabled !== curr.delayed?.enabled
+                                                }
+                                                noStyle
+                                            >
+                                                {({ getFieldValue }) => (
+                                                    <Form.Item
+                                                        name={['delayed', 'duration']}
+                                                        noStyle
+                                                        rules={[
+                                                            {
+                                                                required: getFieldValue(['delayed', 'enabled']),
+                                                                message: 'Select duration if Delayed is enabled'
+                                                            }
+                                                        ]}
+                                                    >
+                                                        <Select
+                                                            placeholder="Select delay duration"
+                                                            disabled={!getFieldValue(['delayed', 'enabled'])}
+                                                            showSearch
+                                                            optionFilterProp="children"
+                                                        >
+                                                            <Select.Option value="1 day">1 day</Select.Option>
+                                                            <Select.Option value="7 days">7 days</Select.Option>
+                                                            <Select.Option value="14 days">14 days</Select.Option>
+                                                            <Select.Option value="30 days">30 days</Select.Option>
+                                                        </Select>
+                                                    </Form.Item>
+                                                )}
+                                            </Form.Item>
+                                        )}
+                                    </Col>
+                                </Row>
+                            </Form.Item>
+                        ))}
+                    </Form>
+                </Modal>
+
+                <Modal
+                    title="Configure Required Documents"
+                    open={openDocumentModal}
+                    onCancel={handleCloseDocument}
+                    onOk={handleConfirmDocument}
+                    maskClosable={false}
+                    keyboard={false}
+                    destroyOnClose
+                    className="modal-container"
+                >
+                    <Form
+                        form={documentForm}
+                        layout="vertical"
+                        name="documentForm"
+                        style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+                    >
+                        <Form.List name="documents">
+                            {(fields, { add, remove }) => (
+                                <>
+                                    {fields.map(({ key, name, ...restField }) => (
+                                        <Form.Item key={key} required={false}>
+                                            <Row gutter={8} align="middle">
+                                                <Col flex="auto">
+                                                    <Form.Item
+                                                        {...restField}
+                                                        name={name}
+                                                        rules={[{ required: true, message: 'Please enter document name' }]}
+                                                        noStyle
+                                                    >
+                                                        <Input placeholder="Enter document name" />
+                                                    </Form.Item>
+                                                </Col>
+                                                <Col>
+                                                    <MinusCircleOutlined onClick={() => remove(name)} style={{ color: 'red' }} />
+                                                </Col>
+                                            </Row>
+                                        </Form.Item>
+                                    ))}
+                                    <Form.Item>
+                                        <Button
+                                            type="dashed"
+                                            onClick={() => add()}
+                                            block
+                                            icon={<PlusOutlined />}
+                                        >
+                                            Add Document
+                                        </Button>
+                                    </Form.Item>
+                                </>
+                            )}
+                        </Form.List>
+                    </Form>
+                </Modal>
             </div>
         </div>
     );

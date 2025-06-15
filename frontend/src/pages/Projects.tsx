@@ -253,7 +253,7 @@ const Projects = () => {
             case 'capex':
                 return <CAPEXPerformance />;
             case 'documents':
-                return <ProjectDocs />;
+                return <ProjectDocs code={projectDetails.id} />;
             case 'csr':
                 return <CSR />;
             case 'mineInfra':
