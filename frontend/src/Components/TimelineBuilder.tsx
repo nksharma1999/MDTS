@@ -246,6 +246,7 @@ const TimeBuilder = () => {
       const timelineId = selectedTimeline.versionId || selectedTimeline.timelineId;
       setSelectedTimelineId(timelineId);
       getProjectTimeline(timelineId);
+      console.log(timelineId);
 
       setIsUpdateMode(true);
       setSelectedProjectName(projectParameters?.projectName || "");
@@ -279,6 +280,8 @@ const TimeBuilder = () => {
         } else {
           handleLibraryChange([]);
         }
+        console.log(finTimeline);
+
         return finTimeline;
       } catch (err) {
         console.error("Error fetching timeline:", err);
@@ -389,44 +392,6 @@ const TimeBuilder = () => {
     setFinalData(items);
     setSequencedModules(items);
   };
-
-  // const handleDurationChange = (code: any, newDuration: any) => {
-  //   let updatedFinalData = [...finalData];
-  //   let updatedSequencedModules = [...sequencedModules];
-  //   function updateActivities(activities: any) {
-  //     return activities.map((activity: any) => {
-  //       if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
-  //         return activity;
-  //       }
-  //       if (activity.code === code) {
-  //         activity.duration = newDuration;
-  //         const startDate = activity.start;
-  //         const duration = parseInt(newDuration, 10) || 0;
-
-  //         const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
-
-  //         activity.end = endDate;
-  //         activity.holidays = [...(activity.holidays || []), ...durationHolidays];
-
-  //         updateDependentActivities(activity.code, endDate);
-  //       }
-  //       return activity;
-  //     });
-  //   }
-
-  //   updatedFinalData = updatedFinalData.map((module) => ({
-  //     ...module,
-  //     activities: updateActivities(module.activities),
-  //   }));
-
-  //   updatedSequencedModules = updatedSequencedModules.map((module) => ({
-  //     ...module,
-  //     activities: updateActivities(module.activities),
-  //   }));
-
-  //   setFinalData(updatedFinalData);
-  //   setSequencedModules(updatedSequencedModules);
-  // };
 
   const handleDurationChange = (code: any, newDuration: any) => {
     let updatedFinalData = [...finalData];
@@ -875,64 +840,15 @@ const TimeBuilder = () => {
     }
   };
 
-  // const handleSaveProjectTimeline = async (sequencedModules: any) => {
-  //   try {
-  //     if (!selectedProject || !selectedProjectId) {
-  //       throw new Error("Project or Project ID is missing.");
-  //     }
-
-  //     const currentUser = getCurrentUser();
-  //     const currentTimestamp = new Date().toISOString();
-
-  //     const createTimelineEntry = (timelineId: string, existingTimeline: any[]) => {
-  //       const newVersion = `${existingTimeline.length + 1}.0`;
-  //       localStorage.setItem("latestProjectVersion", newVersion);
-  //       return {
-  //         timelineId,
-  //         status: "pending",
-  //         version: newVersion,
-  //         addedBy: currentUser.name,
-  //         addedUserEmail: currentUser.email,
-  //         createdAt: currentTimestamp,
-  //         updatedAt: currentTimestamp,
-  //       };
-  //     };
-
-  //     if (!isUpdateMode || isReplanMode) {
-  //       const createdTimeLineId: any = await db.addProjectTimeline(sequencedModules);
-  //       const existingTimeline = selectedProject.projectTimeline || [];
-
-  //       const updatedProjectWithTimeline = {
-  //         ...selectedProject,
-  //         projectTimeline: [...existingTimeline, createTimelineEntry(createdTimeLineId, existingTimeline)],
-  //         processedTimelineData: sequencedModules,
-  //       };
-
-  //       await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
-  //     } else {
-  //       await db.updateProjectTimeline(selectedTimelineId, sequencedModules);
-  //     }
-
-  //     setTimeout(() => navigate(".", { replace: true }), 0);
-  //     message.success(isUpdateMode ? "Project timeline updated successfully!" : "Project timeline saved successfully!");
-
-  //     localStorage.setItem("selectedProjectId", selectedProjectId);
-  //     resetProjectState();
-  //   } catch (error) {
-  //     console.error("Error saving project timeline:", error);
-  //     message.error("Failed to save project timeline. Please try again.");
-  //   }
-  // };
-
   const handleSaveProjectTimeline = async (sequencedModules: any) => {
     try {
       if (!selectedProject || !selectedProjectId) {
         throw new Error("Project or Project ID is missing.");
       }
-  
+
       const currentUser = getCurrentUser();
       const currentTimestamp = new Date().toISOString();
-  
+
       const createTimelineEntry = (
         timelineId: string,
         version: string
@@ -945,14 +861,14 @@ const TimeBuilder = () => {
         createdAt: currentTimestamp,
         updatedAt: currentTimestamp,
       });
-  
+
       if (!isUpdateMode || isReplanMode) {
         const createdTimeLineId: any = await db.addProjectTimeline(sequencedModules);
         const existingTimeline = selectedProject.projectTimeline || [];
-  
+
         const newVersion = `${existingTimeline.length + 1}.0`;
         localStorage.setItem("latestProjectVersion", newVersion);
-  
+
         let updatedTimeline = [...existingTimeline];
         if (isReplanMode && existingTimeline.length > 0) {
           const lastIndex = existingTimeline.length - 1;
@@ -961,7 +877,7 @@ const TimeBuilder = () => {
             status: "replanned",
           };
         }
-  
+
         const updatedProjectWithTimeline = {
           ...selectedProject,
           projectTimeline: [
@@ -970,15 +886,15 @@ const TimeBuilder = () => {
           ],
           processedTimelineData: sequencedModules,
         };
-  
+
         await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
       } else {
         await db.updateProjectTimeline(selectedTimelineId, sequencedModules);
       }
-  
+
       setTimeout(() => navigate(".", { replace: true }), 0);
       message.success(isUpdateMode ? "Project timeline updated successfully!" : "Project timeline saved successfully!");
-  
+
       localStorage.setItem("selectedProjectId", selectedProjectId);
       resetProjectState();
     } catch (error) {
@@ -986,7 +902,7 @@ const TimeBuilder = () => {
       message.error("Failed to save project timeline. Please try again.");
     }
   };
-  
+
   const resetProjectState = () => {
     setSelectedProject(null);
     setSelectedProjectId(null);
@@ -1868,7 +1784,7 @@ const TimeBuilder = () => {
                 </div>
               )}
             </div>
-            {(isUpdateMode ||isMenualTimeline) && (<>
+            {(isUpdateMode || isMenualTimeline) && (<>
               <div style={{ paddingRight: "5px" }}>
                 <Button
                   type="primary"
